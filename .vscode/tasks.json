@@ -1,0 +1,59 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "configure",
+            "type": "shell",
+            "command": "cmake --preset v0.0.1",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "cmake --build --preset v0.0.1",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "cmake --build build --target clean --parallel",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "debug",
+            "type": "shell",
+            "command": "C:/avrdude/avrdude.exe -pm88p -cusbasp -U flash:w:embedded_project_name.elf:a",
+            "options": {
+                "cwd": "${workspaceFolder}/build/app"
+            }
+        },
+        {
+            "label": "eeprom_flash",
+            "type": "shell",
+            "command": "C:/avrdude/avrdude.exe -pm88p -cusbasp -U eeprom:w:embedded_project_name.elf:a",
+            "options": {
+                "cwd": "${workspaceFolder}/build/app"
+            }
+        },
+        {
+            "label": "fusebits_flash",
+            "type": "shell",
+            "command": "C:/avrdude/avrdude.exe -pm88p -cusbasp -U lfuse:w:embedded_project_name.elf:a -U hfuse:w:embedded_project_name.elf:a -U efuse:w:embedded_project_name.elf:a -U lock:w:embedded_project_name.elf:a",
+            "options": {
+                "cwd": "${workspaceFolder}/build/app"
+            }
+        }
+    ]
+}
