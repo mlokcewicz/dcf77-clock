@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/hal/platforms/${HW_VERSION}/toolchain.cmake)
 
 # project configuration
-project("embedded_project_name" C ASM)
+project("dcf77_clock" C ASM)
 
 # Application modules
 add_subdirectory(app)

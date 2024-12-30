@@ -1,4 +1,6 @@
-# embedded-project-name 
+# dcf77-clock 
+
+DCF77 controlled radio clock based on Atmega88 microcontroller, MAS6180 AM receive and DS1302 RTC. 
 
 ## Tools
 * CMake 3.20.0
