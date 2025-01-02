@@ -37,7 +37,8 @@
             "command": "C:/embedded_tools/avrdude/avrdude.exe -pm88p -cusbasp -U flash:w:dcf77_clock.elf:a",
             "options": {
                 "cwd": "${workspaceFolder}/build/app"
-            }
+            },
+            "problemMatcher": []
         },
         {
             "label": "eeprom_flash",
