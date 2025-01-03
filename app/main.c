@@ -295,6 +295,8 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 }
 
+/* RTC */
+
 int main()
 {
     DDRD |= (1 << PD0);
@@ -329,3 +331,12 @@ int main()
 }
 
 //------------------------------------------------------------------------------
+
+// DCF77 - PB0 (TIM1 ICP)
+// DS1307 - TWI + PCINT
+// LCD - dowolnie + podstwietlenie pod PWM timer0
+// ENCODER - INT0 i INT1
+// BUTTON - PCINT
+// LED - dodowlnie
+// USART - pod USART
+// ISP - pod ISP
