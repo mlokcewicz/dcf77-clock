@@ -12,7 +12,7 @@ Capabilities:
 
 Hardware:
 * ATmega88
-* CM#6005 DCF77 receiver
+* CME6005 DCF77 receiver
 * DS1302 RTC + CR2032
 * 2x16 HD44760 LCD
 * Rotary Encoder + LED + Buzzer
