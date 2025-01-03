@@ -111,10 +111,10 @@ struct dcf77_frame
     uint8_t leap_second : 1;
     uint8_t time_start_always_zero : 1;
     uint8_t minutes_units : 4;
-    uint8_t minutes_tens : 4;
+    uint8_t minutes_tens : 3;
     uint8_t minutes_parity : 1;
     uint8_t hours_units : 4;
-    uint8_t hours_tens : 4;
+    uint8_t hours_tens : 2;
     uint8_t hours_parity : 1;
     uint8_t month_days_units : 4;
     uint8_t month_day_tens : 2;
@@ -208,7 +208,7 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
         return DCF77_BIT_VAL_0;
     if (is_in_range(ms, 140, 250))
         return DCF77_BIT_VAL_1;
-    if (is_in_range(ms, 1600, 2200))
+    if (is_in_range(ms, 1700, 2200))
         return DCF77_BIT_VAL_NONE;
 
     return DCF77_BIT_VAL_ERROR;
@@ -219,7 +219,6 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     static bool frame_started = false;
     static uint64_t frame = 0;
     static uint64_t bit_cnt = 0;
-
 
     ticks = tick_to_ms(ticks, 256);
     char buf[10] = {0};
@@ -249,34 +248,42 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
     enum dcf77_bit_val val = 0;
 
-    if (rising_edge) // Time shold be bit
+    if (!rising_edge) // Bit transmission
     {
         val = get_bit_val(ticks);
 
-        if (val == DCF77_BIT_VAL_ERROR || DCF77_BIT_VAL_NONE)
+        if (val == DCF77_BIT_VAL_ERROR /*|| val == DCF77_BIT_VAL_NONE*/)
         {
             hd44780_set_pos(&lcd_obj, 1, 0);
-            hd44780_print(&lcd_obj, "ERROR          ");
+            sprintf(buf, "ERROR: %u     ", ticks);
+
+            hd44780_print(&lcd_obj, buf);
             frame = 0;
             frame_started = 0;
             bit_cnt = 0;
             return;
         }
 
-        frame = (frame << 1) | val;
+        frame |= ((uint64_t)val << bit_cnt); 
         bit_cnt++;
 
-        if (bit_cnt > 36)
+        if (bit_cnt >= 59)
         {
             struct dcf77_frame *frame_ptr = (struct dcf77_frame*)&frame;
 
-            uint8_t minutes = frame_ptr->minutes_units + 10 * frame_ptr->minutes_tens;
-            uint8_t hours = frame_ptr->hours_units + 10 * frame_ptr->hours_tens;
+			uint8_t hours = 10 * frame_ptr->hours_tens + frame_ptr->hours_units;
+			uint8_t minutes = 10 * frame_ptr->minutes_tens + frame_ptr->minutes_units;
+			
+			uint8_t day = 10 * frame_ptr->month_day_tens + frame_ptr->month_days_units;
+			uint8_t month = 10 * frame_ptr->month_day_tens + frame_ptr->months_units;
+			uint8_t year = 10 * frame_ptr->years_tens + frame_ptr->years_units;
 
-            sprintf(buf, "%u:%u OK", hours, minutes);
+            sprintf(buf, "%02u:%02u %02u.%02u.%02u", hours, minutes, day, month, year);
             hd44780_set_pos(&lcd_obj, 1, 0);
             hd44780_print(&lcd_obj, buf);
             cli();
+
+            while(1);
             return;
         }
 
