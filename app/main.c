@@ -137,9 +137,9 @@ static void timer1_capt_cb(uint16_t icr)
 {
     static bool rising_edge = false;
 
-    if (rising_edge)
-        TCCR1B |= (1 << ICES1);
-    else
+    if (rising_edge) // Triggered on rising edge, break was measuered, change to falling
+        TCCR1B |= (1 << ICES1); // TODO: THIS SHOULD BE SWAPPED!
+    else // Triggered on falling edge, bit was measured, change to rising
         TCCR1B &= ~(1 << ICES1);
 
     rising_edge ^= 1;
