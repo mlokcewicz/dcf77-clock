@@ -195,7 +195,7 @@ struct timer_cfg timer1_cfg =
 
 static bool is_in_range(uint16_t ms, uint16_t min, uint16_t max)
 {
-    return (ms > min) && (ms < max);
+    return (ms >= min) && (ms < max);
 }
 
 enum dcf77_bit_val
@@ -206,8 +206,23 @@ enum dcf77_bit_val
     DCF77_BIT_VAL_ERROR,
 };
 
+#define EXTENDEND_TOLERANCE 1
+
 static enum dcf77_bit_val get_bit_val(uint16_t ms)
 {
+#if EXTENDEND_TOLERANCE
+
+    if (is_in_range(ms, 40, 140))
+        return DCF77_BIT_VAL_0;
+    if (is_in_range(ms, 141, 400))
+        return DCF77_BIT_VAL_1;
+    if (is_in_range(ms, 1500, 2200))
+        return DCF77_BIT_VAL_NONE;
+
+    return DCF77_BIT_VAL_ERROR;
+
+#endif
+
     if (is_in_range(ms, 40, 130))
         return DCF77_BIT_VAL_0;
     if (is_in_range(ms, 140, 250))
