@@ -144,26 +144,30 @@ static void timer1_capt_cb(uint16_t icr)
 
     rising_edge ^= 1;
 
+    /* Ignore short pulses */
+    // if (!rising_edge && (tick_to_ms(icr, 256) < 40))
+    //     return;
+
     TCNT1 = 0;
 
     dcf77_decode(icr, rising_edge);
 };
 
-static void timer1_ovr_cb(void)
-{
-    uint16_t tcnt = timer_get_val(&timer1_obj);
+// static void timer1_ovr_cb(void)
+// {
+//     uint16_t tcnt = timer_get_val(&timer1_obj);
     
-    char buf[10] = {0};
-    utoa(tcnt, buf, 10);
+//     char buf[10] = {0};
+//     utoa(tcnt, buf, 10);
 
-    // sprintf(buf, "%u", tcnt);
-    hd44780_set_pos(&lcd_obj, 1, 0);
-    hd44780_print(&lcd_obj,"          ");
-    hd44780_set_pos(&lcd_obj, 1, 0);
+//     // sprintf(buf, "%u", tcnt);
+//     hd44780_set_pos(&lcd_obj, 1, 0);
+//     hd44780_print(&lcd_obj,"          ");
+//     hd44780_set_pos(&lcd_obj, 1, 0);
 
-    hd44780_print(&lcd_obj, "OVR ");
-    hd44780_print(&lcd_obj, buf);
-}
+//     hd44780_print(&lcd_obj, "OVR ");
+//     hd44780_print(&lcd_obj, buf);
+// }
 
 struct timer_cfg timer1_cfg = 
 {  
@@ -208,7 +212,7 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
         return DCF77_BIT_VAL_0;
     if (is_in_range(ms, 140, 250))
         return DCF77_BIT_VAL_1;
-    if (is_in_range(ms, 1700, 2200))
+    if (is_in_range(ms, 1500, 2200))
         return DCF77_BIT_VAL_NONE;
 
     return DCF77_BIT_VAL_ERROR;
@@ -221,7 +225,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     static uint64_t bit_cnt = 0;
 
     ticks = tick_to_ms(ticks, 256);
-    char buf[10] = {0};
+    char buf[25] = {0};
     utoa(ticks, buf, 10);
 
     uint8_t pos = rising_edge ? 8 : 0;
@@ -244,6 +248,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
             return;
         }
+        return;
     }
 
     enum dcf77_bit_val val = 0;
@@ -252,10 +257,10 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     {
         val = get_bit_val(ticks);
 
-        if (val == DCF77_BIT_VAL_ERROR /*|| val == DCF77_BIT_VAL_NONE*/)
+        if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {
             hd44780_set_pos(&lcd_obj, 1, 0);
-            sprintf(buf, "ERROR: %u     ", ticks);
+            sprintf(buf, "ERROR: %u           ", ticks);
 
             hd44780_print(&lcd_obj, buf);
             frame = 0;
@@ -291,6 +296,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     else // should be break
     {
         //TODO
+        // take into account ignoring short pulses - it affects break time
     }
 
 }
