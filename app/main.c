@@ -152,6 +152,8 @@ static void timer1_capt_cb(uint16_t icr)
     // if (!rising_edge && (tick_to_ms(icr, 256) < 600))
     //     return;
 
+    // TODO: Check pauses since last ignored short pulse (static timestapm) or ignore everything for at least 600 ms
+
     TCNT1 = 0;
 
     dcf77_decode(icr, !rising_edge); // restore real trigger source edge
