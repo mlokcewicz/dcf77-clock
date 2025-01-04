@@ -135,22 +135,22 @@ static uint64_t tick_to_ms(uint16_t ticks, uint16_t presc)
 
 static void timer1_capt_cb(uint16_t icr)
 {
-    static bool rising_edge = false;
+    static bool rising_edge = false; // This has to be the same as initialization
 
     if (rising_edge) // Triggered on rising edge, break was measuered, change to falling
-        TCCR1B |= (1 << ICES1); // TODO: THIS SHOULD BE SWAPPED!
-    else // Triggered on falling edge, bit was measured, change to rising
         TCCR1B &= ~(1 << ICES1);
-
+    else // Triggered on falling edge, bit was measured, change to rising
+        TCCR1B |= (1 << ICES1); 
+    
     rising_edge ^= 1;
 
-    /* Ignore short pulses */
-    // if (!rising_edge && (tick_to_ms(icr, 256) < 40))
+    // /* Ignore short pulses (triggered on falling edge) */
+    // if (rising_edge && (tick_to_ms(icr, 256) < 40))
     //     return;
 
     TCNT1 = 0;
 
-    dcf77_decode(icr, rising_edge);
+    dcf77_decode(icr, !rising_edge); // restore real trigger source edge
 };
 
 // static void timer1_ovr_cb(void)
