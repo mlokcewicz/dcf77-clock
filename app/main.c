@@ -362,6 +362,7 @@ int main()
 // DCF77 - PB0 (TIM1 ICP)
 // DS1307 - TWI + PCINT
 // LCD - dowolnie + podstwietlenie pod PWM timer0
+// BUZZER - Timer2
 // ENCODER - INT0 i INT1
 // BUTTON - PCINT
 // LED - dodowlnie
