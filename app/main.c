@@ -43,16 +43,28 @@ static void lcd_set_pin_cb(uint8_t pin, bool state)
 {
     int pin_to_pin_val[] = 
     {
-        [LCD_RS] = PC4,
-        [LCD_RW] = PC5,
-        [LCD_E] = PB7,
-        [LCD_D4] = PC0,
-        [LCD_D5] = PC1,
-        [LCD_D6] = PC2,
-        [LCD_D7] = PC3,
+        [LCD_RS] = PC3,
+        [LCD_E] = PD4,
+        [LCD_D4] = PB6,
+        [LCD_D5] = PB7,
+        [LCD_D6] = PD7,
+        [LCD_D7] = PD5,
     };
 
-    if (pin == LCD_E)
+    if (pin == LCD_RW)
+        return;
+
+    if (pin == LCD_RS)
+    {
+        if (state)
+            PORTC |= (1 << pin_to_pin_val[pin]);
+        else
+            PORTC &= ~(1 << pin_to_pin_val[pin]);
+
+        return;
+    }
+    
+    if ((pin == LCD_D4) || (pin == LCD_D5))
     {
         if (state)
             PORTB |= (1 << pin_to_pin_val[pin]);
@@ -63,9 +75,9 @@ static void lcd_set_pin_cb(uint8_t pin, bool state)
     }
 
     if (state)
-        PORTC |= (1 << pin_to_pin_val[pin]);
+        PORTD |= (1 << pin_to_pin_val[pin]);
     else
-        PORTC &= ~(1 << pin_to_pin_val[pin]);
+        PORTD &= ~(1 << pin_to_pin_val[pin]);
 }
 
 static void lcd_delay_cb(uint32_t us) 
@@ -76,8 +88,10 @@ static void lcd_delay_cb(uint32_t us)
 
 static void lcd_pin_init_cb(void)
 {
-    DDRC = 0xFF;
-    DDRB |= 1 << PB7;
+
+    DDRC |= 1 << PC3;
+    DDRB |= (1 << PB6) | (1 << PB7);
+    DDRD |= (1 << PD4) | (1 << PD5) | (1 << PD7);
 }
 
 static void lcd_pin_deinit_cb(void)
@@ -326,8 +340,8 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 int main()
 {
-    DDRD |= (1 << PD0);
-    PORTD &= ~(1 << PD0);
+    DDRD |= (1 << PD6);
+    PORTD &= ~(1 << PD6);
 
     DDRB &= ~(1 << PB0); // input
     // PORTB |= (1 << PB0); /* Pull up for EXTI */
@@ -346,12 +360,12 @@ int main()
 
     while (1)
     {
-        // PORTD ^= (1 << PD0);
+        // PORTD ^= (1 << PD6);
 
         if (PINB & (1 << PB0))
-            PORTD |= 1 << PD0;
+            PORTD |= 1 << PD6;
         else 
-            PORTD &= ~(1 << PD0);
+            PORTD &= ~(1 << PD6);
 
         // _delay_ms(1000);
     }
