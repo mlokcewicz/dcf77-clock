@@ -340,10 +340,15 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 int main()
 {
+    /* LED */
     DDRD |= (1 << PD6);
     PORTD &= ~(1 << PD6);
 
-    DDRB &= ~(1 << PB0); // input
+    /* DCF */
+    DDRB |= (1 << PB1);
+    PORTB &= ~(1 << PB1); // SEL
+
+    DDRB &= ~(1 << PB0); // input 
     // PORTB |= (1 << PB0); /* Pull up for EXTI */
     // PORTB &= ~(1 << PB0); /* Pull down for EXTI */
     MCUCR &= ~(1 << PUD);
