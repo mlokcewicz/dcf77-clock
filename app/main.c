@@ -387,3 +387,18 @@ int main()
 // LED - dodowlnie
 // USART - pod USART
 // ISP - pod ISP
+
+// Basic threads / processess:
+// * radio_manager (waits for request and TIM1 interrupts)
+// * ui_manager (waits for INT0, PCINT interrupts from encoder / button)
+// * clock_manager (waits for SQW and send event to UI)
+// * main (transfers event)
+
+// Events:
+// * ENC+ (to ui_manager)
+// * ENC- (to ui_manager)
+// * SW (to ui_manager)
+// * SEC (to clock_manager)
+// * Sync REQ (from ui_manager or radio_manager) (to radio_manager)
+// * Clock UPDT REQ (from ui_manager or radio_manager) (to clock_manager or ui_manager)
+// * Alarm (from clock_manager) (to ui_manager)
