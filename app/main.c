@@ -362,6 +362,8 @@ int main()
     timer_start(&timer1_obj, true);
 
     sei();
+    
+    // set_system_time(1742839880);
 
     while (1)
     {
@@ -374,7 +376,13 @@ int main()
 
         // _delay_ms(1000);
 
-	// TODO: Add buzzer, encoder and switch handling for application
+        // _delay_ms(1000);
+        // system_tick();
+        // uint32_t unix_time = time(NULL);
+        // hd44780_set_pos(&lcd_obj, 1, 0);
+        // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
+
+	    // TODO: Add buzzer, encoder and switch handling for application
     }
 }
 
