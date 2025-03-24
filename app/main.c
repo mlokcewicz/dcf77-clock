@@ -373,6 +373,8 @@ int main()
             PORTD &= ~(1 << PD6);
 
         // _delay_ms(1000);
+
+	// TODO: Add buzzer, encoder and switch handling for application
     }
 }
 
