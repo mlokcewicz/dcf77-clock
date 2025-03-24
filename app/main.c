@@ -315,7 +315,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 			uint8_t minutes = 10 * frame_ptr->minutes_tens + frame_ptr->minutes_units;
 			
 			uint8_t day = 10 * frame_ptr->month_day_tens + frame_ptr->month_days_units;
-			uint8_t month = 10 * frame_ptr->month_day_tens + frame_ptr->months_units;
+			uint8_t month = 10 * frame_ptr->month_tens + frame_ptr->months_units;
 			uint8_t year = 10 * frame_ptr->years_tens + frame_ptr->years_units;
 
             sprintf(buf, "%02u:%02u %02u.%02u.%02u", hours, minutes, day, month, year);
