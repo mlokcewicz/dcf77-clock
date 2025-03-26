@@ -274,7 +274,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
     enum dcf77_bit_val val = 0;
 
-    if (!rising_edge) // Bit transmission
+    if (!rising_edge) // Bit transmission // NO REVERSED NOW
     {
         val = get_bit_val(ticks);
 
@@ -334,12 +334,17 @@ int main()
     // PORTB &= ~(1 << PB0); /* Pull down for EXTI */
     MCUCR &= ~(1 << PUD);
 
+    DDRB |= (1 << PB1); // out SEL
+    PORTB &= ~(1 << PB1); //SEL low
+    
     hd44780_init(&lcd_obj, &lcd_cfg);
     hd44780_print(&lcd_obj, "TEST");
     hd44780_set_pos(&lcd_obj, 1, 0);
 
-    timer_init(&timer1_obj, &timer1_cfg);
+    
+    // while (1);
 
+    timer_init(&timer1_obj, &timer1_cfg);
     timer_start(&timer1_obj, true);
 
     sei();
