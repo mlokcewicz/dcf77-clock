@@ -145,8 +145,8 @@ static void timer1_capt_cb(uint16_t icr)
     rising_edge ^= 1;
 
     /* Ignore short pulses (triggered on falling edge) */
-    if (rising_edge && (tick_to_ms(icr, 256) < 35))
-        return;
+    // if (rising_edge && (tick_to_ms(icr, 256) < 35))
+    //     return;
 
     // /* Ignore short pauses (triggered on rising edge) */
     // if (!rising_edge && (tick_to_ms(icr, 256) < 600))
@@ -249,7 +249,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     char buf[25] = {0};
     utoa(ticks, buf, 10);
 
-    uint8_t pos = rising_edge ? 8 : 0;
+    uint8_t pos = !rising_edge ? 8 : 0;
 
     hd44780_set_pos(&lcd_obj, 0, pos);
     hd44780_print(&lcd_obj,"        ");
@@ -274,7 +274,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
     enum dcf77_bit_val val = 0;
 
-    if (!rising_edge) // Bit transmission // NO REVERSED NOW
+    if (rising_edge) // Bit transmission // NO REVERSED NOW
     {
         val = get_bit_val(ticks);
 
@@ -354,9 +354,9 @@ int main()
         // PORTD ^= (1 << PD0);
 
         if (PINB & (1 << PB0))
-            PORTD |= 1 << PD0;
-        else 
             PORTD &= ~(1 << PD0);
+        else 
+            PORTD |= 1 << PD0;
 
         // _delay_ms(1000);
     }
