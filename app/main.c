@@ -144,12 +144,12 @@ static void timer1_capt_cb(uint16_t icr)
     
     rising_edge ^= 1;
 
-    /* Ignore short pulses (triggered on falling edge) */
-    // if (rising_edge && (tick_to_ms(icr, 256) < 35))
-    //     return;
+    /* Ignore short pulses (triggered on falling edge) REVERSED */
+    if (!rising_edge && (tick_to_ms(icr, 256) < 35))
+        return;
 
-    // /* Ignore short pauses (triggered on rising edge) */
-    // if (!rising_edge && (tick_to_ms(icr, 256) < 600))
+    // /* Ignore short pauses (triggered on rising edge) REVERSED */
+    // if (rising_edge && (tick_to_ms(icr, 256) < 600))
     //     return;
 
     // TODO: Check pauses since last ignored short pulse (static timestapm) or ignore everything for at least 600 ms
