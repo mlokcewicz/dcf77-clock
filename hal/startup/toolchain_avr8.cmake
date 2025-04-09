@@ -1,5 +1,5 @@
 # hardware configuration
-set(TARGET_MCU "atmega88p")
+set(TARGET_MCU "atmega88")
 set(TARGET_CLOCK "1000000UL")
  
 # toolchain configuration

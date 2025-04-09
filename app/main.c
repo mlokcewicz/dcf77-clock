@@ -109,6 +109,69 @@ static struct hd44780_cfg lcd_cfg =
 
 static struct hd44780_obj lcd_obj;
 
+/* BUZZER */
+
+void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms) 
+{
+    uint16_t delay_us = 1000000UL / (frequency_hz * 2); 
+    uint16_t cycles = (frequency_hz * duration_ms) / 1000;
+
+    DDRB |= (1 << PB3);  
+
+    for (uint16_t i = 0; i < cycles; i++) 
+    {
+        PORTB |= (1 << PB3);  
+        lcd_delay_cb(delay_us);
+        PORTB &= ~(1 << PB3); 
+        lcd_delay_cb(delay_us);
+    }
+}
+
+/* ENCODER */
+
+#include <rotary_encoder.h>
+
+bool rot_encoder_get_a_cb(void)
+{
+    return (PIND & (1 << PD2));
+};
+bool rot_encoder_get_b_cb(void)
+{
+    return (PIND & (1 << PD3));
+}
+void rot_encoder_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
+{
+    if (dir == ROTARY_ENCODER_DIR_LEFT)
+        buzzer_beep(3000, 500);  // 1 kHz, 500 ms
+    else
+        buzzer_beep(1000, 500);  // 1 kHz, 500 ms
+}
+
+bool rot_encoder_init_cb(void)
+{
+    DDRD &= ~(1 << PD2); // input 
+    DDRD &= ~(1 << PD3); // input 
+
+    return true;
+}
+bool rot_encoder_deinit_cb(void)
+{
+    return true;
+}
+
+struct rotary_encoder_cfg cf = 
+{
+    .get_a_cb = rot_encoder_get_a_cb,
+    .get_b_cb = rot_encoder_get_b_cb,
+    .init_cb = rot_encoder_init_cb,
+    .deinit_cb = rot_encoder_deinit_cb,
+    .rotation_cb = rot_encoder_rotation_cb,
+    .sub_steps_count = 4,
+    .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_NONE,
+};
+
+struct rotary_encoder_obj rot;
+
 /* DCF77 */
 #include <timer.h>
 #include <stdlib.h>
@@ -295,9 +358,9 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {
             hd44780_set_pos(&lcd_obj, 1, 0);
-            sprintf(buf, "ERROR: %u           ", ticks);
+            // sprintf(buf, "ERROR: %u           ", ticks);
 
-            hd44780_print(&lcd_obj, buf);
+            hd44780_print(&lcd_obj, "ERROR         ");
             frame = 0;
             frame_started = 0;
             bit_cnt = 0;
@@ -338,6 +401,16 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 /* RTC */
 
+#include <twi.h>
+#include <avr/interrupt.h>
+
+static struct twi_cfg twi1_cfg = 
+{
+    .pull_up_en = false,
+    .frequency = 100,
+    .irq_mode = false,
+};
+
 int main()
 {
     /* LED */
@@ -349,9 +422,10 @@ int main()
     PORTB &= ~(1 << PB1); // SEL
 
     DDRB &= ~(1 << PB0); // input 
-    // PORTB |= (1 << PB0); /* Pull up for EXTI */
-    // PORTB &= ~(1 << PB0); /* Pull down for EXTI */
     MCUCR &= ~(1 << PUD);
+
+    /* SW */
+    DDRB &= ~(1 << PB2); // input 
 
     hd44780_init(&lcd_obj, &lcd_cfg);
     hd44780_print(&lcd_obj, "TEST");
@@ -361,6 +435,14 @@ int main()
 
     timer_start(&timer1_obj, true);
 
+    rotary_encoder_init(&rot, &cf);
+
+    twi_init(&twi1_cfg);
+    uint8_t sec_config[] = {0x00, 0x09};
+    twi_send(0b11010000, sec_config, 2, true);
+    uint8_t sqw_config[] = {0x07, 0b00010000};
+    twi_send(0b11010000, sqw_config, 2, true);
+
     sei();
     
     // set_system_time(1742839880);
@@ -369,34 +451,41 @@ int main()
     {
         // PORTD ^= (1 << PD6);
 
-        if (PINB & (1 << PB0))
-            PORTD |= 1 << PD6;
-        else 
-            PORTD &= ~(1 << PD6);
+        while (!(PINB & (1 << PB2)))
+        {
+            // PORTD |= 1 << PD6;
 
-        // _delay_ms(1000);
+            if (!(PINC & (1 << PC2)))
+                PORTD |= 1 << PD6;
+            else
+                PORTD &= ~(1 << PD6);
+        }
+
+        if (PINB & (1 << PB0))
+            PORTD &= ~(1 << PD6);
+        else 
+            PORTD |= 1 << PD6;
+
+        rotary_encoder_process(&rot);
+
+        // uint8_t sec_buf = 6;
+        // uint8_t sec_addr = 0x00;
+
+        // twi_send(0b11010001, &sec_addr, 1, true);
+        // twi_receive(0b11010001, &sec_buf, 1);
+
+        // hd44780_set_pos(&lcd_obj, 1, 15);
+        // hd44780_putc(&lcd_obj, (sec_buf & 0x0F) + '0');
 
         // _delay_ms(1000);
         // system_tick();
         // uint32_t unix_time = time(NULL);
         // hd44780_set_pos(&lcd_obj, 1, 0);
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
-
-	    // TODO: Add buzzer, encoder and switch handling for application
     }
 }
 
 //------------------------------------------------------------------------------
-
-// DCF77 - PB0 (TIM1 ICP)
-// DS1307 - TWI + PCINT
-// LCD - dowolnie + podstwietlenie pod PWM timer0
-// BUZZER - Timer2
-// ENCODER - INT0 i INT1
-// BUTTON - PCINT
-// LED - dodowlnie
-// USART - pod USART
-// ISP - pod ISP
 
 // Basic threads / processess:
 // * radio_manager (waits for request of sync, then enables dcf receiver and TIM1 irq, and set new last_sync timestamp, and waits for sync_finished and disables dcf and TIM1 irq)
