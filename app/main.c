@@ -145,8 +145,11 @@ void rot_encoder_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
 
     if (dir == ROTARY_ENCODER_DIR_LEFT)
         buzzer_beep(3000, 500);  // 1 kHz, 500 ms
+        // hd44780_shift(&lcd_obj, false, false);
     else
         buzzer_beep(1000, 500);  // 1 kHz, 500 ms
+        // hd44780_shift(&lcd_obj, false, true);
+
 }
 
 bool rot_encoder_init_cb(void)
@@ -463,7 +466,7 @@ int main()
     uint8_t sqw_config[] = {0x07, 0b00010000};
     twi_send(0b11010000, sqw_config, 2, true);
 
-    sei();
+    // sei();
     
     // set_system_time(1742839880);
 
