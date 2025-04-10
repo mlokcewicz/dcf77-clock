@@ -466,7 +466,7 @@ int main()
     uint8_t sqw_config[] = {0x07, 0b00010000};
     twi_send(0b11010000, sqw_config, 2, true);
 
-    // sei();
+    sei();
     
     // set_system_time(1742839880);
 
