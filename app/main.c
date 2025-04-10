@@ -141,6 +141,8 @@ bool rot_encoder_get_b_cb(void)
 }
 void rot_encoder_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
 {
+    (void)step_cnt;
+
     if (dir == ROTARY_ENCODER_DIR_LEFT)
         buzzer_beep(3000, 500);  // 1 kHz, 500 ms
     else
@@ -374,14 +376,32 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         {
             struct dcf77_frame *frame_ptr = (struct dcf77_frame*)&frame;
 
-			uint8_t hours = 10 * frame_ptr->hours_tens + frame_ptr->hours_units;
-			uint8_t minutes = 10 * frame_ptr->minutes_tens + frame_ptr->minutes_units;
+			// uint8_t hours = 10 * frame_ptr->hours_tens + frame_ptr->hours_units;
+			// uint8_t minutes = 10 * frame_ptr->minutes_tens + frame_ptr->minutes_units;
 			
-			uint8_t day = 10 * frame_ptr->month_day_tens + frame_ptr->month_days_units;
-			uint8_t month = 10 * frame_ptr->months_tens + frame_ptr->months_units;
-			uint8_t year = 10 * frame_ptr->years_tens + frame_ptr->years_units;
+			// uint8_t day = 10 * frame_ptr->month_day_tens + frame_ptr->month_days_units;
+			// uint8_t month = 10 * frame_ptr->months_tens + frame_ptr->months_units;
+			// uint8_t year = 10 * frame_ptr->years_tens + frame_ptr->years_units;
 
-            sprintf(buf, "%02u:%02u %02u.%02u.%02u", hours, minutes, day, month, year);
+            buf[0] = 0;
+
+            uint8_t i = 0;
+            buf[i++] = (frame_ptr->hours_tens + '0');
+            buf[i++] = (frame_ptr->hours_units + '0');
+            buf[i++] = (':');
+            buf[i++] = (frame_ptr->minutes_tens + '0');
+            buf[i++] = (frame_ptr->minutes_units + '0');
+            buf[i++] = (' ');
+            buf[i++] = (frame_ptr->month_day_tens + '0');
+            buf[i++] = (frame_ptr->month_days_units + '0');
+            buf[i++] = ('.');
+            buf[i++] = (frame_ptr->month_day_tens + '0');
+            buf[i++] = (frame_ptr->month_days_units + '0');
+            buf[i++] = ('.');
+            buf[i++] = (frame_ptr->years_tens + '0');
+            buf[i++] = (frame_ptr->years_units + '0');
+            
+            // sprintf(buf, "%02u:%02u %02u.%02u.%02u", hours, minutes, day, month, year);
             hd44780_set_pos(&lcd_obj, 1, 0);
             hd44780_print(&lcd_obj, buf);
             cli();
