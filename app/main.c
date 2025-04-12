@@ -426,6 +426,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 #include <twi.h>
 #include <avr/interrupt.h>
+#include <time.h>
 
 static struct twi_cfg twi1_cfg = 
 {
@@ -433,6 +434,23 @@ static struct twi_cfg twi1_cfg =
     .frequency = 100,
     .irq_mode = false,
 };
+
+// void init_pcint10_interrupt_rising() 
+// {
+//     DDRC &= ~(1 << DDC2); 
+    
+//     PCICR |= (1 << PCIE1);  
+    
+//     PCMSK1 |= (1 << PCINT10);  
+    
+//     MCUCR |= (1 << ISC00); 
+// }
+
+// ISR(PCINT1_vect) 
+// {
+//     if (PINC & (1 << PC2))
+//         system_tick();
+// }
 
 int main()
 {
@@ -466,9 +484,10 @@ int main()
     uint8_t sqw_config[] = {0x07, 0b00010000};
     twi_send(0b11010000, sqw_config, 2, true);
 
-    sei();
+    // set_system_time(1744458473);
+    // init_pcint10_interrupt_rising();
     
-    // set_system_time(1742839880);
+    sei();
 
     while (1)
     {
@@ -500,8 +519,6 @@ int main()
         // hd44780_set_pos(&lcd_obj, 1, 15);
         // hd44780_putc(&lcd_obj, (sec_buf & 0x0F) + '0');
 
-        // _delay_ms(1000);
-        // system_tick();
         // uint32_t unix_time = time(NULL);
         // hd44780_set_pos(&lcd_obj, 1, 0);
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
