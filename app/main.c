@@ -386,8 +386,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 			// uint8_t month = 10 * frame_ptr->months_tens + frame_ptr->months_units;
 			// uint8_t year = 10 * frame_ptr->years_tens + frame_ptr->years_units;
 
-            buf[0] = 0;
-
+            
             uint8_t i = 0;
             buf[i++] = (frame_ptr->hours_tens + '0');
             buf[i++] = (frame_ptr->hours_units + '0');
@@ -403,6 +402,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             buf[i++] = ('.');
             buf[i++] = (frame_ptr->years_tens + '0');
             buf[i++] = (frame_ptr->years_units + '0');
+            buf[i++] = 0;
             
             // sprintf(buf, "%02u:%02u %02u.%02u.%02u", hours, minutes, day, month, year);
             hd44780_set_pos(&lcd_obj, 1, 0);
