@@ -397,8 +397,8 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             buf[i++] = (frame_ptr->month_day_tens + '0');
             buf[i++] = (frame_ptr->month_days_units + '0');
             buf[i++] = ('.');
-            buf[i++] = (frame_ptr->month_day_tens + '0');
-            buf[i++] = (frame_ptr->month_days_units + '0');
+            buf[i++] = (frame_ptr->months_tens + '0');
+            buf[i++] = (frame_ptr->months_units + '0');
             buf[i++] = ('.');
             buf[i++] = (frame_ptr->years_tens + '0');
             buf[i++] = (frame_ptr->years_units + '0');
