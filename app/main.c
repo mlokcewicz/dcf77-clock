@@ -212,7 +212,7 @@ struct timer_obj timer1_obj;
 
 static uint64_t tick_to_ms(uint16_t ticks, uint16_t presc)
 {
-    return (uint64_t)ticks * presc * 1000 / (F_CPU);
+    return (uint64_t)ticks * presc * 1000 / (F_CPU); // Remove uint64_t reference and division
 }
 
 static void timer1_capt_cb(uint16_t icr)
