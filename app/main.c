@@ -354,8 +354,8 @@ static enum dcf77_bit_val get_bit_val2(uint16_t ticks)
 static void dcf77_decode(uint16_t ticks, bool rising_edge)
 {
     static bool frame_started = false;
-    static uint64_t frame = 0;
-    static uint64_t bit_cnt = 0;
+    static uint8_t frame[8] = {0};  
+    static uint8_t bit_cnt = 0;
 
     // ticks = tick_to_ms(ticks, 256);
     char buf[25] = {0};
@@ -396,13 +396,20 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             // sprintf(buf, "ERROR: %u           ", ticks);
 
             hd44780_print(&lcd_obj, "ERROR         ");
-            frame = 0;
+            // frame = 0;
             frame_started = 0;
             bit_cnt = 0;
             return;
         }
 
-        frame |= ((uint64_t)val << bit_cnt); 
+        // frame |= ((uint64_t)val << bit_cnt); 
+
+        uint8_t byte_idx = bit_cnt / 8;
+        // uint8_t bit_idx = 7 - (bit_cnt % 8); // MSB first
+        uint8_t bit_idx = bit_cnt % 8; // LSB first
+    
+        frame[byte_idx] |= (val << bit_idx);
+
         bit_cnt++;
 
         if (bit_cnt >= 59)
