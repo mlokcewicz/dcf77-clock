@@ -113,6 +113,7 @@ static struct hd44780_obj lcd_obj;
 
 void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms) 
 {
+    // return;
     uint16_t delay_us = 1000000UL / (frequency_hz * 2); 
     uint16_t cycles = (frequency_hz * duration_ms) / 1000;
 
@@ -210,10 +211,14 @@ struct dcf77_frame
 
 struct timer_obj timer1_obj;
 
-static uint64_t tick_to_ms(uint16_t ticks, uint16_t presc)
-{
-    return (uint64_t)ticks * presc * 1000 / (F_CPU); // Remove uint64_t reference and division
-}
+// static uint64_t tick_to_ms(uint16_t ticks, uint16_t presc)
+// {
+//     return (uint64_t)ticks * presc * 1000 / (F_CPU); // Remove uint64_t reference and division
+// }
+
+#define PRESC 256
+
+#define MS_TO_TICKS(ms, presc) ((ms * (F_CPU / 1000UL) / presc))
 
 static void timer1_capt_cb(uint16_t icr)
 {
@@ -227,7 +232,7 @@ static void timer1_capt_cb(uint16_t icr)
     rising_edge ^= 1;
 
     /* Ignore short pulses (triggered on falling edge) REVERSED */
-    if (!rising_edge && (tick_to_ms(icr, 256) < 35))
+    if (!rising_edge && (icr < MS_TO_TICKS(35, PRESC)))
         return;
 
     // /* Ignore short pauses (triggered on rising edge) REVERSED */
@@ -321,13 +326,38 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
     return DCF77_BIT_VAL_ERROR;
 }
 
+static enum dcf77_bit_val get_bit_val2(uint16_t ticks)
+{
+#if EXTENDEND_TOLERANCE
+
+    if (is_in_range(ticks, MS_TO_TICKS(40, PRESC), MS_TO_TICKS(140, PRESC)))
+        return DCF77_BIT_VAL_0;
+    if (is_in_range(ticks, MS_TO_TICKS(141, PRESC), MS_TO_TICKS(400, PRESC)))
+        return DCF77_BIT_VAL_1;
+    if (is_in_range(ticks, MS_TO_TICKS(1500, PRESC), MS_TO_TICKS(2200, PRESC)))
+        return DCF77_BIT_VAL_NONE;
+
+    return DCF77_BIT_VAL_ERROR;
+
+#endif
+
+    // if (is_in_range(ms, 40, 130))
+    //     return DCF77_BIT_VAL_0;
+    // if (is_in_range(ms, 140, 250))
+    //     return DCF77_BIT_VAL_1;
+    // if (is_in_range(ms, 1500, 2200))
+    //     return DCF77_BIT_VAL_NONE;
+
+    return DCF77_BIT_VAL_ERROR;
+}
+
 static void dcf77_decode(uint16_t ticks, bool rising_edge)
 {
     static bool frame_started = false;
     static uint64_t frame = 0;
     static uint64_t bit_cnt = 0;
 
-    ticks = tick_to_ms(ticks, 256);
+    // ticks = tick_to_ms(ticks, 256);
     char buf[25] = {0};
     utoa(ticks, buf, 10);
 
@@ -341,7 +371,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
     if (!frame_started)
     {
-        if (get_bit_val(ticks) == DCF77_BIT_VAL_NONE)
+        if (get_bit_val2(ticks) == DCF77_BIT_VAL_NONE)
         {
             frame_started = true;
             hd44780_set_pos(&lcd_obj, 1, 0);
@@ -358,7 +388,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
     if (rising_edge) // Bit transmission // REVERSED NOW
     {
-        val = get_bit_val(ticks);
+        val = get_bit_val2(ticks);
 
         if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {

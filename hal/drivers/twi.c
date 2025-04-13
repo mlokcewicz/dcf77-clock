@@ -114,7 +114,7 @@ bool twi_init(struct twi_cfg *cfg)
     while (bitrate > 255)
     {
         presc++;
-        bitrate /=4;
+        bitrate >>=2;
     };
 
     TWBR = bitrate;
