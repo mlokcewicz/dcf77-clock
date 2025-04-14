@@ -53,7 +53,7 @@ struct rotary_encoder_cfg
 
     enum rotary_encoder_irq_config irq_cfg;
     uint8_t sub_steps_count;
-    volatile uint32_t debounce_counter_initial_value;
+    volatile uint16_t debounce_counter_initial_value;
 };
 
 struct rotary_encoder_obj
@@ -70,8 +70,8 @@ struct rotary_encoder_obj
     volatile uint8_t prev_pos;
     volatile int8_t step_cnt;
 
-    volatile uint32_t debounce_counter_initial_value;
-    volatile uint32_t debounce_counter_current_value;
+    volatile uint16_t debounce_counter_initial_value;
+    volatile uint16_t debounce_counter_current_value;
 
 };
 

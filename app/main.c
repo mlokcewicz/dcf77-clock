@@ -80,15 +80,14 @@ static void lcd_set_pin_cb(uint8_t pin, bool state)
         PORTD &= ~(1 << pin_to_pin_val[pin]);
 }
 
-static void lcd_delay_cb(uint32_t us) 
+static void lcd_delay_cb(uint16_t us) 
 {
-    for (uint32_t i = us; i > 0; i--)
+    for (uint16_t i = us; i > 0; i--)
         _delay_us(1);
 }
 
 static void lcd_pin_init_cb(void)
 {
-
     DDRC |= 1 << PC3;
     DDRB |= (1 << PB6) | (1 << PB7);
     DDRD |= (1 << PD4) | (1 << PD5) | (1 << PD7);
@@ -111,7 +110,7 @@ static struct hd44780_obj lcd_obj;
 
 /* BUZZER */
 
-void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms) 
+static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms) 
 {
     // return;
     uint16_t delay_us = 1000000UL / (frequency_hz * 2); 
@@ -128,44 +127,47 @@ void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
     }
 }
 
+/* BUTTON */
+
+
 /* ENCODER */
 
 #include <rotary_encoder.h>
 
-bool rot_encoder_get_a_cb(void)
+static bool rot_encoder_get_a_cb(void)
 {
     return (PIND & (1 << PD2));
 };
-bool rot_encoder_get_b_cb(void)
+
+static bool rot_encoder_get_b_cb(void)
 {
     return (PIND & (1 << PD3));
 }
-void rot_encoder_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
+
+static void rot_encoder_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
 {
     (void)step_cnt;
 
     if (dir == ROTARY_ENCODER_DIR_LEFT)
-        buzzer_beep(3000, 500);  // 1 kHz, 500 ms
-        // hd44780_shift(&lcd_obj, false, false);
+        buzzer_beep(3000, 200);  // 1 kHz, 500 ms
     else
-        buzzer_beep(1000, 500);  // 1 kHz, 500 ms
-        // hd44780_shift(&lcd_obj, false, true);
-
+        buzzer_beep(1000, 200);  // 1 kHz, 500 ms
 }
 
-bool rot_encoder_init_cb(void)
+static bool rot_encoder_init_cb(void)
 {
     DDRD &= ~(1 << PD2); // input 
     DDRD &= ~(1 << PD3); // input 
 
     return true;
 }
-bool rot_encoder_deinit_cb(void)
+
+static bool rot_encoder_deinit_cb(void)
 {
     return true;
 }
 
-struct rotary_encoder_cfg cf = 
+static struct rotary_encoder_cfg cf = 
 {
     .get_a_cb = rot_encoder_get_a_cb,
     .get_b_cb = rot_encoder_get_b_cb,
@@ -173,10 +175,31 @@ struct rotary_encoder_cfg cf =
     .deinit_cb = rot_encoder_deinit_cb,
     .rotation_cb = rot_encoder_rotation_cb,
     .sub_steps_count = 4,
-    .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_NONE,
+    .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_A,
 };
 
-struct rotary_encoder_obj rot;
+static struct rotary_encoder_obj rot;
+
+/* EXTI */
+
+#include <exti.h>
+
+static void exti_button_cb(void)
+{
+    if (!(PINB & (1 << PB2)))
+        buzzer_beep(8000, 200);
+}
+
+static void exti_sqw_cb(void)
+{
+    // if (!(PINC & (1 << PC2)))
+        // buzzer_beep(500, 50);
+}
+
+static void exti_encoder_cb(void)
+{
+    rotary_encoder_process(&rot);
+}
 
 /* DCF77 */
 #include <timer.h>
@@ -209,7 +232,7 @@ struct dcf77_frame
     uint8_t date_parity: 1;
 } __attribute__((__packed__));
 
-struct timer_obj timer1_obj;
+static struct timer_obj timer1_obj;
 
 // static uint64_t tick_to_ms(uint16_t ticks, uint16_t presc)
 // {
@@ -218,7 +241,11 @@ struct timer_obj timer1_obj;
 
 #define PRESC 256
 
-#define MS_TO_TICKS(ms, presc) ((ms * (F_CPU / 1000UL) / presc))
+// #define ms_to_ticks(ms, presc) ((ms * (F_CPU / 1000UL) / presc))
+static uint16_t ms_to_ticks(uint16_t ms, uint16_t presc) 
+{
+    return ms * (F_CPU / 1000UL) / presc;
+}
 
 static void timer1_capt_cb(uint16_t icr)
 {
@@ -232,7 +259,7 @@ static void timer1_capt_cb(uint16_t icr)
     rising_edge ^= 1;
 
     /* Ignore short pulses (triggered on falling edge) REVERSED */
-    if (!rising_edge && (icr < MS_TO_TICKS(35, PRESC)))
+    if (!rising_edge && (icr < ms_to_ticks(35, PRESC)))
         return;
 
     // /* Ignore short pauses (triggered on rising edge) REVERSED */
@@ -246,23 +273,7 @@ static void timer1_capt_cb(uint16_t icr)
     dcf77_decode(icr, !rising_edge); // restore real trigger source edge
 };
 
-// static void timer1_ovr_cb(void)
-// {
-//     uint16_t tcnt = timer_get_val(&timer1_obj);
-    
-//     char buf[10] = {0};
-//     utoa(tcnt, buf, 10);
-
-//     // sprintf(buf, "%u", tcnt);
-//     hd44780_set_pos(&lcd_obj, 1, 0);
-//     hd44780_print(&lcd_obj,"          ");
-//     hd44780_set_pos(&lcd_obj, 1, 0);
-
-//     hd44780_print(&lcd_obj, "OVR ");
-//     hd44780_print(&lcd_obj, buf);
-// }
-
-struct timer_cfg timer1_cfg = 
+static struct timer_cfg timer1_cfg = 
 {  
     .id = TIMER_ID_1,
     .clock = TIMER_CLOCK_PRESC_256,
@@ -330,11 +341,11 @@ static enum dcf77_bit_val get_bit_val2(uint16_t ticks)
 {
 #if EXTENDEND_TOLERANCE
 
-    if (is_in_range(ticks, MS_TO_TICKS(40, PRESC), MS_TO_TICKS(140, PRESC)))
+    if (is_in_range(ticks, ms_to_ticks(40, PRESC), ms_to_ticks(140, PRESC)))
         return DCF77_BIT_VAL_0;
-    if (is_in_range(ticks, MS_TO_TICKS(141, PRESC), MS_TO_TICKS(400, PRESC)))
+    if (is_in_range(ticks, ms_to_ticks(141, PRESC), ms_to_ticks(400, PRESC)))
         return DCF77_BIT_VAL_1;
-    if (is_in_range(ticks, MS_TO_TICKS(1500, PRESC), MS_TO_TICKS(2200, PRESC)))
+    if (is_in_range(ticks, ms_to_ticks(1500, PRESC), ms_to_ticks(2200, PRESC)))
         return DCF77_BIT_VAL_NONE;
 
     return DCF77_BIT_VAL_ERROR;
@@ -375,12 +386,9 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         {
             frame_started = true;
             hd44780_set_pos(&lcd_obj, 1, 0);
-            hd44780_print(&lcd_obj,"          ");
-            hd44780_set_pos(&lcd_obj, 1, 0);
             hd44780_print(&lcd_obj, "FRAME STARTED");
-
-            return;
         }
+
         return;
     }
 
@@ -393,20 +401,14 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {
             hd44780_set_pos(&lcd_obj, 1, 0);
-            // sprintf(buf, "ERROR: %u           ", ticks);
-
             hd44780_print(&lcd_obj, "ERROR         ");
-            // frame = 0;
             frame_started = 0;
             bit_cnt = 0;
             return;
         }
 
-        // frame |= ((uint64_t)val << bit_cnt); 
-
         uint8_t byte_idx = bit_cnt / 8;
-        // uint8_t bit_idx = 7 - (bit_cnt % 8); // MSB first
-        uint8_t bit_idx = bit_cnt % 8; // LSB first
+        uint8_t bit_idx = bit_cnt % 8;
     
         frame[byte_idx] |= (val << bit_idx);
 
@@ -414,15 +416,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
         if (bit_cnt >= 59)
         {
-            struct dcf77_frame *frame_ptr = (struct dcf77_frame*)&frame;
-
-			// uint8_t hours = 10 * frame_ptr->hours_tens + frame_ptr->hours_units;
-			// uint8_t minutes = 10 * frame_ptr->minutes_tens + frame_ptr->minutes_units;
-			
-			// uint8_t day = 10 * frame_ptr->month_day_tens + frame_ptr->month_days_units;
-			// uint8_t month = 10 * frame_ptr->months_tens + frame_ptr->months_units;
-			// uint8_t year = 10 * frame_ptr->years_tens + frame_ptr->years_units;
-
+            struct dcf77_frame *frame_ptr = (struct dcf77_frame*)frame;
             
             uint8_t i = 0;
             buf[i++] = (frame_ptr->hours_tens + '0');
@@ -441,7 +435,6 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             buf[i++] = (frame_ptr->years_units + '0');
             buf[i++] = 0;
             
-            // sprintf(buf, "%02u:%02u %02u.%02u.%02u", hours, minutes, day, month, year);
             hd44780_set_pos(&lcd_obj, 1, 0);
             hd44780_print(&lcd_obj, buf);
             cli();
@@ -449,12 +442,11 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             while(1);
             return;
         }
-
     }
     else // should be break
     {
-        //TODO
-        // take into account ignoring short pulses - it affects break time
+        // TODO: Add breaks validation
+        // TODO: take into account ignoring short pulses - it affects break time
     }
 
 }
@@ -463,7 +455,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 #include <twi.h>
 #include <avr/interrupt.h>
-#include <time.h>
+// #include <time.h>
 
 static struct twi_cfg twi1_cfg = 
 {
@@ -471,23 +463,6 @@ static struct twi_cfg twi1_cfg =
     .frequency = 100,
     .irq_mode = false,
 };
-
-// void init_pcint10_interrupt_rising() 
-// {
-//     DDRC &= ~(1 << DDC2); 
-    
-//     PCICR |= (1 << PCIE1);  
-    
-//     PCMSK1 |= (1 << PCINT10);  
-    
-//     MCUCR |= (1 << ISC00); 
-// }
-
-// ISR(PCINT1_vect) 
-// {
-//     if (PINC & (1 << PC2))
-//         system_tick();
-// }
 
 int main()
 {
@@ -515,6 +490,15 @@ int main()
 
     rotary_encoder_init(&rot, &cf);
 
+    exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
+    exti_enable(EXTI_ID_PCINT10, true);
+
+    exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button_cb);
+    exti_enable(EXTI_ID_PCINT2, true);
+
+    exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder_cb);
+    exti_enable(EXTI_ID_INT0, true);
+
     twi_init(&twi1_cfg);
     uint8_t sec_config[] = {0x00, 0x09};
     twi_send(0b11010000, sec_config, 2, true);
@@ -522,30 +506,15 @@ int main()
     twi_send(0b11010000, sqw_config, 2, true);
 
     // set_system_time(1744458473);
-    // init_pcint10_interrupt_rising();
     
     sei();
 
     while (1)
     {
-        // PORTD ^= (1 << PD6);
-
-        while (!(PINB & (1 << PB2)))
-        {
-            // PORTD |= 1 << PD6;
-
-            if (!(PINC & (1 << PC2)))
-                PORTD |= 1 << PD6;
-            else
-                PORTD &= ~(1 << PD6);
-        }
-
         if (PINB & (1 << PB0))
             PORTD &= ~(1 << PD6);
         else 
             PORTD |= 1 << PD6;
-
-        rotary_encoder_process(&rot);
 
         // uint8_t sec_buf = 6;
         // uint8_t sec_addr = 0x00;
@@ -563,6 +532,23 @@ int main()
 }
 
 //------------------------------------------------------------------------------
+
+// Components (added / to add)
+// * HD44780
+// * DCF77 Decoder
+// * Rotary encoder
+// * TWI
+// * EXTI
+
+// * DS1307
+// * Button
+// * Buzzer
+
+// * USART
+// * GPIO
+// * Core
+
+// 3 managers + main logic
 
 // Basic threads / processess:
 // * radio_manager (waits for request of sync, then enables dcf receiver and TIM1 irq, and set new last_sync timestamp, and waits for sync_finished and disables dcf and TIM1 irq)

@@ -100,7 +100,7 @@ bool rotary_encoder_init(struct rotary_encoder_obj *obj, struct rotary_encoder_c
     obj->debounce_counter_initial_value = cfg->debounce_counter_initial_value;
     obj->debounce_counter_current_value = obj->debounce_counter_initial_value;
 
-    if (obj->debounce_counter_initial_value == UINT32_MAX)
+    if (obj->debounce_counter_initial_value == UINT16_MAX)
         obj->debounce_counter_initial_value--;
 
     /* Set initial positon (for polling mode) */

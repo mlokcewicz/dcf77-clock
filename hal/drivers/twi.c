@@ -90,7 +90,7 @@ static bool handle_error(void)
 
 bool twi_init(struct twi_cfg *cfg)
 {
-    if (!cfg || cfg->frequency == 0 || F_CPU / cfg->frequency < 16)
+    if (!cfg || cfg->frequency == 0 || F_CPU < (16UL * cfg->frequency))
         return false;
 
     ctx.irq_mode = cfg->irq_mode;
@@ -114,7 +114,7 @@ bool twi_init(struct twi_cfg *cfg)
     while (bitrate > 255)
     {
         presc++;
-        bitrate >>=2;
+        bitrate >>= 2;
     };
 
     TWBR = bitrate;

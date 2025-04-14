@@ -118,7 +118,8 @@ bool hd44780_init(struct hd44780_obj *obj, struct hd44780_cfg *cfg)
     obj->set_pin_state(LCD_D7, false);
 
     /* Initialize LCD */
-    obj->delay_us(100000);
+    obj->delay_us(50000);
+    obj->delay_us(50000);
 
     /* LCD is initialized by default with 8-bit data bus so there is a need to double each nibble */
     /* Set 8-bit data bus command at least 3 times - specific for some displays */

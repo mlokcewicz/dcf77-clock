@@ -22,7 +22,7 @@ extern "C" {
 typedef void (*hd44780_pin_init_cb)(void);
 typedef void (*hd44780_pin_deinit_cb)(void);
 typedef void (*hd44780_set_pin_cb)(uint8_t pin, bool state);
-typedef void (*hd44780_delay_us_cb)(uint32_t microseconds);
+typedef void (*hd44780_delay_us_cb)(uint16_t microseconds);
 
 //------------------------------------------------------------------------------
 
