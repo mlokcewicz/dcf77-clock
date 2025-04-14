@@ -39,9 +39,10 @@ ISR(BADISR_vect)
 #include <hd44780.h>
 
 /* LCD */
+
 static void lcd_set_pin_cb(uint8_t pin, bool state) 
 {
-    int pin_to_pin_val[] = 
+    const uint8_t pin_to_pin_val[] = 
     {
         [LCD_RS] = PC3,
         [LCD_E] = PD4,
@@ -82,7 +83,7 @@ static void lcd_set_pin_cb(uint8_t pin, bool state)
 
 static void lcd_delay_cb(uint16_t us) 
 {
-    for (uint16_t i = us; i > 0; i--)
+    while (us--)
         _delay_us(1);
 }
 
@@ -129,22 +130,62 @@ static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
 
 /* BUTTON */
 
+#include <button.h>
+
+bool button1_init_cb(void)
+{
+    /* SW */
+    DDRB &= ~(1 << PB2); // input 
+
+    return true;
+}
+
+bool button1_get_state_cb(void)
+{
+    return PINB & (1 << PB2);
+}
+
+void button1_pressed_cb(void)
+{
+    buzzer_beep(6000, 50);
+}
+
+bool button1_deinit_cb(void)
+{
+    return true;
+}
+
+static struct button_cfg button1_cfg = 
+{
+	.init = button1_init_cb,
+	.get_state = button1_get_state_cb,
+	.pressed = button1_pressed_cb,
+	.deinit = button1_deinit_cb,
+    
+    .active_low = true,
+    .irq_cfg = true,
+
+	.debounce_counter_initial_value = 0,
+	.autopress_counter_initial_value = 0,
+};
+
+static struct button_obj button1_obj;
 
 /* ENCODER */
 
 #include <rotary_encoder.h>
 
-static bool rot_encoder_get_a_cb(void)
+static bool encoder1_get_a_cb(void)
 {
     return (PIND & (1 << PD2));
 };
 
-static bool rot_encoder_get_b_cb(void)
+static bool encoder1_get_b_cb(void)
 {
     return (PIND & (1 << PD3));
 }
 
-static void rot_encoder_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
+static void encoder1_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
 {
     (void)step_cnt;
 
@@ -154,7 +195,7 @@ static void rot_encoder_rotation_cb(enum rotary_encoder_direction dir, int8_t st
         buzzer_beep(1000, 200);  // 1 kHz, 500 ms
 }
 
-static bool rot_encoder_init_cb(void)
+static bool encoder1_init_cb(void)
 {
     DDRD &= ~(1 << PD2); // input 
     DDRD &= ~(1 << PD3); // input 
@@ -162,32 +203,44 @@ static bool rot_encoder_init_cb(void)
     return true;
 }
 
-static bool rot_encoder_deinit_cb(void)
+static bool encoder1_deinit_cb(void)
 {
     return true;
 }
 
-static struct rotary_encoder_cfg cf = 
+static struct rotary_encoder_cfg encoder1_cfg = 
 {
-    .get_a_cb = rot_encoder_get_a_cb,
-    .get_b_cb = rot_encoder_get_b_cb,
-    .init_cb = rot_encoder_init_cb,
-    .deinit_cb = rot_encoder_deinit_cb,
-    .rotation_cb = rot_encoder_rotation_cb,
+    .get_a_cb = encoder1_get_a_cb,
+    .get_b_cb = encoder1_get_b_cb,
+    .init_cb = encoder1_init_cb,
+    .deinit_cb = encoder1_deinit_cb,
+    .rotation_cb = encoder1_rotation_cb,
     .sub_steps_count = 4,
     .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_A,
 };
 
-static struct rotary_encoder_obj rot;
+static struct rotary_encoder_obj encoder1_obj;
+
+/* RTC */
+
+#include <twi.h>
+#include <avr/interrupt.h>
+// #include <time.h>
+
+static struct twi_cfg twi1_cfg = 
+{
+    .pull_up_en = false,
+    .frequency = 100,
+    .irq_mode = false,
+};
 
 /* EXTI */
 
 #include <exti.h>
 
-static void exti_button_cb(void)
+static void exti_button1_cb(void)
 {
-    if (!(PINB & (1 << PB2)))
-        buzzer_beep(8000, 200);
+    button_process(&button1_obj);
 }
 
 static void exti_sqw_cb(void)
@@ -196,16 +249,138 @@ static void exti_sqw_cb(void)
         // buzzer_beep(500, 50);
 }
 
-static void exti_encoder_cb(void)
+static void exti_encoder1_cb(void)
 {
-    rotary_encoder_process(&rot);
+    rotary_encoder_process(&encoder1_obj);
 }
 
-/* DCF77 */
+/* Buzzer */
+
 #include <timer.h>
+#include <buzzer.h>
+
+static struct timer_cfg timer2_cfg = 
+{  
+    .id = TIMER_ID_2,
+    .clock = TIMER_CLOCK_PRESC_8,
+    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    .mode = TIMER_MODE_CTC,
+    .com_a_cfg = TIMER_CM_CHANGE_PIN_STATE,
+    .com_b_cfg = TIMER_CM_DISABLED,
+
+    .counter_val = 0,
+    .ovrfv_cb = NULL,
+
+    .out_comp_a_val = 0,
+    .out_comp_b_val = 0,
+    .out_comp_a_cb = NULL,
+    .out_comp_b_cb = NULL,
+    
+    .input_capture_val = 0,
+    .input_capture_pullup = false,
+    .input_capture_noise_canceler = false,
+    .input_capture_rising_edge = false,
+    .in_capt_cb = NULL,
+};
+
+static struct timer_obj timer2_obj;
+
+bool buzzer1_init_cb(void)
+{
+    return true;
+}
+
+void buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
+{
+    if (tone != BUZZER_TONE_STOP)
+    {
+        timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * tone)) - 1;
+        timer_init(&timer2_obj, &timer2_cfg);
+        timer_start(&timer2_obj, true);
+    }
+    else
+        timer_start(&timer2_obj, false);
+
+    while (time_ms--)
+        _delay_ms(1);
+    
+    timer_start(&timer2_obj, false);
+}
+
+void buzzer1_stop_cb(void)
+{
+    timer_start(&timer2_obj, false);
+}
+
+bool buzzer1_deinit_cb(void)
+{
+
+}
+
+static struct buzzer_cfg buzzer1_cfg = 
+{
+	.init = buzzer1_init_cb,
+	.play = buzzer1_play_cb,
+	.stop = buzzer1_stop_cb,
+	.deinit = buzzer1_deinit_cb,
+};
+
+static struct buzzer_obj buzzer1_obj;
+
+struct buzzer_note alarm_beep[] = 
+{
+	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
+};
+
+/* DCF77 */
+
 #include <stdlib.h>
 
+static void timer1_capt_cb(uint16_t icr);
+
+static struct timer_cfg timer1_cfg = 
+{  
+    .id = TIMER_ID_1,
+    .clock = TIMER_CLOCK_PRESC_256,
+    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    .mode = TIMER_MODE_16_BIT_NORMAL,
+    .com_a_cfg = TIMER_CM_DISABLED,
+    .com_b_cfg = TIMER_CM_DISABLED,
+
+    .counter_val = 0,
+    .ovrfv_cb = NULL,
+
+    .out_comp_a_val = 0,
+    .out_comp_b_val = 0,
+    .out_comp_a_cb = NULL,
+    .out_comp_b_cb = NULL,
+    
+    .input_capture_val = 0,
+    .input_capture_pullup = false,
+    .input_capture_noise_canceler = false,
+    .input_capture_rising_edge = false,
+    .in_capt_cb = timer1_capt_cb,
+};
+
+static struct timer_obj timer1_obj;
+
 static void dcf77_decode(uint16_t ticks, bool rising_edge);
+
+enum dcf77_bit_val
+{
+    DCF77_BIT_VAL_0,
+    DCF77_BIT_VAL_1,
+    DCF77_BIT_VAL_NONE,
+    DCF77_BIT_VAL_ERROR,
+};
+
 
 struct dcf77_frame
 {
@@ -232,16 +407,9 @@ struct dcf77_frame
     uint8_t date_parity: 1;
 } __attribute__((__packed__));
 
-static struct timer_obj timer1_obj;
-
-// static uint64_t tick_to_ms(uint16_t ticks, uint16_t presc)
-// {
-//     return (uint64_t)ticks * presc * 1000 / (F_CPU); // Remove uint64_t reference and division
-// }
 
 #define PRESC 256
 
-// #define ms_to_ticks(ms, presc) ((ms * (F_CPU / 1000UL) / presc))
 static uint16_t ms_to_ticks(uint16_t ms, uint16_t presc) 
 {
     return ms * (F_CPU / 1000UL) / presc;
@@ -273,91 +441,19 @@ static void timer1_capt_cb(uint16_t icr)
     dcf77_decode(icr, !rising_edge); // restore real trigger source edge
 };
 
-static struct timer_cfg timer1_cfg = 
-{  
-    .id = TIMER_ID_1,
-    .clock = TIMER_CLOCK_PRESC_256,
-    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
-    .mode = TIMER_MODE_16_BIT_NORMAL,
-    .com_a_cfg = TIMER_CM_DISABLED,
-    .com_b_cfg = TIMER_CM_DISABLED,
-
-    .counter_val = 0,
-    .ovrfv_cb = NULL,
-
-    .out_comp_a_val = 0,
-    .out_comp_b_val = 0,
-    .out_comp_a_cb = NULL,
-    .out_comp_b_cb = NULL,
-    
-    .input_capture_val = 0,
-    .input_capture_pullup = false,
-    .input_capture_noise_canceler = false,
-    .input_capture_rising_edge = false,
-    .in_capt_cb = timer1_capt_cb,
-};
-
 static bool is_in_range(uint16_t ms, uint16_t min, uint16_t max)
 {
     return (ms >= min) && (ms < max);
 }
 
-enum dcf77_bit_val
+static enum dcf77_bit_val get_bit_val(uint16_t ticks)
 {
-    DCF77_BIT_VAL_0,
-    DCF77_BIT_VAL_1,
-    DCF77_BIT_VAL_NONE,
-    DCF77_BIT_VAL_ERROR,
-};
-
-#define EXTENDEND_TOLERANCE 1
-
-static enum dcf77_bit_val get_bit_val(uint16_t ms)
-{
-#if EXTENDEND_TOLERANCE
-
-    if (is_in_range(ms, 40, 140))
+    if (is_in_range(ticks, ms_to_ticks(40, PRESC), ms_to_ticks(130, PRESC)))
         return DCF77_BIT_VAL_0;
-    if (is_in_range(ms, 141, 400))
-        return DCF77_BIT_VAL_1;
-    if (is_in_range(ms, 1500, 2200))
-        return DCF77_BIT_VAL_NONE;
-
-    return DCF77_BIT_VAL_ERROR;
-
-#endif
-
-    if (is_in_range(ms, 40, 130))
-        return DCF77_BIT_VAL_0;
-    if (is_in_range(ms, 140, 250))
-        return DCF77_BIT_VAL_1;
-    if (is_in_range(ms, 1500, 2200))
-        return DCF77_BIT_VAL_NONE;
-
-    return DCF77_BIT_VAL_ERROR;
-}
-
-static enum dcf77_bit_val get_bit_val2(uint16_t ticks)
-{
-#if EXTENDEND_TOLERANCE
-
-    if (is_in_range(ticks, ms_to_ticks(40, PRESC), ms_to_ticks(140, PRESC)))
-        return DCF77_BIT_VAL_0;
-    if (is_in_range(ticks, ms_to_ticks(141, PRESC), ms_to_ticks(400, PRESC)))
+    if (is_in_range(ticks, ms_to_ticks(140, PRESC), ms_to_ticks(250, PRESC)))
         return DCF77_BIT_VAL_1;
     if (is_in_range(ticks, ms_to_ticks(1500, PRESC), ms_to_ticks(2200, PRESC)))
         return DCF77_BIT_VAL_NONE;
-
-    return DCF77_BIT_VAL_ERROR;
-
-#endif
-
-    // if (is_in_range(ms, 40, 130))
-    //     return DCF77_BIT_VAL_0;
-    // if (is_in_range(ms, 140, 250))
-    //     return DCF77_BIT_VAL_1;
-    // if (is_in_range(ms, 1500, 2200))
-    //     return DCF77_BIT_VAL_NONE;
 
     return DCF77_BIT_VAL_ERROR;
 }
@@ -382,7 +478,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
     if (!frame_started)
     {
-        if (get_bit_val2(ticks) == DCF77_BIT_VAL_NONE)
+        if (get_bit_val(ticks) == DCF77_BIT_VAL_NONE)
         {
             frame_started = true;
             hd44780_set_pos(&lcd_obj, 1, 0);
@@ -396,7 +492,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
     if (rising_edge) // Bit transmission // REVERSED NOW
     {
-        val = get_bit_val2(ticks);
+        val = get_bit_val(ticks);
 
         if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {
@@ -451,19 +547,6 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 }
 
-/* RTC */
-
-#include <twi.h>
-#include <avr/interrupt.h>
-// #include <time.h>
-
-static struct twi_cfg twi1_cfg = 
-{
-    .pull_up_en = false,
-    .frequency = 100,
-    .irq_mode = false,
-};
-
 int main()
 {
     /* LED */
@@ -477,26 +560,23 @@ int main()
     DDRB &= ~(1 << PB0); // input 
     MCUCR &= ~(1 << PUD);
 
-    /* SW */
-    DDRB &= ~(1 << PB2); // input 
-
     hd44780_init(&lcd_obj, &lcd_cfg);
     hd44780_print(&lcd_obj, "TEST");
     hd44780_set_pos(&lcd_obj, 1, 0);
 
     timer_init(&timer1_obj, &timer1_cfg);
+    // timer_start(&timer1_obj, true);
 
-    timer_start(&timer1_obj, true);
+    button_init(&button1_obj, &button1_cfg);
+    rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
-    rotary_encoder_init(&rot, &cf);
+    buzzer_init(&buzzer1_obj, &buzzer1_cfg);
 
     exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
     exti_enable(EXTI_ID_PCINT10, true);
-
-    exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button_cb);
+    exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
     exti_enable(EXTI_ID_PCINT2, true);
-
-    exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder_cb);
+    exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
     exti_enable(EXTI_ID_INT0, true);
 
     twi_init(&twi1_cfg);
@@ -515,6 +595,15 @@ int main()
             PORTD &= ~(1 << PD6);
         else 
             PORTD |= 1 << PD6;
+
+        
+        // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(*alarm_beep), 120);
+        // _delay_ms(1000);
+        
+        // timer_start(&timer2_obj, true);
+        // _delay_ms(200);
+        // timer_start(&timer2_obj, false);
+        // _delay_ms(200);
 
         // uint8_t sec_buf = 6;
         // uint8_t sec_addr = 0x00;
@@ -538,10 +627,11 @@ int main()
 // * DCF77 Decoder
 // * Rotary encoder
 // * TWI
+// * TIM 
 // * EXTI
+// * Button
 
 // * DS1307
-// * Button
 // * Buzzer
 
 // * USART

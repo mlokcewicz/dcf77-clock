@@ -118,7 +118,7 @@ extern "C" {
 #define BUZZER_TONE_D8  		4699
 #define BUZZER_TONE_DS8 		4978
 
-#define BUZZER_NOTE_STOP 		25000
+#define BUZZER_TONE_STOP 		0
 
 //------------------------------------------------------------------------------
 
