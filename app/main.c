@@ -379,7 +379,6 @@ enum dcf77_bit_val
     DCF77_BIT_VAL_ERROR,
 };
 
-
 struct dcf77_frame
 {
     uint8_t frame_start_always_zero : 1;
@@ -404,7 +403,6 @@ struct dcf77_frame
     uint8_t years_tens: 4;
     uint8_t date_parity: 1;
 } __attribute__((__packed__));
-
 
 #define PRESC 256
 
