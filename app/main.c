@@ -627,9 +627,9 @@ int main()
 // * TIM 
 // * EXTI
 // * Button
+// * Buzzer
 
 // * DS1307
-// * Buzzer
 
 // * USART
 // * GPIO
