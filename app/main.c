@@ -312,7 +312,7 @@ void buzzer1_stop_cb(void)
 
 bool buzzer1_deinit_cb(void)
 {
-
+    return true;
 }
 
 static struct buzzer_cfg buzzer1_cfg = 
