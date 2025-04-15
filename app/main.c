@@ -298,8 +298,6 @@ void buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
         timer_init(&timer2_obj, &timer2_cfg);
         timer_start(&timer2_obj, true);
     }
-    else
-        timer_start(&timer2_obj, false);
 
     while (time_ms--)
         _delay_ms(1);
@@ -329,14 +327,14 @@ static struct buzzer_obj buzzer1_obj;
 
 struct buzzer_note alarm_beep[] = 
 {
-	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
-	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
-	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
-	{BUZZER_TONE_C6, BUZZER_NOTE_HALF},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_HALF},
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
 };
 
 /* DCF77 */
@@ -565,7 +563,7 @@ int main()
     hd44780_set_pos(&lcd_obj, 1, 0);
 
     timer_init(&timer1_obj, &timer1_cfg);
-    // timer_start(&timer1_obj, true);
+    timer_start(&timer1_obj, true);
 
     button_init(&button1_obj, &button1_cfg);
     rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
@@ -595,11 +593,12 @@ int main()
             PORTD &= ~(1 << PD6);
         else 
             PORTD |= 1 << PD6;
-
-        
-        // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(*alarm_beep), 120);
+  
+        // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
         
+        // timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * 1000)) - 1;
+        // timer_init(&timer2_obj, &timer2_cfg);
         // timer_start(&timer2_obj, true);
         // _delay_ms(200);
         // timer_start(&timer2_obj, false);

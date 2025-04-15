@@ -21,7 +21,7 @@ extern "C" {
 
 #define BUZZER_NOTE_WHOLE 			((4) * (BUZZER_NOTE_QUARTER))
 #define BUZZER_NOTE_HALF 			((2) * (BUZZER_NOTE_QUARTER))
-#define BUZZER_NOTE_QUARTER 		(60000)
+#define BUZZER_NOTE_QUARTER 		(60000UL)
 #define BUZZER_NOTE_EIGHTH 			((BUZZER_NOTE_QUARTER) / (2))
 #define BUZZER_NOTE_NINETH 			((BUZZER_NOTE_WHOLE) / (9))
 #define BUZZER_NOTE_TWELEVE 		((BUZZER_NOTE_WHOLE) / (12))
@@ -148,7 +148,7 @@ struct buzzer_cfg
 struct buzzer_note
 {
 	uint16_t tone;
-	uint16_t note;
+	uint32_t note;
 };
 
 //------------------------------------------------------------------------------
