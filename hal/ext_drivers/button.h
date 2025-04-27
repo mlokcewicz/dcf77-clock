@@ -36,8 +36,8 @@ struct button_cfg
     bool active_low;
     bool irq_cfg;
 
-	volatile uint32_t debounce_counter_initial_value;
-	volatile uint32_t autopress_counter_initial_value;
+	volatile uint16_t debounce_counter_initial_value;
+	volatile uint16_t autopress_counter_initial_value;
 };
 
 struct button_obj
