@@ -254,9 +254,71 @@ static void exti_encoder1_cb(void)
     rotary_encoder_process(&encoder1_obj);
 }
 
-/* Buzzer */
+/* System timer */
 
 #include <timer.h>
+#include <util/atomic.h>
+
+// static uint16_t ms_to_ticks(uint16_t ms, uint16_t presc) 
+// {
+//     return ms * (F_CPU / 1000UL) / presc;
+// }
+
+#define ms_to_ticks(ms, presc) (ms * (F_CPU / 1000UL) / presc)
+
+static volatile uint32_t current_ms = 0;
+
+static void timer0_comp_a_cb(void)
+{
+    current_ms++; 
+}
+
+static struct timer_cfg timer0_cfg = 
+{  
+    .id = TIMER_ID_0,
+    .clock = TIMER_CLOCK_PRESC_8,
+    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    .mode = TIMER_MODE_CTC,
+    .com_a_cfg = TIMER_CM_DISABLED,
+    .com_b_cfg = TIMER_CM_DISABLED,
+
+    .counter_val = 0,
+    .ovrfv_cb = NULL,
+
+    .out_comp_a_val = ms_to_ticks(1, 8) - 1,
+    .out_comp_b_val = 0,
+    .out_comp_a_cb = timer0_comp_a_cb,
+    .out_comp_b_cb = NULL,
+    
+    .input_capture_val = 0,
+    .input_capture_pullup = false,
+    .input_capture_noise_canceler = false,
+    .input_capture_rising_edge = false,
+    .in_capt_cb = NULL,
+};
+
+static struct timer_obj timer0_obj;
+
+static void system_timer_init(void)
+{
+    timer_init(&timer0_obj, &timer0_cfg);
+    timer_start(&timer0_obj, true);
+}
+
+static uint32_t system_timer_get(void)
+{
+    volatile uint32_t val = 0;
+
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+        val = current_ms;
+    }
+
+    return val;
+}
+
+/* Buzzer */
+
 #include <buzzer.h>
 
 static struct timer_cfg timer2_cfg = 
@@ -406,11 +468,6 @@ struct dcf77_frame
 
 #define PRESC 256
 
-static uint16_t ms_to_ticks(uint16_t ms, uint16_t presc) 
-{
-    return ms * (F_CPU / 1000UL) / presc;
-}
-
 static void timer1_capt_cb(uint16_t icr)
 {
     static bool rising_edge = false; // This has to be the same as initialization
@@ -556,6 +613,8 @@ int main()
     DDRB &= ~(1 << PB0); // input 
     MCUCR &= ~(1 << PUD);
 
+    system_timer_init();
+
     hd44780_init(&lcd_obj, &lcd_cfg);
     hd44780_print(&lcd_obj, "TEST");
     hd44780_set_pos(&lcd_obj, 1, 0);
@@ -587,11 +646,12 @@ int main()
 
     while (1)
     {
-        if (PINB & (1 << PB0))
-            PORTD &= ~(1 << PD6);
-        else 
-            PORTD |= 1 << PD6;
-  
+        // if (PINB & (1 << PB0))
+        //     PORTD &= ~(1 << PD6);
+        // else 
+        //     PORTD |= 1 << PD6;
+
+
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
         
@@ -610,6 +670,10 @@ int main()
 
         // hd44780_set_pos(&lcd_obj, 1, 15);
         // hd44780_putc(&lcd_obj, (sec_buf & 0x0F) + '0');
+
+        // hd44780_set_pos(&lcd_obj, 1, 0);
+        // char buff[16] = {0};
+        // hd44780_print(&lcd_obj, ltoa(system_timer_get(), buff, 10));
 
         // uint32_t unix_time = time(NULL);
         // hd44780_set_pos(&lcd_obj, 1, 0);
@@ -634,6 +698,7 @@ int main()
 // * USART
 // * GPIO
 // * Core
+// * WDG
 
 // 3 managers + main logic
 
