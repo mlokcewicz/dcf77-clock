@@ -17,6 +17,12 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <util/delay.h>
+
+//------------------------------------------------------------------------------
+
+#define MS_TO_TICKS(ms, presc) (ms * (F_CPU / 1000UL) / presc)
+
 //------------------------------------------------------------------------------
 
 typedef void (*timer_ovrf_cb)(void);
@@ -154,6 +160,22 @@ uint16_t timer_get_val(struct timer_obj *obj);
 void timer_deinit(struct timer_obj *obj);
 
 //------------------------------------------------------------------------------
+
+/// @brief Initializes system_timer based on Timer 0 with 1 ms tick
+void system_timer_init(void);
+
+/// @brief Gets current system timer value
+/// @return current system timer value [ms]
+uint32_t system_timer_get(void);
+
+/// @brief Checks if current tickstamp is older compared to timeout and previous tickstamp
+/// @param tickstamp precious timestamp
+/// @param timeout timeout
+/// @return true if timeout passed
+bool system_timer_tickstamp_is_older(uint32_t tickstamp, uint32_t timeout);
+
+//------------------------------------------------------------------------------
+
 
 #ifdef __cplusplus
 }

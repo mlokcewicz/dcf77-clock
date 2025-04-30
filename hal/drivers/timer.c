@@ -399,3 +399,63 @@ ISR(TIMER2_COMPB_vect)
 }
 
 //------------------------------------------------------------------------------
+
+static volatile uint32_t current_ms = 0;
+
+static void timer0_comp_a_cb(void)
+{
+    current_ms++; 
+}
+
+//------------------------------------------------------------------------------
+
+void system_timer_init(void)
+{
+    static struct timer_cfg timer0_cfg = 
+    {  
+        .id = TIMER_ID_0,
+        .clock = TIMER_CLOCK_PRESC_8,
+        .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+        .mode = TIMER_MODE_CTC,
+        .com_a_cfg = TIMER_CM_DISABLED,
+        .com_b_cfg = TIMER_CM_DISABLED,
+
+        .counter_val = 0,
+        .ovrfv_cb = NULL,
+
+        .out_comp_a_val = MS_TO_TICKS(1, 8) - 1,
+        .out_comp_b_val = 0,
+        .out_comp_a_cb = timer0_comp_a_cb,
+        .out_comp_b_cb = NULL,
+        
+        .input_capture_val = 0,
+        .input_capture_pullup = false,
+        .input_capture_noise_canceler = false,
+        .input_capture_rising_edge = false,
+        .in_capt_cb = NULL,
+    };
+
+    static struct timer_obj timer0_obj;
+
+    timer_init(&timer0_obj, &timer0_cfg);
+    timer_start(&timer0_obj, true);
+}
+
+uint32_t system_timer_get(void)
+{
+    volatile uint32_t val = 0;
+
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+        val = current_ms;
+    }
+
+    return val;
+}
+
+bool system_timer_tickstamp_is_older(uint32_t tickstamp, uint32_t timeout)
+{
+    return tickstamp + timeout > system_timer_get();
+}
+
+//------------------------------------------------------------------------------
