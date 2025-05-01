@@ -245,6 +245,7 @@ static struct rotary_encoder_obj encoder1_obj;
 /* RTC */
 
 #include <twi.h>
+#include <ds1307.h>
 #include <avr/interrupt.h>
 // #include <time.h>
 
@@ -254,6 +255,8 @@ static struct twi_cfg twi1_cfg =
     .frequency = 100,
     .irq_mode = false,
 };
+
+
 
 /* EXTI */
 
@@ -576,7 +579,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 int main()
 {
-    wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
+    // wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
 
     /* LED */
     // DDRD |= (1 << PD6);
@@ -668,8 +671,8 @@ int main()
         // hd44780_set_pos(&lcd_obj, 1, 0);
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
         
-        wdg_feed();
-        core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
+        // wdg_feed();
+        // core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
     }
 }
 
