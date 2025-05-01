@@ -37,6 +37,8 @@ ISR(BADISR_vect)
 //------------------------------------------------------------------------------
 
 /* Common */
+#include <core.h>
+#include <wdg.h>
 #include <gpio.h>
 
 /* LCD */
@@ -574,6 +576,8 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 int main()
 {
+    wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
+
     /* LED */
     // DDRD |= (1 << PD6);
     // PORTD &= ~(1 << PD6);
@@ -628,12 +632,14 @@ int main()
 
     while (1)
     {
-        if (PINB & (1 << PB0))
-            PORTD &= ~(1 << PD6);
-        else 
-            PORTD |= 1 << PD6;
+        // if (PINB & (1 << PB0))
+        //     PORTD &= ~(1 << PD6);
+        // else 
+        //     PORTD |= 1 << PD6;
 
-        
+        gpio_set(GPIO_PORT_D, GPIO_PIN_6, !gpio_get(GPIO_PORT_B, GPIO_PIN_0));
+
+
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
         // buzzer_process(&buzzer1_obj);
@@ -661,6 +667,9 @@ int main()
         // uint32_t unix_time = time(NULL);
         // hd44780_set_pos(&lcd_obj, 1, 0);
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
+        
+        wdg_feed();
+        core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
     }
 }
 
@@ -675,11 +684,11 @@ int main()
 // * EXTI
 // * Button
 // * Buzzer
+// * GPIO
 
 // * DS1307
 
 // * USART
-// * GPIO
 // * Core
 // * WDG
 
