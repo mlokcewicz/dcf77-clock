@@ -26,7 +26,7 @@ static struct timer_ctx ctx;
 //------------------------------------------------------------------------------
 
 /* Code redundancy here is intentional - any optimizations by creating arrays of pointers to registers
-   and selection of register by timer id causes unnecessary FLASH consumption */
+   and selection of register by timer ID causes unnecessary FLASH consumption */
 
 static void timer0_init(struct timer_obj *obj, struct timer_cfg *cfg)
 {
@@ -400,17 +400,24 @@ ISR(TIMER2_COMPB_vect)
 
 //------------------------------------------------------------------------------
 
-static volatile uint32_t current_ms = 0;
+struct system_timer_ctx
+{
+    volatile uint32_t current_ms;
+};
+
+static struct system_timer_ctx system_timer_ctx;
 
 static void timer0_comp_a_cb(void)
 {
-    current_ms++; 
+    system_timer_ctx.current_ms++; 
 }
 
 //------------------------------------------------------------------------------
 
 void system_timer_init(void)
 {
+    system_timer_ctx.current_ms = 0;
+
     static struct timer_cfg timer0_cfg = 
     {  
         .id = TIMER_ID_0,
@@ -447,15 +454,15 @@ uint32_t system_timer_get(void)
 
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
-        val = current_ms;
+        val = system_timer_ctx.current_ms;
     }
 
     return val;
 }
 
-bool system_timer_tickstamp_is_older(uint32_t tickstamp, uint32_t timeout)
+bool system_timer_timeout_passed(uint32_t tickstamp, uint32_t timeout)
 {
-    return tickstamp + timeout > system_timer_get();
+    return tickstamp + timeout < system_timer_get();
 }
 
 //------------------------------------------------------------------------------

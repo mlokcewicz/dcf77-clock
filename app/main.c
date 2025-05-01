@@ -257,7 +257,6 @@ static void exti_encoder1_cb(void)
 /* Buzzer */
 
 #include <timer.h>
-
 #include <buzzer.h>
 
 static struct timer_cfg timer2_cfg = 
@@ -291,19 +290,33 @@ bool buzzer1_init_cb(void)
     return true;
 }
 
-void buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
+bool buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
 {
-    if (tone != BUZZER_TONE_STOP)
+    static uint32_t start_tickstamp = 0;
+
+    if (start_tickstamp == 0) // note not started
     {
-        timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * tone)) - 1;
-        timer_init(&timer2_obj, &timer2_cfg);
-        timer_start(&timer2_obj, true);
+        if (tone != BUZZER_TONE_STOP)
+        {
+            timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * tone)) - 1;
+            timer_init(&timer2_obj, &timer2_cfg);
+            timer_start(&timer2_obj, true);
+        }
+        else
+            timer_start(&timer2_obj, false);
+
+        start_tickstamp = system_timer_get();
+        
+        return true;
     }
 
-    while (time_ms--)
-        _delay_ms(1);
-    
-    timer_start(&timer2_obj, false);
+    /* Note is playing */
+    if (!system_timer_timeout_passed(start_tickstamp, time_ms))
+        return true;
+
+    start_tickstamp = 0;
+
+    return false; // note is played
 }
 
 void buzzer1_stop_cb(void)
@@ -336,6 +349,7 @@ struct buzzer_note alarm_beep[] =
 	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
 	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
 	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, 1000UL * 800},
 };
 
 /* DCF77 */
@@ -566,6 +580,8 @@ int main()
 
     buzzer_init(&buzzer1_obj, &buzzer1_cfg);
 
+    buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
+
     exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
     exti_enable(EXTI_ID_PCINT10, true);
     exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
@@ -585,14 +601,15 @@ int main()
 
     while (1)
     {
-        // if (PINB & (1 << PB0))
-        //     PORTD &= ~(1 << PD6);
-        // else 
-        //     PORTD |= 1 << PD6;
+        if (PINB & (1 << PB0))
+            PORTD &= ~(1 << PD6);
+        else 
+            PORTD |= 1 << PD6;
 
-
+        
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
+        // buzzer_process(&buzzer1_obj);
         
         // timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * 1000)) - 1;
         // timer_init(&timer2_obj, &timer2_cfg);

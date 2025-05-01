@@ -123,7 +123,7 @@ extern "C" {
 //------------------------------------------------------------------------------
 
 typedef bool (*buzzer_init_cb)(void);
-typedef void (*buzzer_play_cb)(uint16_t tone, uint16_t time_ms);
+typedef bool (*buzzer_play_cb)(uint16_t tone, uint16_t time_ms);
 typedef void (*buzzer_stop_cb)(void);
 typedef bool (*buzzer_deinit_cb)(void);
 
@@ -135,6 +135,11 @@ struct buzzer_obj
 	buzzer_play_cb play;
 	buzzer_stop_cb stop;
 	buzzer_deinit_cb deinit;
+
+	const struct buzzer_note *current_pattern;
+	uint16_t current_pattern_size;
+	uint16_t current_pattern_bpm;
+	uint16_t current_step;
 };
 
 struct buzzer_cfg
@@ -161,14 +166,25 @@ bool buzzer_init(struct buzzer_obj *obj, struct buzzer_cfg *cfg);
 
 /// @brief Plays selected audio pattern
 /// @param obj buzzer object structure pointer
-/// @param song selected autio pattern array @ref struct note
+/// @param pattern selected autio pattern array @ref struct note
 /// @param size selected autio pattern array size in bytes
 /// @param bpm selected autio pattern BPM
-void buzzer_play_pattern(struct buzzer_obj *obj, const struct buzzer_note song[], uint16_t size, uint16_t bpm);
+void buzzer_play_pattern(struct buzzer_obj *obj, const struct buzzer_note pattern[], uint16_t size, uint16_t bpm);
 
-/// @brief Stops actual autio pattern
+/// @brief Stops actual audio pattern
 /// @param obj buzzer object structure pointer
 void buzzer_stop_pattern(struct buzzer_obj *obj);
+
+/// @brief Sets current pattern for non-blocking play mode (@ref buzzer_process())
+/// @param obj buzzer object structure pointer
+/// @param pattern selected autio pattern array @ref struct note
+/// @param size selected autio pattern array size in bytes
+/// @param bpm selected autio pattern BPM
+void buzzer_set_pattern(struct buzzer_obj *obj, const struct buzzer_note pattern[], uint16_t size, uint16_t bpm);
+
+/// @brief Processes current audio pattern
+/// @param obj buzzer object structure pointer
+void buzzer_process(struct buzzer_obj *obj);
 
 /// @brief Deinitializes buzzer low level driver and resets context
 /// @param obj buzzer object structure pointer
