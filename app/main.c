@@ -685,12 +685,12 @@ int main()
 // * Button
 // * Buzzer
 // * GPIO
+// * Core
+// * WDG
 
 // * DS1307
 
 // * USART
-// * Core
-// * WDG
 
 // 3 managers + main logic
 
