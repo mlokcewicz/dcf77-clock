@@ -42,43 +42,26 @@ ISR(BADISR_vect)
 
 static void lcd_set_pin_cb(uint8_t pin, bool state) 
 {
-    const uint8_t pin_to_pin_val[] = 
+    struct gpio_tuple
     {
-        [LCD_RS] = PC3,
-        [LCD_E] = PD4,
-        [LCD_D4] = PB6,
-        [LCD_D5] = PB7,
-        [LCD_D6] = PD7,
-        [LCD_D7] = PD5,
+        volatile uint8_t *port_reg;
+        uint8_t pin;
     };
 
-    if (pin == LCD_RW)
-        return;
-
-    if (pin == LCD_RS)
+    static const struct gpio_tuple lcd_pins[] = 
     {
-        if (state)
-            PORTC |= (1 << pin_to_pin_val[pin]);
-        else
-            PORTC &= ~(1 << pin_to_pin_val[pin]);
-
-        return;
-    }
-    
-    if ((pin == LCD_D4) || (pin == LCD_D5))
-    {
-        if (state)
-            PORTB |= (1 << pin_to_pin_val[pin]);
-        else
-            PORTB &= ~(1 << pin_to_pin_val[pin]);
-
-        return;
-    }
+        [LCD_RS] = {&PORTC, PC3},
+        [LCD_E] = {&PORTD, PD4},
+        [LCD_D4] = {&PORTB, PB6},
+        [LCD_D5] = {&PORTB, PB7},
+        [LCD_D6] = {&PORTD, PD7},
+        [LCD_D7] = {&PORTD, PD5},
+    };
 
     if (state)
-        PORTD |= (1 << pin_to_pin_val[pin]);
+        *(lcd_pins[pin].port_reg) |= (1 << lcd_pins[pin].pin);
     else
-        PORTD &= ~(1 << pin_to_pin_val[pin]);
+        *(lcd_pins[pin].port_reg) &= ~(1 << lcd_pins[pin].pin);
 }
 
 static void lcd_delay_cb(uint16_t us) 
