@@ -1,0 +1,98 @@
+//------------------------------------------------------------------------------
+
+/// @file ds1307.h
+/// @note Copyright (C) Michał Łokcewicz. All rights reserved.
+
+//------------------------------------------------------------------------------
+
+#ifndef DS1307_H_
+#define DS1307_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//------------------------------------------------------------------------------
+
+#include <stdbool.h>
+#include <stdint.h>
+
+//------------------------------------------------------------------------------
+
+enum ds1307_rate_select
+{
+    DS1307_RS_1HZ = 0,
+    DS1307_RS_4096HZ,
+    DS1307_RS_8192HZ,
+    DS1307_RS_32768HZ,
+};
+
+//------------------------------------------------------------------------------
+
+typedef bool (*ds1307_io_init_cb)(void);
+typedef bool (*ds1307_io_deinit_cb)(void);
+typedef bool (*ds1307_serial_send_cb)(uint8_t device_addr, uint8_t *data, uint16_t len);
+typedef bool (*ds1307_serial_receive_cb)(uint8_t device_addr, uint8_t *data, uint16_t len);
+
+//------------------------------------------------------------------------------
+
+
+
+struct ds1307_cfg
+{
+    ds1307_io_init_cb io_init;
+    ds1307_serial_send_cb serial_send;
+    ds1307_serial_send_cb serial_receive;
+
+    bool sqw_en;
+    enum ds1307_rate_select rs;
+};
+
+struct ds1307_obj
+{
+    ds1307_io_init_cb io_init;
+    ds1307_io_deinit_cb io_deinit;
+    ds1307_serial_send_cb serial_send;
+    ds1307_serial_send_cb serial_receive;
+};
+
+//------------------------------------------------------------------------------
+
+/// @brief Initializes DS1307 module accroding to given configuration @ref struct ds1307_cfg
+/// @param obj given DS1307 object pointer
+/// @param cfg given configuration structure pointer
+/// @return true if initialized correctly, otherwiste false
+bool ds1307_init(struct ds1307_obj *obj, struct ds1307_cfg *cfg);
+
+/// @brief Chekcs if DS1307 is running or is halted (according to power down)
+/// @param obj given DS1307 object pointer
+/// @return true if is running 
+bool ds1307_is_running(struct ds1307_obj *obj);
+
+/// @brief Sets given unix time 
+/// @param obj given DS1307 object pointer
+/// @param unix_time unix timestamp 
+/// @return true if initialized correctly, otherwiste false
+bool ds1307_set_date(struct ds1307_obj *obj, uint32_t unix_time);
+
+/// @brief Gets unix time
+/// @param obj given DS1307 object pointer
+/// @param unix_time unix timestamp 
+/// @return true if initialized correctly, otherwiste false
+bool ds1307_get_date(struct ds1307_obj *obj, uint32_t *unix_time);
+
+/// @brief Deinitializes DS1307 module and reset object
+/// @param obj given DS1307 object pointer
+/// @return true if deinitialized correctly, otherwiste false
+bool ds1307_deinit(struct ds1307_obj *obj);
+
+//------------------------------------------------------------------------------
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* DS1307_H_ */
+
+//------------------------------------------------------------------------------
