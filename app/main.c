@@ -41,6 +41,68 @@ ISR(BADISR_vect)
 #include <wdg.h>
 #include <gpio.h>
 
+static bool synced = false;
+
+/* RTC */
+
+#include <twi.h>
+#include <ds1307.h>
+#include <avr/interrupt.h>
+// #include <time.h>
+
+static struct twi_cfg twi1_cfg = 
+{
+    .pull_up_en = false,
+    .frequency = 100,
+    .irq_mode = false,
+};
+
+bool ds1307_io_init_cb1(void)
+{
+    return twi_init(&twi1_cfg);
+}
+
+bool ds1307_serial_send_cb1(uint8_t device_addr, uint8_t *data, uint16_t len)
+{
+    return twi_send(device_addr, data, len, true);
+}
+
+bool ds1307_serial_receive_cb1(uint8_t device_addr, uint8_t *data, uint16_t len)
+{
+    return twi_receive(device_addr, data, len);
+}
+
+static struct ds1307_cfg rtc_cfg = 
+{
+    .io_init = ds1307_io_init_cb1,
+    .serial_send = ds1307_serial_send_cb1,
+    .serial_receive = ds1307_serial_receive_cb1,
+
+    .sqw_en = true,
+    .rs = DS1307_RS_1HZ,
+};
+
+static struct ds1307_obj rtc_obj;
+
+static struct ds1307_time unix_time = 
+{
+    .clock_halt = 0,
+    .hour_mode = 0,
+    .seconds_units = 2,
+    .seconds_tens = 3,
+    .minutes_units = 5,
+    .minutes_tens = 4,
+    .hours_units = 8,
+    .hours_tens = 1,
+    .date_units = 1,
+    .date_tens = 0,
+    .day = 5,
+    .month_units = 5,
+    .month_tens = 0,
+    .year_units = 5,
+    .year_tens = 2,
+};
+
 /* LCD */
 
 #include <hd44780.h>
@@ -145,6 +207,7 @@ static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
 /* BUTTON */
 
 #include <button.h>
+#include <string.h>
 
 bool button1_init_cb(void)
 {
@@ -164,6 +227,11 @@ bool button1_get_state_cb(void)
 void button1_pressed_cb(void)
 {
     buzzer_beep(6000, 50);
+
+    memset(&unix_time, 0x00, sizeof(unix_time));
+    ds1307_set_time(&rtc_obj, &unix_time);
+
+    synced = false;
 }
 
 bool button1_deinit_cb(void)
@@ -242,22 +310,6 @@ static struct rotary_encoder_cfg encoder1_cfg =
 
 static struct rotary_encoder_obj encoder1_obj;
 
-/* RTC */
-
-#include <twi.h>
-#include <ds1307.h>
-#include <avr/interrupt.h>
-// #include <time.h>
-
-static struct twi_cfg twi1_cfg = 
-{
-    .pull_up_en = false,
-    .frequency = 100,
-    .irq_mode = false,
-};
-
-
-
 /* EXTI */
 
 #include <exti.h>
@@ -269,8 +321,29 @@ static void exti_button1_cb(void)
 
 static void exti_sqw_cb(void)
 {
-    // if (!(PINC & (1 << PC2)))
-        // buzzer_beep(500, 50);
+    if (!(PINC & (1 << PC2)))
+    {
+        char buf[16];
+        ds1307_get_time(&rtc_obj, &unix_time);
+        uint8_t i = 0;
+        buf[i++] = (unix_time.hours_tens + '0');
+        buf[i++] = (unix_time.hours_units + '0');
+        buf[i++] = (':');
+        buf[i++] = (unix_time.minutes_tens + '0');
+        buf[i++] = (unix_time.minutes_units + '0');
+        buf[i++] = (' ');
+        buf[i++] = (unix_time.date_tens + '0');
+        buf[i++] = (unix_time.date_units + '0');
+        buf[i++] = ('.');
+        buf[i++] = (unix_time.month_tens + '0');
+        buf[i++] = (unix_time.month_units + '0');
+        buf[i++] = (' ');
+        buf[i++] = (unix_time.seconds_tens + '0');
+        buf[i++] = (unix_time.seconds_units + '0');
+        buf[i++] = 0;
+        hd44780_set_pos(&lcd_obj, 1, 0);
+        hd44780_print(&lcd_obj, buf);
+    }
 }
 
 static void exti_encoder1_cb(void)
@@ -287,24 +360,24 @@ static struct timer_cfg timer2_cfg =
 {  
     .id = TIMER_ID_2,
     .clock = TIMER_CLOCK_PRESC_8,
-    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    // .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
     .mode = TIMER_MODE_CTC,
     .com_a_cfg = TIMER_CM_CHANGE_PIN_STATE,
-    .com_b_cfg = TIMER_CM_DISABLED,
+    // .com_b_cfg = TIMER_CM_DISABLED,
 
-    .counter_val = 0,
-    .ovrfv_cb = NULL,
+    // .counter_val = 0,
+    // .ovrfv_cb = NULL,
 
-    .out_comp_a_val = 0,
-    .out_comp_b_val = 0,
-    .out_comp_a_cb = NULL,
-    .out_comp_b_cb = NULL,
+    // .out_comp_a_val = 0,
+    // .out_comp_b_val = 0,
+    // .out_comp_a_cb = NULL,
+    // .out_comp_b_cb = NULL,
     
-    .input_capture_val = 0,
-    .input_capture_pullup = false,
-    .input_capture_noise_canceler = false,
-    .input_capture_rising_edge = false,
-    .in_capt_cb = NULL,
+    // .input_capture_val = 0,
+    // .input_capture_pullup = false,
+    // .input_capture_noise_canceler = false,
+    // .input_capture_rising_edge = false,
+    // .in_capt_cb = NULL,
 };
 
 static struct timer_obj timer2_obj;
@@ -386,23 +459,23 @@ static struct timer_cfg timer1_cfg =
 {  
     .id = TIMER_ID_1,
     .clock = TIMER_CLOCK_PRESC_256,
-    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    // .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
     .mode = TIMER_MODE_16_BIT_NORMAL,
-    .com_a_cfg = TIMER_CM_DISABLED,
-    .com_b_cfg = TIMER_CM_DISABLED,
+    // .com_a_cfg = TIMER_CM_DISABLED,
+    // .com_b_cfg = TIMER_CM_DISABLED,
 
-    .counter_val = 0,
-    .ovrfv_cb = NULL,
+    // .counter_val = 0,
+    // .ovrfv_cb = NULL,
 
-    .out_comp_a_val = 0,
-    .out_comp_b_val = 0,
-    .out_comp_a_cb = NULL,
-    .out_comp_b_cb = NULL,
+    // .out_comp_a_val = 0,
+    // .out_comp_b_val = 0,
+    // .out_comp_a_cb = NULL,
+    // .out_comp_b_cb = NULL,
     
-    .input_capture_val = 0,
-    .input_capture_pullup = false,
-    .input_capture_noise_canceler = false,
-    .input_capture_rising_edge = false,
+    // .input_capture_val = 0,
+    // .input_capture_pullup = false,
+    // .input_capture_noise_canceler = false,
+    // .input_capture_rising_edge = false,
     .in_capt_cb = timer1_capt_cb,
 };
 
@@ -447,6 +520,9 @@ struct dcf77_frame
 
 static void timer1_capt_cb(uint16_t icr)
 {
+    if (synced)
+        return;
+
     static bool rising_edge = false; // This has to be the same as initialization
 
     if (rising_edge) // Triggered on rising edge, break was measuered, change to falling
@@ -495,15 +571,14 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     static uint8_t bit_cnt = 0;
 
     // ticks = tick_to_ms(ticks, 256);
-    char buf[25] = {0};
+    char buf[16] = {0};
     utoa(ticks, buf, 10);
 
     uint8_t pos = !rising_edge ? 8 : 0;
 
     hd44780_set_pos(&lcd_obj, 0, pos);
-    hd44780_print(&lcd_obj,"        ");
+    hd44780_print(&lcd_obj,"       ");
     hd44780_set_pos(&lcd_obj, 0, pos);
-
     hd44780_print(&lcd_obj, buf);
 
     if (!frame_started)
@@ -511,8 +586,8 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         if (get_bit_val(ticks) == DCF77_BIT_VAL_NONE)
         {
             frame_started = true;
-            hd44780_set_pos(&lcd_obj, 1, 0);
-            hd44780_print(&lcd_obj, "FRAME STARTED");
+            hd44780_set_pos(&lcd_obj, 0, 15);
+            hd44780_print(&lcd_obj, "S");
         }
 
         return;
@@ -526,8 +601,8 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
         if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {
-            hd44780_set_pos(&lcd_obj, 1, 0);
-            hd44780_print(&lcd_obj, "ERROR         ");
+            hd44780_set_pos(&lcd_obj, 0, 15);
+            hd44780_print(&lcd_obj, "E");
             frame_started = 0;
             bit_cnt = 0;
             return;
@@ -544,28 +619,45 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         {
             struct dcf77_frame *frame_ptr = (struct dcf77_frame*)frame;
             
-            uint8_t i = 0;
-            buf[i++] = (frame_ptr->hours_tens + '0');
-            buf[i++] = (frame_ptr->hours_units + '0');
-            buf[i++] = (':');
-            buf[i++] = (frame_ptr->minutes_tens + '0');
-            buf[i++] = (frame_ptr->minutes_units + '0');
-            buf[i++] = (' ');
-            buf[i++] = (frame_ptr->month_day_tens + '0');
-            buf[i++] = (frame_ptr->month_days_units + '0');
-            buf[i++] = ('.');
-            buf[i++] = (frame_ptr->months_tens + '0');
-            buf[i++] = (frame_ptr->months_units + '0');
-            buf[i++] = ('.');
-            buf[i++] = (frame_ptr->years_tens + '0');
-            buf[i++] = (frame_ptr->years_units + '0');
-            buf[i++] = 0;
+            // uint8_t i = 0;
+            // buf[i++] = (frame_ptr->hours_tens + '0');
+            // buf[i++] = (frame_ptr->hours_units + '0');
+            // buf[i++] = (':');
+            // buf[i++] = (frame_ptr->minutes_tens + '0');
+            // buf[i++] = (frame_ptr->minutes_units + '0');
+            // buf[i++] = (' ');
+            // buf[i++] = (frame_ptr->month_day_tens + '0');
+            // buf[i++] = (frame_ptr->month_days_units + '0');
+            // buf[i++] = ('.');
+            // buf[i++] = (frame_ptr->months_tens + '0');
+            // buf[i++] = (frame_ptr->months_units + '0');
+            // buf[i++] = ('.');
+            // buf[i++] = (frame_ptr->years_tens + '0');
+            // buf[i++] = (frame_ptr->years_units + '0');
+            // buf[i++] = 0;
             
-            hd44780_set_pos(&lcd_obj, 1, 0);
-            hd44780_print(&lcd_obj, buf);
-            cli();
+            // hd44780_set_pos(&lcd_obj, 1, 0);
+            // hd44780_print(&lcd_obj, buf);
 
-            while(1);
+            unix_time.clock_halt = 0;
+            unix_time.hour_mode = 0;
+            unix_time.hours_tens = frame_ptr->hours_tens;
+            unix_time.hours_units = frame_ptr->hours_units;
+            unix_time.minutes_tens = frame_ptr->minutes_tens;
+            unix_time.minutes_units = frame_ptr->minutes_units;
+            unix_time.date_tens = frame_ptr->month_day_tens;
+            unix_time.date_units = frame_ptr->month_days_units;
+            unix_time.month_tens = frame_ptr->months_tens;
+            unix_time.month_units = frame_ptr->months_units;
+            unix_time.year_tens = frame_ptr->years_tens;
+            unix_time.year_units = frame_ptr->years_units;
+            unix_time.seconds_tens = 0;
+            unix_time.seconds_units = 0;
+
+            ds1307_set_time(&rtc_obj, &unix_time);
+
+            synced = true;
+    
             return;
         }
     }
@@ -579,7 +671,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 int main()
 {
-    // wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
+    wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
 
     /* LED */
     // DDRD |= (1 << PD6);
@@ -623,15 +715,14 @@ int main()
     exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
     exti_enable(EXTI_ID_INT0, true);
 
-    twi_init(&twi1_cfg);
-    uint8_t sec_config[] = {0x00, 0x09};
-    twi_send(0b11010000, sec_config, 2, true);
-    uint8_t sqw_config[] = {0x07, 0b00010000};
-    twi_send(0b11010000, sqw_config, 2, true);
+    ds1307_init(&rtc_obj, &rtc_cfg);
 
     // set_system_time(1744458473);
     
     sei();
+
+    if (!ds1307_is_running(&rtc_obj))
+        ds1307_set_time(&rtc_obj, &unix_time);
 
     while (1)
     {
@@ -641,7 +732,6 @@ int main()
         //     PORTD |= 1 << PD6;
 
         gpio_set(GPIO_PORT_D, GPIO_PIN_6, !gpio_get(GPIO_PORT_B, GPIO_PIN_0));
-
 
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
@@ -660,8 +750,16 @@ int main()
         // twi_send(0b11010001, &sec_addr, 1, true);
         // twi_receive(0b11010001, &sec_buf, 1);
 
-        // hd44780_set_pos(&lcd_obj, 1, 15);
+        // hd44780_set_pos(&lcd_obj, 1, 10);
         // hd44780_putc(&lcd_obj, (sec_buf & 0x0F) + '0');
+        
+        // uint8_t *str = "DUPA";
+        // ds1307_save_to_ram(&rtc_obj, 5, str, 4);
+        // char buf2[10] = {0};
+        // ds1307_read_from_ram(&rtc_obj, 4, buf2, 4);
+        // hd44780_set_pos(&lcd_obj, 0, 8);
+        // hd44780_print(&lcd_obj, buf2);
+        // _delay_ms(5000);
 
         // hd44780_set_pos(&lcd_obj, 1, 0);
         // char buff[16] = {0};
@@ -671,29 +769,12 @@ int main()
         // hd44780_set_pos(&lcd_obj, 1, 0);
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
         
-        // wdg_feed();
-        // core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
+        wdg_feed();
+        core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
     }
 }
 
 //------------------------------------------------------------------------------
-
-// Components (added / to add)
-// * HD44780
-// * DCF77 Decoder
-// * Rotary encoder
-// * TWI
-// * TIM 
-// * EXTI
-// * Button
-// * Buzzer
-// * GPIO
-// * Core
-// * WDG
-
-// * DS1307
-
-// * USART
 
 // 3 managers + main logic
 
