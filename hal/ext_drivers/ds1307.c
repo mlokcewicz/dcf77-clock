@@ -7,9 +7,11 @@
 
 #include "ds1307.h"
 
+#include <string.h>
+
 //------------------------------------------------------------------------------
 
-#define DS1307_ADDR 0b11010000
+#define DS1307_ADDR 0b11010001
 
 //------------------------------------------------------------------------------
 
@@ -64,17 +66,37 @@ bool ds1307_is_running(struct ds1307_obj *obj)
     return (msg[0] & (1 << 7)) == 0;
 }
 
-bool ds1307_set_date(struct ds1307_obj *obj, uint32_t unix_time)
+bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *unix_time)
 {
-    if (!obj)
+    if (!obj || !unix_time)
+        return false;
+
+    struct msg_time
+    {   
+        uint8_t addr;
+        struct ds1307_time unix_time;
+    };
+
+    struct msg_time msg = {DS1307_REG_ADDR_SECONDS};
+    memcpy(&(msg.unix_time), unix_time, sizeof(*unix_time));
+    
+    if (!obj->serial_send(DS1307_ADDR, (uint8_t*)&msg, sizeof(msg)))
         return false;
 
     return true;
 }
 
-bool ds1307_get_date(struct ds1307_obj *obj, uint32_t *unix_time)
+bool ds1307_get_time(struct ds1307_obj *obj, struct ds1307_time *unix_time)
 {   
     if (!obj || !unix_time)
+        return false;
+
+    uint8_t msg[] = {DS1307_REG_ADDR_SECONDS};
+
+    if (!obj->serial_send(DS1307_ADDR, msg, sizeof(msg)))
+        return false;
+
+    if (!obj->serial_receive(DS1307_ADDR, (uint8_t*)unix_time, sizeof(*unix_time)))
         return false;
 
     return true;
@@ -82,7 +104,14 @@ bool ds1307_get_date(struct ds1307_obj *obj, uint32_t *unix_time)
 
 bool ds1307_save_to_ram(struct ds1307_obj *obj, uint8_t addr, uint8_t *data, uint8_t len)
 {
-    if (!obj)
+    if (!obj || DS1307_REG_ADDR_RAM_START + addr + len > DS1307_REG_ADDR_RAM_END)
+        return false;
+
+    uint8_t msg[len + 1];
+    msg[0] = DS1307_REG_ADDR_RAM_START + addr;
+    memcpy(&msg[1], data, len);
+
+    if (!obj->serial_send(DS1307_ADDR, msg, sizeof(msg)))
         return false;
 
     return true;
@@ -90,7 +119,15 @@ bool ds1307_save_to_ram(struct ds1307_obj *obj, uint8_t addr, uint8_t *data, uin
 
 bool ds1307_read_from_ram(struct ds1307_obj *obj, uint8_t addr, uint8_t *data, uint8_t len)
 {
-    if (!obj)
+    if (!obj || DS1307_REG_ADDR_RAM_START + addr + len > DS1307_REG_ADDR_RAM_END)
+        return false;
+
+    uint8_t msg[] = {DS1307_REG_ADDR_RAM_START + addr};
+    
+    if (!obj->serial_send(DS1307_ADDR, msg, sizeof(msg)))
+        return false;
+
+    if (!obj->serial_receive(DS1307_ADDR, data, len))
         return false;
 
     return true;
@@ -99,6 +136,12 @@ bool ds1307_read_from_ram(struct ds1307_obj *obj, uint8_t addr, uint8_t *data, u
 bool ds1307_deinit(struct ds1307_obj *obj)
 {
     if (!obj)
+        return false;
+
+    /* Set Clock Halt bit */
+    uint8_t msg[] = {DS1307_REG_ADDR_SECONDS, 1 << 7};
+
+    if (!obj->serial_send(DS1307_ADDR, msg, sizeof(msg)))
         return false;
     
     return true;
