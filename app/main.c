@@ -160,16 +160,16 @@ static void lcd_delay_cb(uint16_t us)
 
 static void lcd_pin_init_cb(void)
 {
-    DDRC |= 1 << PC3;
-    DDRB |= (1 << PB6) | (1 << PB7);
-    DDRD |= (1 << PD4) | (1 << PD5) | (1 << PD7);
+    // DDRC |= 1 << PC3;
+    // DDRB |= (1 << PB6) | (1 << PB7);
+    // DDRD |= (1 << PD4) | (1 << PD5) | (1 << PD7);
 
-    // gpio_init(GPIO_PORT_C, GPIO_PIN_3, true, false);
-    // gpio_init(GPIO_PORT_B, GPIO_PIN_6, true, false);
-    // gpio_init(GPIO_PORT_B, GPIO_PIN_7, true, false);
-    // gpio_init(GPIO_PORT_D, GPIO_PIN_4, true, false);
-    // gpio_init(GPIO_PORT_D, GPIO_PIN_5, true, false);
-    // gpio_init(GPIO_PORT_D, GPIO_PIN_7, true, false);
+    gpio_init(GPIO_PORT_C, GPIO_PIN_3, true, false);
+    gpio_init(GPIO_PORT_B, GPIO_PIN_6, true, false);
+    gpio_init(GPIO_PORT_B, GPIO_PIN_7, true, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_4, true, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_5, true, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_7, true, false);
 }
 
 static void lcd_pin_deinit_cb(void)
@@ -214,16 +214,16 @@ static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
 bool button1_init_cb(void)
 {
     /* SW */
-    DDRB &= ~(1 << PB2); // input 
-    // gpio_init(GPIO_PORT_B, GPIO_PIN_2, false, false);
+    // DDRB &= ~(1 << PB2); // input 
+    gpio_init(GPIO_PORT_B, GPIO_PIN_2, false, false);
 
     return true;
 }
 
 bool button1_get_state_cb(void)
 {
-    return PINB & (1 << PB2);
-    // return gpio_get(GPIO_PORT_B, GPIO_PIN_2);
+    // return PINB & (1 << PB2);
+    return gpio_get(GPIO_PORT_B, GPIO_PIN_2);
 }
 
 void button1_pressed_cb(void)
@@ -263,14 +263,14 @@ static struct button_obj button1_obj;
 
 static bool encoder1_get_a_cb(void)
 {
-    return (PIND & (1 << PD2));
-    // return gpio_get(GPIO_PORT_D, GPIO_PIN_2);
+    // return (PIND & (1 << PD2));
+    return gpio_get(GPIO_PORT_D, GPIO_PIN_2);
 };
 
 static bool encoder1_get_b_cb(void)
 {
-    return (PIND & (1 << PD3));
-    // return gpio_get(GPIO_PORT_D, GPIO_PIN_3);
+    // return (PIND & (1 << PD3));
+    return gpio_get(GPIO_PORT_D, GPIO_PIN_3);
 }
 
 static void encoder1_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
@@ -285,11 +285,11 @@ static void encoder1_rotation_cb(enum rotary_encoder_direction dir, int8_t step_
 
 static bool encoder1_init_cb(void)
 {
-    DDRD &= ~(1 << PD2); // input 
-    DDRD &= ~(1 << PD3); // input 
+//     DDRD &= ~(1 << PD2); // input 
+//     DDRD &= ~(1 << PD3); // input 
 
-    // gpio_init(GPIO_PORT_D, GPIO_PIN_2, false, false);
-    // gpio_init(GPIO_PORT_D, GPIO_PIN_3, false, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_2, false, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_3, false, false);
 
     return true;
 }
@@ -687,23 +687,23 @@ int main()
     // wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
 
     /* LED */
-    DDRD |= (1 << PD6);
-    PORTD &= ~(1 << PD6);
+    // DDRD |= (1 << PD6);
+    // PORTD &= ~(1 << PD6);
 
-    // gpio_init(GPIO_PORT_D, GPIO_PIN_6, true, false);
-    // gpio_set(GPIO_PORT_D, GPIO_PIN_6, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_6, true, false);
+    gpio_set(GPIO_PORT_D, GPIO_PIN_6, false);
 
     /* DCF */
-    DDRB |= (1 << PB1);
-    PORTB &= ~(1 << PB1); // SEL
+    // DDRB |= (1 << PB1);
+    // PORTB &= ~(1 << PB1); // SEL
 
-    DDRB &= ~(1 << PB0); // input 
+    // DDRB &= ~(1 << PB0); // input 
     MCUCR &= ~(1 << PUD);
 
-    // gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
-    // gpio_set(GPIO_PORT_B, GPIO_PIN_1, false);
+    gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
+    gpio_set(GPIO_PORT_B, GPIO_PIN_1, false);
 
-    // gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
+    gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
 
     system_timer_init();
 
