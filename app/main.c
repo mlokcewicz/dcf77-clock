@@ -109,47 +109,25 @@ static struct ds1307_time unix_time =
 
 #include <hd44780.h>
 
-static void lcd_set_pin_cb(uint8_t pin, bool state) 
+static void lcd_set_pin_cb(uint8_t pin, bool state)
 {
-    // struct gpio_tuple
-    // {
-    //     volatile uint8_t *port_reg;
-    //     uint8_t pin;
-    // };
+    struct gpio_tuple
+    {
+        enum gpio_port port;
+        enum gpio_pin pin;
+    };
 
-    // static const struct gpio_tuple lcd_pins[] = 
-    // {
-    //     [LCD_RS] = {&PORTC, PC3},
-    //     [LCD_E] = {&PORTD, PD4},
-    //     [LCD_D4] = {&PORTB, PB6},
-    //     [LCD_D5] = {&PORTB, PB7},
-    //     [LCD_D6] = {&PORTD, PD7},
-    //     [LCD_D7] = {&PORTD, PD5},
-    // };
+    static const struct gpio_tuple lcd_pins[] =
+    {
+        [LCD_RS] = {GPIO_PORT_C, GPIO_PIN_3},
+        [LCD_E] = {GPIO_PORT_D, GPIO_PIN_4},
+        [LCD_D4] = {GPIO_PORT_B, GPIO_PIN_6},
+        [LCD_D5] = {GPIO_PORT_B, GPIO_PIN_7},
+        [LCD_D6] = {GPIO_PORT_D, GPIO_PIN_7},
+        [LCD_D7] = {GPIO_PORT_D, GPIO_PIN_5},
+    };
 
-    // if (state)
-    //     *(lcd_pins[pin].port_reg) |= (1 << lcd_pins[pin].pin);
-    // else
-    //     *(lcd_pins[pin].port_reg) &= ~(1 << lcd_pins[pin].pin);
-
-
-        struct gpio_tuple
-        {
-            enum gpio_port port;
-            enum gpio_pin pin;
-        };
-    
-        static const struct gpio_tuple lcd_pins[] = 
-        {
-            [LCD_RS] = {GPIO_PORT_C, GPIO_PIN_3},
-            [LCD_E] = {GPIO_PORT_D, GPIO_PIN_4},
-            [LCD_D4] = {GPIO_PORT_B, GPIO_PIN_6},
-            [LCD_D5] = {GPIO_PORT_B, GPIO_PIN_7},
-            [LCD_D6] = {GPIO_PORT_D, GPIO_PIN_7},
-            [LCD_D7] = {GPIO_PORT_D, GPIO_PIN_5},
-        };
-
-        gpio_set(lcd_pins[pin].port, lcd_pins[pin].pin, state);
+    gpio_set(lcd_pins[pin].port, lcd_pins[pin].pin, state);
 }
 
 static void lcd_delay_cb(uint16_t us) 
@@ -160,10 +138,6 @@ static void lcd_delay_cb(uint16_t us)
 
 static void lcd_pin_init_cb(void)
 {
-    // DDRC |= 1 << PC3;
-    // DDRB |= (1 << PB6) | (1 << PB7);
-    // DDRD |= (1 << PD4) | (1 << PD5) | (1 << PD7);
-
     gpio_init(GPIO_PORT_C, GPIO_PIN_3, true, false);
     gpio_init(GPIO_PORT_B, GPIO_PIN_6, true, false);
     gpio_init(GPIO_PORT_B, GPIO_PIN_7, true, false);
@@ -213,16 +187,11 @@ static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
 
 bool button1_init_cb(void)
 {
-    /* SW */
-    // DDRB &= ~(1 << PB2); // input 
-    gpio_init(GPIO_PORT_B, GPIO_PIN_2, false, false);
-
-    return true;
+    return gpio_init(GPIO_PORT_B, GPIO_PIN_2, false, false);
 }
 
 bool button1_get_state_cb(void)
 {
-    // return PINB & (1 << PB2);
     return gpio_get(GPIO_PORT_B, GPIO_PIN_2);
 }
 
@@ -265,13 +234,11 @@ static struct button_obj button1_obj;
 
 static bool encoder1_get_a_cb(void)
 {
-    // return (PIND & (1 << PD2));
     return gpio_get(GPIO_PORT_D, GPIO_PIN_2);
 };
 
 static bool encoder1_get_b_cb(void)
 {
-    // return (PIND & (1 << PD3));
     return gpio_get(GPIO_PORT_D, GPIO_PIN_3);
 }
 
@@ -287,9 +254,6 @@ static void encoder1_rotation_cb(enum rotary_encoder_direction dir, int8_t step_
 
 static bool encoder1_init_cb(void)
 {
-//     DDRD &= ~(1 << PD2); // input 
-//     DDRD &= ~(1 << PD3); // input 
-
     gpio_init(GPIO_PORT_D, GPIO_PIN_2, false, false);
     gpio_init(GPIO_PORT_D, GPIO_PIN_3, false, false);
 
@@ -328,33 +292,7 @@ static bool new_sec = false;
 static void exti_sqw_cb(void)
 {
     if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
-    {
         new_sec = true;
-    }
-    // if (!(PINC & (1 << PC2)))
-    // if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
-    // {
-    //     char buf[16];
-    //     ds1307_get_time(&rtc_obj, &unix_time);
-    //     uint8_t i = 0;
-    //     buf[i++] = (unix_time.hours_tens + '0');
-    //     buf[i++] = (unix_time.hours_units + '0');
-    //     buf[i++] = (':');
-    //     buf[i++] = (unix_time.minutes_tens + '0');
-    //     buf[i++] = (unix_time.minutes_units + '0');
-    //     buf[i++] = (' ');
-    //     buf[i++] = (unix_time.date_tens + '0');
-    //     buf[i++] = (unix_time.date_units + '0');
-    //     buf[i++] = ('.');
-    //     buf[i++] = (unix_time.month_tens + '0');
-    //     buf[i++] = (unix_time.month_units + '0');
-    //     buf[i++] = (' ');
-    //     buf[i++] = (unix_time.seconds_tens + '0');
-    //     buf[i++] = (unix_time.seconds_units + '0');
-    //     buf[i++] = 0;
-    //     hd44780_set_pos(&lcd_obj, 1, 0);
-    //     hd44780_print(&lcd_obj, buf);
-    // }
 }
 
 static void exti_encoder1_cb(void)
@@ -492,11 +430,6 @@ static struct timer_cfg timer1_cfg =
 
 static struct timer_obj timer1_obj;
 
-// static uint16_t MS_TO_TICKS(uint16_t ms, uint16_t presc) 
-// {
-//     return ms * (F_CPU / 1000UL) / presc;
-// }
-
 static void dcf77_decode(uint16_t ticks, bool rising_edge);
 
 enum dcf77_bit_val
@@ -596,24 +529,11 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     last_edge_rising = rising_edge;
     last_ticks = ticks;
 
-    // ticks = tick_to_ms(ticks, 256);
-    // char buf[25] = {0};
-    // utoa(ticks, buf, 10);
-
-    // uint8_t pos = !rising_edge ? 8 : 0;
-
-    // hd44780_set_pos(&lcd_obj, 0, pos);
-    // hd44780_print(&lcd_obj,"       ");
-    // hd44780_set_pos(&lcd_obj, 0, pos);
-    // hd44780_print(&lcd_obj, buf);
-
     if (!frame_started)
     {
         if (get_bit_val(ticks) == DCF77_BIT_VAL_NONE)
         {
             frame_started = true;
-            // hd44780_set_pos(&lcd_obj, 0, 15);
-            // hd44780_print(&lcd_obj, "S");
             last_frame_started = true;
         }
 
@@ -628,8 +548,6 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
         if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {
-            // hd44780_set_pos(&lcd_obj, 0, 15);
-            // hd44780_print(&lcd_obj, "E");
             last_error = true;
             frame_started = 0;
             bit_cnt = 0;
@@ -647,29 +565,6 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         {
             struct dcf77_frame *frame_ptr = (struct dcf77_frame*)frame;
             
-            // uint8_t i = 0;
-            // buf[i++] = (frame_ptr->hours_tens + '0');
-            // buf[i++] = (frame_ptr->hours_units + '0');
-            // buf[i++] = (':');
-            // buf[i++] = (frame_ptr->minutes_tens + '0');
-            // buf[i++] = (frame_ptr->minutes_units + '0');
-            // buf[i++] = (' ');
-            // buf[i++] = (frame_ptr->month_day_tens + '0');
-            // buf[i++] = (frame_ptr->month_days_units + '0');
-            // buf[i++] = ('.');
-            // buf[i++] = (frame_ptr->months_tens + '0');
-            // buf[i++] = (frame_ptr->months_units + '0');
-            // buf[i++] = ('.');
-            // buf[i++] = (frame_ptr->years_tens + '0');
-            // buf[i++] = (frame_ptr->years_units + '0');
-            // buf[i++] = 0;
-            
-            // hd44780_set_pos(&lcd_obj, 0, 0);
-            // hd44780_print(&lcd_obj, buf);
-
-            // cli();
-            // while(1){};
-
             static struct ds1307_time unix_time_dcf;
 
             unix_time_dcf.clock_halt = 0;
@@ -712,19 +607,10 @@ int main()
     wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
 
     /* LED */
-    // DDRD |= (1 << PD6);
-    // PORTD &= ~(1 << PD6);
-
     gpio_init(GPIO_PORT_D, GPIO_PIN_6, true, false);
     gpio_set(GPIO_PORT_D, GPIO_PIN_6, false);
 
     /* DCF */
-    // DDRB |= (1 << PB1);
-    // PORTB &= ~(1 << PB1); // SEL
-
-    // DDRB &= ~(1 << PB0); // input 
-    // MCUCR &= ~(1 << PUD);
-
     gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
     gpio_set(GPIO_PORT_B, GPIO_PIN_1, false);
 
@@ -764,11 +650,6 @@ int main()
 
     while (1)
     {
-        // if (PINB & (1 << PB0))
-        //     PORTD &= ~(1 << PD6);
-        // else 
-        //     PORTD |= 1 << PD6;
-
         static bool dcf_prev_val = false;
 
         bool dcf_val = gpio_get(GPIO_PORT_B, GPIO_PIN_0);
