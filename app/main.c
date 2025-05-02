@@ -230,6 +230,8 @@ void button1_pressed_cb(void)
 {
     buzzer_beep(6000, 50);
 
+    hd44780_clear(&lcd_obj);
+
     memset(&unix_time, 0x00, sizeof(unix_time));
     ds1307_set_time(&rtc_obj, &unix_time);
 
@@ -321,32 +323,38 @@ static void exti_button1_cb(void)
     button_process(&button1_obj);
 }
 
+static bool new_sec = false;
+
 static void exti_sqw_cb(void)
 {
-    // if (!(PINC & (1 << PC2)))
     // if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
     // {
-    //     char buf[16];
-    //     ds1307_get_time(&rtc_obj, &unix_time);
-    //     uint8_t i = 0;
-    //     buf[i++] = (unix_time.hours_tens + '0');
-    //     buf[i++] = (unix_time.hours_units + '0');
-    //     buf[i++] = (':');
-    //     buf[i++] = (unix_time.minutes_tens + '0');
-    //     buf[i++] = (unix_time.minutes_units + '0');
-    //     buf[i++] = (' ');
-    //     buf[i++] = (unix_time.date_tens + '0');
-    //     buf[i++] = (unix_time.date_units + '0');
-    //     buf[i++] = ('.');
-    //     buf[i++] = (unix_time.month_tens + '0');
-    //     buf[i++] = (unix_time.month_units + '0');
-    //     buf[i++] = (' ');
-    //     buf[i++] = (unix_time.seconds_tens + '0');
-    //     buf[i++] = (unix_time.seconds_units + '0');
-    //     buf[i++] = 0;
-    //     hd44780_set_pos(&lcd_obj, 1, 0);
-    //     hd44780_print(&lcd_obj, buf);
+    //     new_sec = true;
     // }
+    // if (!(PINC & (1 << PC2)))
+    if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
+    {
+        char buf[16];
+        ds1307_get_time(&rtc_obj, &unix_time);
+        uint8_t i = 0;
+        buf[i++] = (unix_time.hours_tens + '0');
+        buf[i++] = (unix_time.hours_units + '0');
+        buf[i++] = (':');
+        buf[i++] = (unix_time.minutes_tens + '0');
+        buf[i++] = (unix_time.minutes_units + '0');
+        buf[i++] = (' ');
+        buf[i++] = (unix_time.date_tens + '0');
+        buf[i++] = (unix_time.date_units + '0');
+        buf[i++] = ('.');
+        buf[i++] = (unix_time.month_tens + '0');
+        buf[i++] = (unix_time.month_units + '0');
+        buf[i++] = (' ');
+        buf[i++] = (unix_time.seconds_tens + '0');
+        buf[i++] = (unix_time.seconds_units + '0');
+        buf[i++] = 0;
+        hd44780_set_pos(&lcd_obj, 1, 0);
+        hd44780_print(&lcd_obj, buf);
+    }
 }
 
 static void exti_encoder1_cb(void)
@@ -484,10 +492,10 @@ static struct timer_cfg timer1_cfg =
 
 static struct timer_obj timer1_obj;
 
-static uint16_t MS_TO_TICKS(uint16_t ms, uint16_t presc) 
-{
-    return ms * (F_CPU / 1000UL) / presc;
-}
+// static uint16_t MS_TO_TICKS(uint16_t ms, uint16_t presc) 
+// {
+//     return ms * (F_CPU / 1000UL) / presc;
+// }
 
 static void dcf77_decode(uint16_t ticks, bool rising_edge);
 
@@ -647,29 +655,31 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             hd44780_set_pos(&lcd_obj, 0, 0);
             hd44780_print(&lcd_obj, buf);
 
-            cli();
-            while(1){};
+            // cli();
+            // while(1){};
 
-            // static struct ds1307_time unix_time_dcf;
+            static struct ds1307_time unix_time_dcf;
 
-            // unix_time_dcf.clock_halt = 0;
-            // unix_time_dcf.hour_mode = 0;
-            // unix_time_dcf.hours_tens = frame_ptr->hours_tens;
-            // unix_time_dcf.hours_units = frame_ptr->hours_units;
-            // unix_time_dcf.minutes_tens = frame_ptr->minutes_tens;
-            // unix_time_dcf.minutes_units = frame_ptr->minutes_units;
-            // unix_time_dcf.date_tens = frame_ptr->month_day_tens;
-            // unix_time_dcf.date_units = frame_ptr->month_days_units;
-            // unix_time_dcf.month_tens = frame_ptr->months_tens;
-            // unix_time_dcf.month_units = frame_ptr->months_units;
-            // unix_time_dcf.year_tens = frame_ptr->years_tens;
-            // unix_time_dcf.year_units = frame_ptr->years_units;
-            // unix_time_dcf.seconds_tens = 0;
-            // unix_time_dcf.seconds_units = 0;
+            unix_time_dcf.clock_halt = 0;
+            unix_time_dcf.hour_mode = 0;
+            unix_time_dcf.hours_tens = frame_ptr->hours_tens;
+            unix_time_dcf.hours_units = frame_ptr->hours_units;
+            unix_time_dcf.minutes_tens = frame_ptr->minutes_tens;
+            unix_time_dcf.minutes_units = frame_ptr->minutes_units;
+            unix_time_dcf.date_tens = frame_ptr->month_day_tens;
+            unix_time_dcf.date_units = frame_ptr->month_days_units;
+            unix_time_dcf.month_tens = frame_ptr->months_tens;
+            unix_time_dcf.month_units = frame_ptr->months_units;
+            unix_time_dcf.year_tens = frame_ptr->years_tens;
+            unix_time_dcf.year_units = frame_ptr->years_units;
+            unix_time_dcf.seconds_tens = 0;
+            unix_time_dcf.seconds_units = 0;
 
-            // ds1307_set_time(&rtc_obj, &unix_time_dcf);
+            ds1307_set_time(&rtc_obj, &unix_time_dcf);
 
-            // synced = true;
+            synced = true;
+            frame_started = false;
+            bit_cnt = 0;
     
             return;
         }
@@ -753,6 +763,31 @@ int main()
             gpio_set(GPIO_PORT_D, GPIO_PIN_6, !dcf_val);
             dcf_prev_val = dcf_val;
         }
+
+        // if (new_sec)
+        // {
+        //     char buf[16];
+        //     ds1307_get_time(&rtc_obj, &unix_time);
+        //     uint8_t i = 0;
+        //     buf[i++] = (unix_time.hours_tens + '0');
+        //     buf[i++] = (unix_time.hours_units + '0');
+        //     buf[i++] = (':');
+        //     buf[i++] = (unix_time.minutes_tens + '0');
+        //     buf[i++] = (unix_time.minutes_units + '0');
+        //     buf[i++] = (' ');
+        //     buf[i++] = (unix_time.date_tens + '0');
+        //     buf[i++] = (unix_time.date_units + '0');
+        //     buf[i++] = ('.');
+        //     buf[i++] = (unix_time.month_tens + '0');
+        //     buf[i++] = (unix_time.month_units + '0');
+        //     buf[i++] = (' ');
+        //     buf[i++] = (unix_time.seconds_tens + '0');
+        //     buf[i++] = (unix_time.seconds_units + '0');
+        //     buf[i++] = 0;
+        //     hd44780_set_pos(&lcd_obj, 1, 0);
+        //     hd44780_print(&lcd_obj, buf);
+        //     new_sec = false;
+        // }
 
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
