@@ -28,6 +28,9 @@
 #define TIMER_USE_TIMER2 0
 #endif
 
+#define MS_TO_TICKS(ms, presc) (ms * (F_CPU / 1000UL) / presc)
+
+
 //------------------------------------------------------------------------------
 
 struct timer_ctx

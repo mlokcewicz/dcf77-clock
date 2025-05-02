@@ -324,29 +324,29 @@ static void exti_button1_cb(void)
 static void exti_sqw_cb(void)
 {
     // if (!(PINC & (1 << PC2)))
-    if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
-    {
-        char buf[16];
-        ds1307_get_time(&rtc_obj, &unix_time);
-        uint8_t i = 0;
-        buf[i++] = (unix_time.hours_tens + '0');
-        buf[i++] = (unix_time.hours_units + '0');
-        buf[i++] = (':');
-        buf[i++] = (unix_time.minutes_tens + '0');
-        buf[i++] = (unix_time.minutes_units + '0');
-        buf[i++] = (' ');
-        buf[i++] = (unix_time.date_tens + '0');
-        buf[i++] = (unix_time.date_units + '0');
-        buf[i++] = ('.');
-        buf[i++] = (unix_time.month_tens + '0');
-        buf[i++] = (unix_time.month_units + '0');
-        buf[i++] = (' ');
-        buf[i++] = (unix_time.seconds_tens + '0');
-        buf[i++] = (unix_time.seconds_units + '0');
-        buf[i++] = 0;
-        hd44780_set_pos(&lcd_obj, 1, 0);
-        hd44780_print(&lcd_obj, buf);
-    }
+    // if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
+    // {
+    //     char buf[16];
+    //     ds1307_get_time(&rtc_obj, &unix_time);
+    //     uint8_t i = 0;
+    //     buf[i++] = (unix_time.hours_tens + '0');
+    //     buf[i++] = (unix_time.hours_units + '0');
+    //     buf[i++] = (':');
+    //     buf[i++] = (unix_time.minutes_tens + '0');
+    //     buf[i++] = (unix_time.minutes_units + '0');
+    //     buf[i++] = (' ');
+    //     buf[i++] = (unix_time.date_tens + '0');
+    //     buf[i++] = (unix_time.date_units + '0');
+    //     buf[i++] = ('.');
+    //     buf[i++] = (unix_time.month_tens + '0');
+    //     buf[i++] = (unix_time.month_units + '0');
+    //     buf[i++] = (' ');
+    //     buf[i++] = (unix_time.seconds_tens + '0');
+    //     buf[i++] = (unix_time.seconds_units + '0');
+    //     buf[i++] = 0;
+    //     hd44780_set_pos(&lcd_obj, 1, 0);
+    //     hd44780_print(&lcd_obj, buf);
+    // }
 }
 
 static void exti_encoder1_cb(void)
@@ -363,24 +363,24 @@ static struct timer_cfg timer2_cfg =
 {  
     .id = TIMER_ID_2,
     .clock = TIMER_CLOCK_PRESC_8,
-    // .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
     .mode = TIMER_MODE_CTC,
     .com_a_cfg = TIMER_CM_CHANGE_PIN_STATE,
-    // .com_b_cfg = TIMER_CM_DISABLED,
+    .com_b_cfg = TIMER_CM_DISABLED,
 
-    // .counter_val = 0,
-    // .ovrfv_cb = NULL,
+    .counter_val = 0,
+    .ovrfv_cb = NULL,
 
-    // .out_comp_a_val = 0,
-    // .out_comp_b_val = 0,
-    // .out_comp_a_cb = NULL,
-    // .out_comp_b_cb = NULL,
+    .out_comp_a_val = 0,
+    .out_comp_b_val = 0,
+    .out_comp_a_cb = NULL,
+    .out_comp_b_cb = NULL,
     
-    // .input_capture_val = 0,
-    // .input_capture_pullup = false,
-    // .input_capture_noise_canceler = false,
-    // .input_capture_rising_edge = false,
-    // .in_capt_cb = NULL,
+    .input_capture_val = 0,
+    .input_capture_pullup = false,
+    .input_capture_noise_canceler = false,
+    .input_capture_rising_edge = false,
+    .in_capt_cb = NULL,
 };
 
 static struct timer_obj timer2_obj;
@@ -462,32 +462,32 @@ static struct timer_cfg timer1_cfg =
 {  
     .id = TIMER_ID_1,
     .clock = TIMER_CLOCK_PRESC_256,
-    // .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
     .mode = TIMER_MODE_16_BIT_NORMAL,
-    // .com_a_cfg = TIMER_CM_DISABLED,
-    // .com_b_cfg = TIMER_CM_DISABLED,
+    .com_a_cfg = TIMER_CM_DISABLED,
+    .com_b_cfg = TIMER_CM_DISABLED,
 
-    // .counter_val = 0,
-    // .ovrfv_cb = NULL,
+    .counter_val = 0,
+    .ovrfv_cb = NULL,
 
-    // .out_comp_a_val = 0,
-    // .out_comp_b_val = 0,
-    // .out_comp_a_cb = NULL,
-    // .out_comp_b_cb = NULL,
+    .out_comp_a_val = 0,
+    .out_comp_b_val = 0,
+    .out_comp_a_cb = NULL,
+    .out_comp_b_cb = NULL,
     
-    // .input_capture_val = 0,
-    // .input_capture_pullup = false,
-    // .input_capture_noise_canceler = false,
-    // .input_capture_rising_edge = false,
+    .input_capture_val = 0,
+    .input_capture_pullup = false,
+    .input_capture_noise_canceler = false,
+    .input_capture_rising_edge = false,
     .in_capt_cb = timer1_capt_cb,
 };
 
 static struct timer_obj timer1_obj;
 
-// static inline uint16_t MS_TO_TICKS(uint16_t ms, uint16_t presc) 
-// {
-//     return ms * (F_CPU / 1000UL) / presc;
-// }
+static uint16_t MS_TO_TICKS(uint16_t ms, uint16_t presc) 
+{
+    return ms * (F_CPU / 1000UL) / presc;
+}
 
 static void dcf77_decode(uint16_t ticks, bool rising_edge);
 
