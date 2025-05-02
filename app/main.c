@@ -39,7 +39,7 @@ ISR(BADISR_vect)
 /* Common */
 // #include <core.h>
 // #include <wdg.h>
-// #include <gpio.h>
+#include <gpio.h>
 
 #include <stdbool.h>
 
@@ -111,45 +111,45 @@ static struct ds1307_time unix_time =
 
 static void lcd_set_pin_cb(uint8_t pin, bool state) 
 {
-    struct gpio_tuple
-    {
-        volatile uint8_t *port_reg;
-        uint8_t pin;
-    };
+    // struct gpio_tuple
+    // {
+    //     volatile uint8_t *port_reg;
+    //     uint8_t pin;
+    // };
 
-    static const struct gpio_tuple lcd_pins[] = 
-    {
-        [LCD_RS] = {&PORTC, PC3},
-        [LCD_E] = {&PORTD, PD4},
-        [LCD_D4] = {&PORTB, PB6},
-        [LCD_D5] = {&PORTB, PB7},
-        [LCD_D6] = {&PORTD, PD7},
-        [LCD_D7] = {&PORTD, PD5},
-    };
+    // static const struct gpio_tuple lcd_pins[] = 
+    // {
+    //     [LCD_RS] = {&PORTC, PC3},
+    //     [LCD_E] = {&PORTD, PD4},
+    //     [LCD_D4] = {&PORTB, PB6},
+    //     [LCD_D5] = {&PORTB, PB7},
+    //     [LCD_D6] = {&PORTD, PD7},
+    //     [LCD_D7] = {&PORTD, PD5},
+    // };
 
-    if (state)
-        *(lcd_pins[pin].port_reg) |= (1 << lcd_pins[pin].pin);
-    else
-        *(lcd_pins[pin].port_reg) &= ~(1 << lcd_pins[pin].pin);
+    // if (state)
+    //     *(lcd_pins[pin].port_reg) |= (1 << lcd_pins[pin].pin);
+    // else
+    //     *(lcd_pins[pin].port_reg) &= ~(1 << lcd_pins[pin].pin);
 
 
-        // struct gpio_tuple
-        // {
-        //     enum gpio_port port;
-        //     enum gpio_pin pin;
-        // };
+        struct gpio_tuple
+        {
+            enum gpio_port port;
+            enum gpio_pin pin;
+        };
     
-        // static const struct gpio_tuple lcd_pins[] = 
-        // {
-        //     [LCD_RS] = {GPIO_PORT_C, GPIO_PIN_3},
-        //     [LCD_E] = {GPIO_PORT_D, GPIO_PIN_4},
-        //     [LCD_D4] = {GPIO_PORT_B, GPIO_PIN_6},
-        //     [LCD_D5] = {GPIO_PORT_B, GPIO_PIN_7},
-        //     [LCD_D6] = {GPIO_PORT_D, GPIO_PIN_7},
-        //     [LCD_D7] = {GPIO_PORT_D, GPIO_PIN_5},
-        // };
+        static const struct gpio_tuple lcd_pins[] = 
+        {
+            [LCD_RS] = {GPIO_PORT_C, GPIO_PIN_3},
+            [LCD_E] = {GPIO_PORT_D, GPIO_PIN_4},
+            [LCD_D4] = {GPIO_PORT_B, GPIO_PIN_6},
+            [LCD_D5] = {GPIO_PORT_B, GPIO_PIN_7},
+            [LCD_D6] = {GPIO_PORT_D, GPIO_PIN_7},
+            [LCD_D7] = {GPIO_PORT_D, GPIO_PIN_5},
+        };
 
-        // gpio_set(lcd_pins[pin].port, lcd_pins[pin].pin, state);
+        gpio_set(lcd_pins[pin].port, lcd_pins[pin].pin, state);
 }
 
 static void lcd_delay_cb(uint16_t us) 
@@ -721,8 +721,8 @@ int main()
 
     buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
 
-    // exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
-    // exti_enable(EXTI_ID_PCINT10, true); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
+    exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
+    exti_enable(EXTI_ID_PCINT10, true); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
     exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
     exti_enable(EXTI_ID_PCINT2, true);
     exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
