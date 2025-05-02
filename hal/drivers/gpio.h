@@ -55,6 +55,13 @@ bool gpio_init(enum gpio_port port, enum gpio_pin pin, bool dir, bool pull_up);
 /// @return true if set properly, otherwise false
 bool gpio_set(enum gpio_port port, enum gpio_pin pin, bool value);
 
+/// @brief Set given output value and blocks interrupts during port read
+/// @param port selected GPIO port @ref enum gpio_port
+/// @param pin selected GPIO pin @ref enum gpio_pin
+/// @param value true for high stare, false for low state
+/// @return true if set properly, otherwise false
+bool gpio_set_atomic(enum gpio_port port, enum gpio_pin pin, bool value);
+
 /// @brief Toggles output value to opposite than actual
 /// @param port selected GPIO port @ref enum gpio_port
 /// @param pin selected GPIO pin @ref enum gpio_pin

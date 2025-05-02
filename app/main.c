@@ -739,12 +739,20 @@ int main()
 
     while (1)
     {
-        if (PINB & (1 << PB0))
-            PORTD &= ~(1 << PD6);
-        else 
-            PORTD |= 1 << PD6;
+        // if (PINB & (1 << PB0))
+        //     PORTD &= ~(1 << PD6);
+        // else 
+        //     PORTD |= 1 << PD6;
 
-        // gpio_set(GPIO_PORT_D, GPIO_PIN_6, !gpio_get(GPIO_PORT_B, GPIO_PIN_0));
+        static bool dcf_prev_val = false;
+
+        bool dcf_val = gpio_get(GPIO_PORT_B, GPIO_PIN_0);
+
+        if (dcf_val != dcf_prev_val)
+        {
+            gpio_set(GPIO_PORT_D, GPIO_PIN_6, !dcf_val);
+            dcf_prev_val = dcf_val;
+        }
 
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);

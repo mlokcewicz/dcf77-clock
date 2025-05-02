@@ -72,11 +72,30 @@ bool gpio_set(enum gpio_port port, enum gpio_pin pin, bool value)
 	if (port > GPIO_PORT_D || pin > GPIO_PIN_7)
 		return false;
 
+	/* Set value */
+	if (value)
+		*(ctx.port_obj_map[port].port_reg) |= (value << ctx.port_obj_map[port].pin_map[pin]);
+	else
+		*(ctx.port_obj_map[port].port_reg) &= ~(1 << ctx.port_obj_map[port].pin_map[pin]);
+
+	/* Wait 1 clock cycle for synchronizer */
+	asm volatile("NOP"::); 
+
+	return true;
+}
+
+bool gpio_set_atomic(enum gpio_port port, enum gpio_pin pin, bool value)
+{
+	if (port > GPIO_PORT_D || pin > GPIO_PIN_7)
+		return false;
+
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 	{
 		/* Set value */
-		*(ctx.port_obj_map[port].port_reg) &= ~(1 << ctx.port_obj_map[port].pin_map[pin]);
-		*(ctx.port_obj_map[port].port_reg) |= (value << ctx.port_obj_map[port].pin_map[pin]);
+		if (value)
+			*(ctx.port_obj_map[port].port_reg) |= (value << ctx.port_obj_map[port].pin_map[pin]);
+		else 
+			*(ctx.port_obj_map[port].port_reg) &= ~(1 << ctx.port_obj_map[port].pin_map[pin]);
 	}
 
 	/* Wait 1 clock cycle for synchronizer */
