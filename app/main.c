@@ -484,6 +484,11 @@ static struct timer_cfg timer1_cfg =
 
 static struct timer_obj timer1_obj;
 
+// static inline uint16_t MS_TO_TICKS(uint16_t ms, uint16_t presc) 
+// {
+//     return ms * (F_CPU / 1000UL) / presc;
+// }
+
 static void dcf77_decode(uint16_t ticks, bool rising_edge);
 
 enum dcf77_bit_val
@@ -642,6 +647,9 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             hd44780_set_pos(&lcd_obj, 0, 0);
             hd44780_print(&lcd_obj, buf);
 
+            cli();
+            while(1){};
+
             static struct ds1307_time unix_time_dcf;
 
             unix_time_dcf.clock_halt = 0;
@@ -676,7 +684,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
 int main()
 {
-    wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
+    // wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
 
     /* LED */
     // DDRD |= (1 << PD6);
@@ -714,7 +722,7 @@ int main()
     buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
 
     exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
-    exti_enable(EXTI_ID_PCINT10, true);
+    exti_enable(EXTI_ID_PCINT10, true); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
     exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
     exti_enable(EXTI_ID_PCINT2, true);
     exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
@@ -774,8 +782,8 @@ int main()
         // hd44780_set_pos(&lcd_obj, 1, 0);
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
         
-        wdg_feed();
-        core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
+        // wdg_feed();
+        // core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
     }
 }
 
