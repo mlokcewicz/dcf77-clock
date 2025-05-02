@@ -127,34 +127,44 @@ bool exti_deinit(enum exti_id id)
 
 //------------------------------------------------------------------------------
 
+#if EXTI_USE_INT0_ISR
 ISR(INT0_vect)
 {
     if (ctx.int0_cb)
         ctx.int0_cb();
 }
+#endif
 
+#if EXTI_USE_INT1_ISR
 ISR(INT1_vect)
 {
     if (ctx.int1_cb)
         ctx.int1_cb();
 }
+#endif
 
+#if EXTI_USE_PCINT0_ISR
 ISR(PCINT0_vect) // PCINT[7:0]
 {
     if (ctx.pcint0_cb)
         ctx.pcint0_cb();
 }
+#endif
 
+#if EXTI_USE_PCINT1_ISR
 ISR(PCINT1_vect) // PCINT[14:8]
 {
     if (ctx.pcint1_cb)
         ctx.pcint1_cb();
 }
+#endif
 
+#if EXTI_USE_PCINT2_ISR
 ISR(PCINT2_vect) // PCINT[23:16]
 {
     if (ctx.pcint2_cb)
         ctx.pcint2_cb();
 }
+#endif
 
 //------------------------------------------------------------------------------

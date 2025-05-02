@@ -16,6 +16,20 @@
 
 //------------------------------------------------------------------------------
 
+#ifndef TIMER_USE_TIMER0
+#define TIMER_USE_TIMER0 0
+#endif
+
+#ifndef TIMER_USE_TIMER1
+#define TIMER_USE_TIMER1 0
+#endif
+
+#ifndef TIMER_USE_TIMER2
+#define TIMER_USE_TIMER2 0
+#endif
+
+//------------------------------------------------------------------------------
+
 struct timer_ctx
 {
     struct timer_obj *timer_obj[TIMER_ID_2 + 1];
@@ -30,6 +44,7 @@ static struct timer_ctx ctx;
 
 static void timer0_init(struct timer_obj *obj, struct timer_cfg *cfg)
 {
+#if TIMER_USE_TIMER0
     /* Set mode */
     TCCR0A &= ~(1 << WGM01) & ~(1 << WGM00);
     TCCR0B &= ~(1 << WGM02);
@@ -73,10 +88,14 @@ static void timer0_init(struct timer_obj *obj, struct timer_cfg *cfg)
     /* Set compare values */
     OCR0A = cfg->out_comp_a_val;
     OCR0B = cfg->out_comp_b_val;
+#endif
+    (void)obj;
+    (void)cfg;
 }
 
 static void timer1_init(struct timer_obj *obj, struct timer_cfg *cfg)
 {
+#if TIMER_USE_TIMER1
     /* Set mode */
     enum timer_mode mode = (cfg->mode >> 4) - 1;
 
@@ -140,10 +159,14 @@ static void timer1_init(struct timer_obj *obj, struct timer_cfg *cfg)
 
     /* Set input capture val */
     ICR1 = cfg->input_capture_val;
+#endif
+    (void)obj;
+    (void)cfg;
 }
 
 static void timer2_init(struct timer_obj *obj, struct timer_cfg *cfg)
 {
+#if TIMER_USE_TIMER2
     /* Configure external clock */
     ASSR &= ~(1 << EXCLK) & ~(1 << AS2);
     ASSR |= (cfg->async_clock << AS2);
@@ -191,44 +214,62 @@ static void timer2_init(struct timer_obj *obj, struct timer_cfg *cfg)
     /* Set compare values */
     OCR2A = cfg->out_comp_a_val;
     OCR2B = cfg->out_comp_b_val;
+#endif
+    (void)obj;
+    (void)cfg;
 }
 
 static void timer0_start(struct timer_obj *obj, bool start)
 {
+#if TIMER_USE_TIMER0
     TCCR0B &= ~(1 << CS02) & ~(1 << CS01) & ~(1 << CS00);
 
     if (start)
         TCCR0B |= obj->clock;
+#endif
+    (void)obj;
+    (void)start;
 }
 
 static void timer1_start(struct timer_obj *obj, bool start)
 {
+#if TIMER_USE_TIMER1
     TCCR1B &= ~(1 << CS12) & ~(1 << CS11) & ~(1 << CS10);
 
     if (start)
         TCCR1B |= obj->clock;
+#endif
+    (void)obj;
+    (void)start;
 }
 
 static void timer2_start(struct timer_obj *obj, bool start)
 {
+#if TIMER_USE_TIMER2
     TCCR2B &= ~(1 << CS22) & ~(1 << CS21) & ~(1 << CS20);
 
     if (start)
         TCCR2B |= obj->clock;
+#endif
+    (void)obj;
+    (void)start;
 }
 
 static void timer0_deinit(void)
 {
+#if TIMER_USE_TIMER0
     TCCR0A = 0;
     TCCR0B = 0;
     TIMSK0 = 0;
     TCNT0 = 0;
     OCR0A = 0;
     OCR0B = 0;
+#endif
 }
 
 static void timer1_deinit(void)
 {
+#if TIMER_USE_TIMER1
     TCCR1A = 0;
     TCCR1B = 0;
     TIMSK1 = 0;
@@ -236,16 +277,19 @@ static void timer1_deinit(void)
     OCR1A = 0;
     OCR1B = 0;
     ICR1 = 0;
+#endif
 }
 
 static void timer2_deinit(void)
 {
+#if TIMER_USE_TIMER2
     TCCR2A = 0;
     TCCR2B = 0;
     TIMSK2 = 0;
     TCNT2 = 0;
     OCR2A = 0;
     OCR2B = 0;
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -253,6 +297,11 @@ static void timer2_deinit(void)
 bool timer_init(struct timer_obj *obj, struct timer_cfg *cfg)
 {
     if (!obj || !cfg || cfg->id > TIMER_ID_2)
+        return false;
+
+    if ((cfg->id == TIMER_ID_0 && !TIMER_USE_TIMER0) ||
+        (cfg->id == TIMER_ID_1 && !TIMER_USE_TIMER1) ||
+        (cfg->id == TIMER_ID_2 && !TIMER_USE_TIMER2))
         return false;
 
     /* Configure source clock */
@@ -314,6 +363,7 @@ void timer_deinit(struct timer_obj *obj)
 
 //------------------------------------------------------------------------------
 
+#if TIMER_USE_TIMER0_OVF_ISR
 ISR(TIMER0_OVF_vect)
 {
     if (ctx.timer_obj[TIMER_ID_0]->ovrfv_cb)
@@ -321,7 +371,9 @@ ISR(TIMER0_OVF_vect)
         ctx.timer_obj[TIMER_ID_0]->ovrfv_cb();
     }
 }
+#endif
 
+#if TIMER_USE_TIMER0_COMPA_ISR
 ISR(TIMER0_COMPA_vect)
 {
     if (ctx.timer_obj[TIMER_ID_0]->out_comp_a_cb)
@@ -329,7 +381,9 @@ ISR(TIMER0_COMPA_vect)
         ctx.timer_obj[TIMER_ID_0]->out_comp_a_cb();
     }
 }
+#endif
 
+#if TIMER_USE_TIMER0_COMPB_ISR
 ISR(TIMER0_COMPB_vect)
 {
     if (ctx.timer_obj[TIMER_ID_0]->comp_b_cb)
@@ -337,9 +391,11 @@ ISR(TIMER0_COMPB_vect)
         ctx.timer_obj[TIMER_ID_0]->comp_b_cb();
     }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if TIMER_USE_TIMER1_OVF_ISR
 ISR(TIMER1_OVF_vect)
 {
     if (ctx.timer_obj[TIMER_ID_1]->ovrfv_cb)
@@ -347,7 +403,9 @@ ISR(TIMER1_OVF_vect)
         ctx.timer_obj[TIMER_ID_1]->ovrfv_cb();
     }
 }
+#endif
 
+#if TIMER_USE_TIMER1_COMPA_ISR
 ISR(TIMER1_COMPA_vect)
 {
     if (ctx.timer_obj[TIMER_ID_1]->out_comp_a_cb)
@@ -355,7 +413,10 @@ ISR(TIMER1_COMPA_vect)
         ctx.timer_obj[TIMER_ID_1]->out_comp_a_cb();
     }
 }
+#endif
 
+
+#if TIMER_USE_TIMER1_COMPB_ISR
 ISR(TIMER1_COMPB_vect)
 {
     if (ctx.timer_obj[TIMER_ID_1]->comp_b_cb)
@@ -363,7 +424,10 @@ ISR(TIMER1_COMPB_vect)
         ctx.timer_obj[TIMER_ID_1]->comp_b_cb();
     }
 }
+#endif
 
+
+#if TIMER_USE_TIMER1_CAPT_ISR
 ISR(TIMER1_CAPT_vect)
 {
     if (ctx.timer_obj[TIMER_ID_1]->in_capt_cb)
@@ -371,9 +435,11 @@ ISR(TIMER1_CAPT_vect)
         ctx.timer_obj[TIMER_ID_1]->in_capt_cb(ICR1);
     }
 }
+#endif
 
 //------------------------------------------------------------------------------
 
+#if TIMER_USE_TIMER2_OVF_ISR
 ISR(TIMER2_OVF_vect)
 {
     if (ctx.timer_obj[TIMER_ID_2]->ovrfv_cb)
@@ -381,7 +447,9 @@ ISR(TIMER2_OVF_vect)
         ctx.timer_obj[TIMER_ID_2]->ovrfv_cb();
     }
 }
+#endif
 
+#if TIMER_USE_TIMER2_COMPA_ISR
 ISR(TIMER2_COMPA_vect)
 {
     if (ctx.timer_obj[TIMER_ID_2]->out_comp_a_cb)
@@ -389,7 +457,9 @@ ISR(TIMER2_COMPA_vect)
         ctx.timer_obj[TIMER_ID_2]->out_comp_a_cb();
     }
 }
+#endif
 
+#if TIMER_USE_TIMER2_COMPB_ISR
 ISR(TIMER2_COMPB_vect)
 {
     if (ctx.timer_obj[TIMER_ID_2]->comp_b_cb)
@@ -397,6 +467,7 @@ ISR(TIMER2_COMPB_vect)
         ctx.timer_obj[TIMER_ID_2]->comp_b_cb();
     }
 }
+#endif
 
 //------------------------------------------------------------------------------
 

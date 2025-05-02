@@ -11,6 +11,17 @@
 
 //------------------------------------------------------------------------------
 
+#ifndef ROTARY_ENCODER_USE_IRQ
+#define ROTARY_ENCODER_USE_IRQ 0
+#endif
+
+#ifndef ROTARY_ENCODER_USE_POLLING
+#define ROTARY_ENCODER_USE_POLLING 0
+#endif
+
+//------------------------------------------------------------------------------
+
+#if ROTARY_ENCODER_USE_POLLING
 static enum rotary_encoder_direction process_poll(struct rotary_encoder_obj *obj)
 {
     /* Check if debounce counter timed out */
@@ -59,7 +70,9 @@ static enum rotary_encoder_direction process_poll(struct rotary_encoder_obj *obj
 
     return ROTARY_ENCODER_DIR_NONE;
 }
+#endif
 
+#if ROTARY_ENCODER_USE_IRQ
 static enum rotary_encoder_direction process_irq(struct rotary_encoder_obj *obj)
 {
     /* Detect edge and determine second pin state (other than interrupt trigger) */
@@ -80,6 +93,7 @@ static enum rotary_encoder_direction process_irq(struct rotary_encoder_obj *obj)
 
     return dir;
 }
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -120,9 +134,19 @@ enum rotary_encoder_direction rotary_encoder_process(struct rotary_encoder_obj *
         return ROTARY_ENCODER_DIR_NONE;
 
     if (obj->irq_cfg == ROTARY_ENCODER_IRQ_CONFIG_NONE)
+    {
+    #if ROTARY_ENCODER_USE_POLLING
         return process_poll(obj);
+    #endif
+    }
     else
+    {
+    #if ROTARY_ENCODER_USE_IRQ
         return process_irq(obj);
+    #endif
+    }
+
+    return ROTARY_ENCODER_DIR_NONE;
 }
 
 bool rotary_encoder_deinit(struct rotary_encoder_obj *obj)

@@ -9,6 +9,17 @@
 
 //------------------------------------------------------------------------------
 
+#ifndef BUTTON_USE_IRQ
+#define BUTTON_USE_IRQ 0
+#endif
+
+#ifndef BUTTON_USE_POLLING
+#define BUTTON_USE_POLLING 0
+#endif
+
+//------------------------------------------------------------------------------
+
+#if BUTTON_USE_POLLING
 static bool process_poll(struct button_obj *obj)
 {
     bool state = obj->get_state();
@@ -47,7 +58,9 @@ static bool process_poll(struct button_obj *obj)
 
     return state;
 }
+#endif
 
+#if BUTTON_USE_IRQ
 static bool process_irq(struct button_obj *obj)
 {
     bool state = obj->get_state();
@@ -58,6 +71,7 @@ static bool process_irq(struct button_obj *obj)
 
     return state;
 }
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -96,9 +110,19 @@ bool button_process(struct button_obj *obj)
         return false;
 
     if (obj->irq_cfg)
+    {
+    #if BUTTON_USE_IRQ
         return process_irq(obj);
+    #endif
+    }
     else
+    {
+    #if BUTTON_USE_POLLING
         return process_poll(obj);
+    #endif
+    }
+
+    return false;
 }
 
 bool button_deinit(struct button_obj *obj)

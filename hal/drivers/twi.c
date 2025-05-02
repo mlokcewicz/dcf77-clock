@@ -14,6 +14,12 @@
 
 //------------------------------------------------------------------------------
 
+#ifndef TWI_USE_TWI_ISR
+#define TWI_USE_TWI_ISR 0
+#endif 
+
+//------------------------------------------------------------------------------
+
 enum twi_state
 {
     TWI_STATE_IDLE,
@@ -76,6 +82,7 @@ static void generate_stop(void)
     while (TWCR & (1 << TWSTO));
 }
 
+#if TWI_USE_TWI_ISR
 static bool handle_error(void)
 {
     TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN); 
@@ -85,12 +92,13 @@ static bool handle_error(void)
 
     return false;
 }
+#endif
     
 //------------------------------------------------------------------------------
 
 bool twi_init(struct twi_cfg *cfg)
 {
-    if (!cfg || cfg->frequency == 0 || F_CPU < (16UL * cfg->frequency))
+    if (!cfg || cfg->frequency == 0 || F_CPU < (16UL * cfg->frequency) || (cfg->irq_mode && (TWI_USE_TWI_ISR == 0)))
         return false;
 
     ctx.irq_mode = cfg->irq_mode;
@@ -261,6 +269,7 @@ void twi_deinit(void)
 
 //------------------------------------------------------------------------------
 
+#if TWI_USE_TWI_ISR
 ISR(TWI_vect)
 {
     switch (ctx.state)
@@ -371,5 +380,6 @@ ISR(TWI_vect)
         break;
     }
 }
+#endif
 
 //------------------------------------------------------------------------------
