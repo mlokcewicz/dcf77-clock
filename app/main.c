@@ -652,26 +652,26 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             cli();
             while(1){};
 
-            static struct ds1307_time unix_time_dcf;
+            // static struct ds1307_time unix_time_dcf;
 
-            unix_time_dcf.clock_halt = 0;
-            unix_time_dcf.hour_mode = 0;
-            unix_time_dcf.hours_tens = frame_ptr->hours_tens;
-            unix_time_dcf.hours_units = frame_ptr->hours_units;
-            unix_time_dcf.minutes_tens = frame_ptr->minutes_tens;
-            unix_time_dcf.minutes_units = frame_ptr->minutes_units;
-            unix_time_dcf.date_tens = frame_ptr->month_day_tens;
-            unix_time_dcf.date_units = frame_ptr->month_days_units;
-            unix_time_dcf.month_tens = frame_ptr->months_tens;
-            unix_time_dcf.month_units = frame_ptr->months_units;
-            unix_time_dcf.year_tens = frame_ptr->years_tens;
-            unix_time_dcf.year_units = frame_ptr->years_units;
-            unix_time_dcf.seconds_tens = 0;
-            unix_time_dcf.seconds_units = 0;
+            // unix_time_dcf.clock_halt = 0;
+            // unix_time_dcf.hour_mode = 0;
+            // unix_time_dcf.hours_tens = frame_ptr->hours_tens;
+            // unix_time_dcf.hours_units = frame_ptr->hours_units;
+            // unix_time_dcf.minutes_tens = frame_ptr->minutes_tens;
+            // unix_time_dcf.minutes_units = frame_ptr->minutes_units;
+            // unix_time_dcf.date_tens = frame_ptr->month_day_tens;
+            // unix_time_dcf.date_units = frame_ptr->month_days_units;
+            // unix_time_dcf.month_tens = frame_ptr->months_tens;
+            // unix_time_dcf.month_units = frame_ptr->months_units;
+            // unix_time_dcf.year_tens = frame_ptr->years_tens;
+            // unix_time_dcf.year_units = frame_ptr->years_units;
+            // unix_time_dcf.seconds_tens = 0;
+            // unix_time_dcf.seconds_units = 0;
 
-            ds1307_set_time(&rtc_obj, &unix_time_dcf);
+            // ds1307_set_time(&rtc_obj, &unix_time_dcf);
 
-            synced = true;
+            // synced = true;
     
             return;
         }
