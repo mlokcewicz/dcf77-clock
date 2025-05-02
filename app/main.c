@@ -714,19 +714,19 @@ int main()
     timer_init(&timer1_obj, &timer1_cfg);
     timer_start(&timer1_obj, true);
 
-    // button_init(&button1_obj, &button1_cfg);
-    // rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
+    button_init(&button1_obj, &button1_cfg);
+    rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
-    // buzzer_init(&buzzer1_obj, &buzzer1_cfg);
+    buzzer_init(&buzzer1_obj, &buzzer1_cfg);
 
-    // buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
+    buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
 
     // exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
     // exti_enable(EXTI_ID_PCINT10, true); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
-    // exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
-    // exti_enable(EXTI_ID_PCINT2, true);
-    // exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
-    // exti_enable(EXTI_ID_INT0, true);
+    exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
+    exti_enable(EXTI_ID_PCINT2, true);
+    exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
+    exti_enable(EXTI_ID_INT0, true);
 
     ds1307_init(&rtc_obj, &rtc_cfg);
 
@@ -734,8 +734,8 @@ int main()
     
     sei();
 
-    // if (!ds1307_is_running(&rtc_obj))
-    //     ds1307_set_time(&rtc_obj, &unix_time);
+    if (!ds1307_is_running(&rtc_obj))
+        ds1307_set_time(&rtc_obj, &unix_time);
 
     while (1)
     {
