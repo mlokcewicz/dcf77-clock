@@ -37,6 +37,8 @@ ISR(BADISR_vect)
 //------------------------------------------------------------------------------
 
 /* Common */
+#include <hal.h>
+
 #include <core.h>
 #include <wdg.h>
 #include <gpio.h>
@@ -321,7 +323,8 @@ static void exti_button1_cb(void)
 
 static void exti_sqw_cb(void)
 {
-    if (!(PINC & (1 << PC2)))
+    // if (!(PINC & (1 << PC2)))
+    if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
     {
         char buf[16];
         ds1307_get_time(&rtc_obj, &unix_time);
@@ -619,42 +622,44 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         {
             struct dcf77_frame *frame_ptr = (struct dcf77_frame*)frame;
             
-            // uint8_t i = 0;
-            // buf[i++] = (frame_ptr->hours_tens + '0');
-            // buf[i++] = (frame_ptr->hours_units + '0');
-            // buf[i++] = (':');
-            // buf[i++] = (frame_ptr->minutes_tens + '0');
-            // buf[i++] = (frame_ptr->minutes_units + '0');
-            // buf[i++] = (' ');
-            // buf[i++] = (frame_ptr->month_day_tens + '0');
-            // buf[i++] = (frame_ptr->month_days_units + '0');
-            // buf[i++] = ('.');
-            // buf[i++] = (frame_ptr->months_tens + '0');
-            // buf[i++] = (frame_ptr->months_units + '0');
-            // buf[i++] = ('.');
-            // buf[i++] = (frame_ptr->years_tens + '0');
-            // buf[i++] = (frame_ptr->years_units + '0');
-            // buf[i++] = 0;
+            uint8_t i = 0;
+            buf[i++] = (frame_ptr->hours_tens + '0');
+            buf[i++] = (frame_ptr->hours_units + '0');
+            buf[i++] = (':');
+            buf[i++] = (frame_ptr->minutes_tens + '0');
+            buf[i++] = (frame_ptr->minutes_units + '0');
+            buf[i++] = (' ');
+            buf[i++] = (frame_ptr->month_day_tens + '0');
+            buf[i++] = (frame_ptr->month_days_units + '0');
+            buf[i++] = ('.');
+            buf[i++] = (frame_ptr->months_tens + '0');
+            buf[i++] = (frame_ptr->months_units + '0');
+            buf[i++] = ('.');
+            buf[i++] = (frame_ptr->years_tens + '0');
+            buf[i++] = (frame_ptr->years_units + '0');
+            buf[i++] = 0;
             
-            // hd44780_set_pos(&lcd_obj, 1, 0);
-            // hd44780_print(&lcd_obj, buf);
+            hd44780_set_pos(&lcd_obj, 0, 0);
+            hd44780_print(&lcd_obj, buf);
 
-            unix_time.clock_halt = 0;
-            unix_time.hour_mode = 0;
-            unix_time.hours_tens = frame_ptr->hours_tens;
-            unix_time.hours_units = frame_ptr->hours_units;
-            unix_time.minutes_tens = frame_ptr->minutes_tens;
-            unix_time.minutes_units = frame_ptr->minutes_units;
-            unix_time.date_tens = frame_ptr->month_day_tens;
-            unix_time.date_units = frame_ptr->month_days_units;
-            unix_time.month_tens = frame_ptr->months_tens;
-            unix_time.month_units = frame_ptr->months_units;
-            unix_time.year_tens = frame_ptr->years_tens;
-            unix_time.year_units = frame_ptr->years_units;
-            unix_time.seconds_tens = 0;
-            unix_time.seconds_units = 0;
+            static struct ds1307_time unix_time_dcf;
 
-            ds1307_set_time(&rtc_obj, &unix_time);
+            unix_time_dcf.clock_halt = 0;
+            unix_time_dcf.hour_mode = 0;
+            unix_time_dcf.hours_tens = frame_ptr->hours_tens;
+            unix_time_dcf.hours_units = frame_ptr->hours_units;
+            unix_time_dcf.minutes_tens = frame_ptr->minutes_tens;
+            unix_time_dcf.minutes_units = frame_ptr->minutes_units;
+            unix_time_dcf.date_tens = frame_ptr->month_day_tens;
+            unix_time_dcf.date_units = frame_ptr->month_days_units;
+            unix_time_dcf.month_tens = frame_ptr->months_tens;
+            unix_time_dcf.month_units = frame_ptr->months_units;
+            unix_time_dcf.year_tens = frame_ptr->years_tens;
+            unix_time_dcf.year_units = frame_ptr->years_units;
+            unix_time_dcf.seconds_tens = 0;
+            unix_time_dcf.seconds_units = 0;
+
+            ds1307_set_time(&rtc_obj, &unix_time_dcf);
 
             synced = true;
     
