@@ -37,8 +37,6 @@ ISR(BADISR_vect)
 //------------------------------------------------------------------------------
 
 /* Common */
-#include <hal.h>
-
 // #include <core.h>
 // #include <wdg.h>
 // #include <gpio.h>
@@ -581,7 +579,7 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
     static uint8_t bit_cnt = 0;
 
     // ticks = tick_to_ms(ticks, 256);
-    char buf[16] = {0};
+    char buf[25] = {0};
     utoa(ticks, buf, 10);
 
     uint8_t pos = !rising_edge ? 8 : 0;
@@ -707,7 +705,7 @@ int main()
 
     // gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
 
-    system_timer_init();
+    // system_timer_init();
 
     hd44780_init(&lcd_obj, &lcd_cfg);
     hd44780_print(&lcd_obj, "TEST");
@@ -716,19 +714,19 @@ int main()
     timer_init(&timer1_obj, &timer1_cfg);
     timer_start(&timer1_obj, true);
 
-    button_init(&button1_obj, &button1_cfg);
-    rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
+    // button_init(&button1_obj, &button1_cfg);
+    // rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
-    buzzer_init(&buzzer1_obj, &buzzer1_cfg);
+    // buzzer_init(&buzzer1_obj, &buzzer1_cfg);
 
-    buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
+    // buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
 
-    exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
-    exti_enable(EXTI_ID_PCINT10, true); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
-    exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
-    exti_enable(EXTI_ID_PCINT2, true);
-    exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
-    exti_enable(EXTI_ID_INT0, true);
+    // exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
+    // exti_enable(EXTI_ID_PCINT10, true); // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
+    // exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
+    // exti_enable(EXTI_ID_PCINT2, true);
+    // exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
+    // exti_enable(EXTI_ID_INT0, true);
 
     // ds1307_init(&rtc_obj, &rtc_cfg);
 
