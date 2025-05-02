@@ -698,7 +698,7 @@ int main()
     // PORTB &= ~(1 << PB1); // SEL
 
     // DDRB &= ~(1 << PB0); // input 
-    MCUCR &= ~(1 << PUD);
+    // MCUCR &= ~(1 << PUD);
 
     gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
     gpio_set(GPIO_PORT_B, GPIO_PIN_1, false);
