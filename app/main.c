@@ -327,34 +327,34 @@ static bool new_sec = false;
 
 static void exti_sqw_cb(void)
 {
-    // if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
-    // {
-    //     new_sec = true;
-    // }
-    // if (!(PINC & (1 << PC2)))
     if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
     {
-        char buf[16];
-        ds1307_get_time(&rtc_obj, &unix_time);
-        uint8_t i = 0;
-        buf[i++] = (unix_time.hours_tens + '0');
-        buf[i++] = (unix_time.hours_units + '0');
-        buf[i++] = (':');
-        buf[i++] = (unix_time.minutes_tens + '0');
-        buf[i++] = (unix_time.minutes_units + '0');
-        buf[i++] = (' ');
-        buf[i++] = (unix_time.date_tens + '0');
-        buf[i++] = (unix_time.date_units + '0');
-        buf[i++] = ('.');
-        buf[i++] = (unix_time.month_tens + '0');
-        buf[i++] = (unix_time.month_units + '0');
-        buf[i++] = (' ');
-        buf[i++] = (unix_time.seconds_tens + '0');
-        buf[i++] = (unix_time.seconds_units + '0');
-        buf[i++] = 0;
-        hd44780_set_pos(&lcd_obj, 1, 0);
-        hd44780_print(&lcd_obj, buf);
+        new_sec = true;
     }
+    // if (!(PINC & (1 << PC2)))
+    // if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
+    // {
+    //     char buf[16];
+    //     ds1307_get_time(&rtc_obj, &unix_time);
+    //     uint8_t i = 0;
+    //     buf[i++] = (unix_time.hours_tens + '0');
+    //     buf[i++] = (unix_time.hours_units + '0');
+    //     buf[i++] = (':');
+    //     buf[i++] = (unix_time.minutes_tens + '0');
+    //     buf[i++] = (unix_time.minutes_units + '0');
+    //     buf[i++] = (' ');
+    //     buf[i++] = (unix_time.date_tens + '0');
+    //     buf[i++] = (unix_time.date_units + '0');
+    //     buf[i++] = ('.');
+    //     buf[i++] = (unix_time.month_tens + '0');
+    //     buf[i++] = (unix_time.month_units + '0');
+    //     buf[i++] = (' ');
+    //     buf[i++] = (unix_time.seconds_tens + '0');
+    //     buf[i++] = (unix_time.seconds_units + '0');
+    //     buf[i++] = 0;
+    //     hd44780_set_pos(&lcd_obj, 1, 0);
+    //     hd44780_print(&lcd_obj, buf);
+    // }
 }
 
 static void exti_encoder1_cb(void)
@@ -580,30 +580,41 @@ static enum dcf77_bit_val get_bit_val(uint16_t ticks)
     return DCF77_BIT_VAL_ERROR;
 }
 
+static bool last_edge_rising = false;
+static uint16_t last_ticks = 0;
+static bool last_error = false;
+static bool last_frame_started = false;
+static bool last_synced = false;
+static struct dcf77_frame *last_frame = NULL;
+
 static void dcf77_decode(uint16_t ticks, bool rising_edge)
 {
     static bool frame_started = false;
     static uint8_t frame[8] = {0};  
     static uint8_t bit_cnt = 0;
 
+    last_edge_rising = rising_edge;
+    last_ticks = ticks;
+
     // ticks = tick_to_ms(ticks, 256);
-    char buf[25] = {0};
-    utoa(ticks, buf, 10);
+    // char buf[25] = {0};
+    // utoa(ticks, buf, 10);
 
-    uint8_t pos = !rising_edge ? 8 : 0;
+    // uint8_t pos = !rising_edge ? 8 : 0;
 
-    hd44780_set_pos(&lcd_obj, 0, pos);
-    hd44780_print(&lcd_obj,"       ");
-    hd44780_set_pos(&lcd_obj, 0, pos);
-    hd44780_print(&lcd_obj, buf);
+    // hd44780_set_pos(&lcd_obj, 0, pos);
+    // hd44780_print(&lcd_obj,"       ");
+    // hd44780_set_pos(&lcd_obj, 0, pos);
+    // hd44780_print(&lcd_obj, buf);
 
     if (!frame_started)
     {
         if (get_bit_val(ticks) == DCF77_BIT_VAL_NONE)
         {
             frame_started = true;
-            hd44780_set_pos(&lcd_obj, 0, 15);
-            hd44780_print(&lcd_obj, "S");
+            // hd44780_set_pos(&lcd_obj, 0, 15);
+            // hd44780_print(&lcd_obj, "S");
+            last_frame_started = true;
         }
 
         return;
@@ -617,8 +628,9 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
 
         if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
         {
-            hd44780_set_pos(&lcd_obj, 0, 15);
-            hd44780_print(&lcd_obj, "E");
+            // hd44780_set_pos(&lcd_obj, 0, 15);
+            // hd44780_print(&lcd_obj, "E");
+            last_error = true;
             frame_started = 0;
             bit_cnt = 0;
             return;
@@ -635,25 +647,25 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
         {
             struct dcf77_frame *frame_ptr = (struct dcf77_frame*)frame;
             
-            uint8_t i = 0;
-            buf[i++] = (frame_ptr->hours_tens + '0');
-            buf[i++] = (frame_ptr->hours_units + '0');
-            buf[i++] = (':');
-            buf[i++] = (frame_ptr->minutes_tens + '0');
-            buf[i++] = (frame_ptr->minutes_units + '0');
-            buf[i++] = (' ');
-            buf[i++] = (frame_ptr->month_day_tens + '0');
-            buf[i++] = (frame_ptr->month_days_units + '0');
-            buf[i++] = ('.');
-            buf[i++] = (frame_ptr->months_tens + '0');
-            buf[i++] = (frame_ptr->months_units + '0');
-            buf[i++] = ('.');
-            buf[i++] = (frame_ptr->years_tens + '0');
-            buf[i++] = (frame_ptr->years_units + '0');
-            buf[i++] = 0;
+            // uint8_t i = 0;
+            // buf[i++] = (frame_ptr->hours_tens + '0');
+            // buf[i++] = (frame_ptr->hours_units + '0');
+            // buf[i++] = (':');
+            // buf[i++] = (frame_ptr->minutes_tens + '0');
+            // buf[i++] = (frame_ptr->minutes_units + '0');
+            // buf[i++] = (' ');
+            // buf[i++] = (frame_ptr->month_day_tens + '0');
+            // buf[i++] = (frame_ptr->month_days_units + '0');
+            // buf[i++] = ('.');
+            // buf[i++] = (frame_ptr->months_tens + '0');
+            // buf[i++] = (frame_ptr->months_units + '0');
+            // buf[i++] = ('.');
+            // buf[i++] = (frame_ptr->years_tens + '0');
+            // buf[i++] = (frame_ptr->years_units + '0');
+            // buf[i++] = 0;
             
-            hd44780_set_pos(&lcd_obj, 0, 0);
-            hd44780_print(&lcd_obj, buf);
+            // hd44780_set_pos(&lcd_obj, 0, 0);
+            // hd44780_print(&lcd_obj, buf);
 
             // cli();
             // while(1){};
@@ -680,6 +692,9 @@ static void dcf77_decode(uint16_t ticks, bool rising_edge)
             synced = true;
             frame_started = false;
             bit_cnt = 0;
+
+            last_synced = true;
+            last_frame = frame_ptr;
     
             return;
         }
@@ -764,30 +779,87 @@ int main()
             dcf_prev_val = dcf_val;
         }
 
-        // if (new_sec)
-        // {
-        //     char buf[16];
-        //     ds1307_get_time(&rtc_obj, &unix_time);
-        //     uint8_t i = 0;
-        //     buf[i++] = (unix_time.hours_tens + '0');
-        //     buf[i++] = (unix_time.hours_units + '0');
-        //     buf[i++] = (':');
-        //     buf[i++] = (unix_time.minutes_tens + '0');
-        //     buf[i++] = (unix_time.minutes_units + '0');
-        //     buf[i++] = (' ');
-        //     buf[i++] = (unix_time.date_tens + '0');
-        //     buf[i++] = (unix_time.date_units + '0');
-        //     buf[i++] = ('.');
-        //     buf[i++] = (unix_time.month_tens + '0');
-        //     buf[i++] = (unix_time.month_units + '0');
-        //     buf[i++] = (' ');
-        //     buf[i++] = (unix_time.seconds_tens + '0');
-        //     buf[i++] = (unix_time.seconds_units + '0');
-        //     buf[i++] = 0;
-        //     hd44780_set_pos(&lcd_obj, 1, 0);
-        //     hd44780_print(&lcd_obj, buf);
-        //     new_sec = false;
-        // }
+        if (new_sec)
+        {
+            char buf[16];
+            ds1307_get_time(&rtc_obj, &unix_time);
+            uint8_t i = 0;
+            buf[i++] = (unix_time.hours_tens + '0');
+            buf[i++] = (unix_time.hours_units + '0');
+            buf[i++] = (':');
+            buf[i++] = (unix_time.minutes_tens + '0');
+            buf[i++] = (unix_time.minutes_units + '0');
+            buf[i++] = (' ');
+            buf[i++] = (unix_time.date_tens + '0');
+            buf[i++] = (unix_time.date_units + '0');
+            buf[i++] = ('.');
+            buf[i++] = (unix_time.month_tens + '0');
+            buf[i++] = (unix_time.month_units + '0');
+            buf[i++] = (' ');
+            buf[i++] = (unix_time.seconds_tens + '0');
+            buf[i++] = (unix_time.seconds_units + '0');
+            buf[i++] = 0;
+            hd44780_set_pos(&lcd_obj, 1, 0);
+            hd44780_print(&lcd_obj, buf);
+            new_sec = false;
+        }
+
+        static bool prev_edge_rising = false;
+
+        if (prev_edge_rising != last_edge_rising)
+        {
+
+            char buf[16] = {0};
+            utoa(last_ticks, buf, 10);
+
+            uint8_t pos = !last_edge_rising ? 8 : 0;
+
+            hd44780_set_pos(&lcd_obj, 0, pos);
+            hd44780_print(&lcd_obj, "       ");
+            hd44780_set_pos(&lcd_obj, 0, pos);
+            hd44780_print(&lcd_obj, buf);
+
+            if (last_frame_started)
+            {
+                hd44780_set_pos(&lcd_obj, 0, 15);
+                hd44780_print(&lcd_obj, "S");
+                last_frame_started = false;
+            }
+
+            if (last_error)
+            {
+                hd44780_set_pos(&lcd_obj, 0, 15);
+                hd44780_print(&lcd_obj, "E");
+                last_error = false;
+            }
+
+            if (last_synced)
+            {
+                uint8_t i = 0;
+                buf[i++] = (last_frame->hours_tens + '0');
+                buf[i++] = (last_frame->hours_units + '0');
+                buf[i++] = (':');
+                buf[i++] = (last_frame->minutes_tens + '0');
+                buf[i++] = (last_frame->minutes_units + '0');
+                buf[i++] = (' ');
+                buf[i++] = (last_frame->month_day_tens + '0');
+                buf[i++] = (last_frame->month_days_units + '0');
+                buf[i++] = ('.');
+                buf[i++] = (last_frame->months_tens + '0');
+                buf[i++] = (last_frame->months_units + '0');
+                buf[i++] = ('.');
+                buf[i++] = (last_frame->years_tens + '0');
+                buf[i++] = (last_frame->years_units + '0');
+                buf[i++] = 0;
+
+                hd44780_set_pos(&lcd_obj, 0, 0);
+                hd44780_print(&lcd_obj, buf);
+
+                last_synced = false;
+            }
+
+            prev_edge_rising = last_edge_rising;
+        }
 
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
