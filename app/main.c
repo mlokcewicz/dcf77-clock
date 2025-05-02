@@ -705,7 +705,7 @@ int main()
 
     // gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
 
-    // system_timer_init();
+    system_timer_init();
 
     hd44780_init(&lcd_obj, &lcd_cfg);
     hd44780_print(&lcd_obj, "TEST");
@@ -728,7 +728,7 @@ int main()
     // exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);
     // exti_enable(EXTI_ID_INT0, true);
 
-    // ds1307_init(&rtc_obj, &rtc_cfg);
+    ds1307_init(&rtc_obj, &rtc_cfg);
 
     // set_system_time(1744458473);
     
