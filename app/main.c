@@ -43,7 +43,7 @@ ISR(BADISR_vect)
 
 #include <stdbool.h>
 
-static bool synced = false;
+#include <dcf77_decoder.h>
 
 /* RTC */
 
@@ -84,7 +84,7 @@ static struct ds1307_cfg rtc_cfg =
     .rs = DS1307_RS_1HZ,
 };
 
-static struct ds1307_obj rtc_obj;
+struct ds1307_obj rtc_obj;
 
 static struct ds1307_time unix_time = 
 {
@@ -402,6 +402,10 @@ struct buzzer_note alarm_beep[] =
 
 #include <stdlib.h>
 
+#include <dcf77_decoder.h>
+
+#define PRESC 256
+
 static void timer1_capt_cb(uint16_t icr);
 
 static struct timer_cfg timer1_cfg = 
@@ -430,58 +434,23 @@ static struct timer_cfg timer1_cfg =
 
 static struct timer_obj timer1_obj;
 
-static void dcf77_decode(uint16_t ticks, bool rising_edge);
-
-enum dcf77_bit_val
-{
-    DCF77_BIT_VAL_0,
-    DCF77_BIT_VAL_1,
-    DCF77_BIT_VAL_NONE,
-    DCF77_BIT_VAL_ERROR,
-};
-
-struct dcf77_frame
-{
-    uint8_t frame_start_always_zero : 1;
-    uint16_t weather_info : 14;
-    uint8_t auxiliary_antenna : 1;
-    uint8_t time_change_announcement : 1;
-    uint8_t winter_time : 2;
-    uint8_t leap_second : 1;
-    uint8_t time_start_always_zero : 1;
-    uint8_t minutes_units : 4;
-    uint8_t minutes_tens : 3;
-    uint8_t minutes_parity : 1;
-    uint8_t hours_units : 4;
-    uint8_t hours_tens : 2;
-    uint8_t hours_parity : 1;
-    uint8_t month_days_units : 4;
-    uint8_t month_day_tens : 2;
-    uint8_t weekday : 3;
-    uint8_t months_units : 4;
-    uint8_t months_tens : 1;
-    uint8_t years_units : 4;
-    uint8_t years_tens: 4;
-    uint8_t date_parity: 1;
-} __attribute__((__packed__));
-
-#define PRESC 256
-
 static void timer1_capt_cb(uint16_t icr)
 {
     if (synced)
         return;
 
+    /* Now trigger on RISING edge is on BIT edge*/
+
     static bool rising_edge = false; // This has to be the same as initialization
 
-    if (rising_edge) // Triggered on rising edge, break was measuered, change to falling
+    if (rising_edge) // Triggered on rising edge, bit was measuered, change to falling
         TCCR1B &= ~(1 << ICES1);
-    else // Triggered on falling edge, bit was measured, change to rising
+    else // Triggered on falling edge, break was measured, change to rising
         TCCR1B |= (1 << ICES1); 
     
     rising_edge ^= 1;
 
-    /* Ignore short pulses (triggered on falling edge) REVERSED */
+    /* Ignore short pulses (triggered on rising edge) REVERSED */
     if (!rising_edge && (icr < MS_TO_TICKS(35, PRESC)))
         return;
 
@@ -495,112 +464,6 @@ static void timer1_capt_cb(uint16_t icr)
 
     dcf77_decode(icr, !rising_edge); // restore real trigger source edge
 };
-
-static bool is_in_range(uint16_t ms, uint16_t min, uint16_t max)
-{
-    return (ms >= min) && (ms < max);
-}
-
-static enum dcf77_bit_val get_bit_val(uint16_t ticks)
-{
-    if (is_in_range(ticks, MS_TO_TICKS(40, PRESC), MS_TO_TICKS(130, PRESC)))
-        return DCF77_BIT_VAL_0;
-    if (is_in_range(ticks, MS_TO_TICKS(140, PRESC), MS_TO_TICKS(250, PRESC)))
-        return DCF77_BIT_VAL_1;
-    if (is_in_range(ticks, MS_TO_TICKS(1500, PRESC), MS_TO_TICKS(2200, PRESC)))
-        return DCF77_BIT_VAL_NONE;
-
-    return DCF77_BIT_VAL_ERROR;
-}
-
-static bool last_edge_rising = false;
-static uint16_t last_ticks = 0;
-static bool last_error = false;
-static bool last_frame_started = false;
-static bool last_synced = false;
-static struct dcf77_frame *last_frame = NULL;
-
-static void dcf77_decode(uint16_t ticks, bool rising_edge)
-{
-    static bool frame_started = false;
-    static uint8_t frame[8] = {0};  
-    static uint8_t bit_cnt = 0;
-
-    last_edge_rising = rising_edge;
-    last_ticks = ticks;
-
-    if (!frame_started)
-    {
-        if (get_bit_val(ticks) == DCF77_BIT_VAL_NONE)
-        {
-            frame_started = true;
-            last_frame_started = true;
-        }
-
-        return;
-    }
-
-    enum dcf77_bit_val val = 0;
-
-    if (rising_edge) // Bit transmission // REVERSED NOW
-    {
-        val = get_bit_val(ticks);
-
-        if (val == DCF77_BIT_VAL_ERROR || val == DCF77_BIT_VAL_NONE)
-        {
-            last_error = true;
-            frame_started = 0;
-            bit_cnt = 0;
-            return;
-        }
-
-        uint8_t byte_idx = bit_cnt / 8;
-        uint8_t bit_idx = bit_cnt % 8;
-    
-        frame[byte_idx] |= (val << bit_idx);
-
-        bit_cnt++;
-
-        if (bit_cnt >= 59)
-        {
-            struct dcf77_frame *frame_ptr = (struct dcf77_frame*)frame;
-            
-            static struct ds1307_time unix_time_dcf;
-
-            unix_time_dcf.clock_halt = 0;
-            unix_time_dcf.hour_mode = 0;
-            unix_time_dcf.hours_tens = frame_ptr->hours_tens;
-            unix_time_dcf.hours_units = frame_ptr->hours_units;
-            unix_time_dcf.minutes_tens = frame_ptr->minutes_tens;
-            unix_time_dcf.minutes_units = frame_ptr->minutes_units;
-            unix_time_dcf.date_tens = frame_ptr->month_day_tens;
-            unix_time_dcf.date_units = frame_ptr->month_days_units;
-            unix_time_dcf.month_tens = frame_ptr->months_tens;
-            unix_time_dcf.month_units = frame_ptr->months_units;
-            unix_time_dcf.year_tens = frame_ptr->years_tens;
-            unix_time_dcf.year_units = frame_ptr->years_units;
-            unix_time_dcf.seconds_tens = 0;
-            unix_time_dcf.seconds_units = 0;
-
-            ds1307_set_time(&rtc_obj, &unix_time_dcf);
-
-            synced = true;
-            frame_started = false;
-            bit_cnt = 0;
-
-            last_synced = true;
-            last_frame = frame_ptr;
-    
-            return;
-        }
-    }
-    else // should be break
-    {
-        // TODO: Add breaks validation
-        // TODO: take into account ignoring short pulses - it affects break time
-    }
-
-}
 
 int main()
 {
