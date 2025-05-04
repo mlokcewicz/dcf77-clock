@@ -45,6 +45,8 @@ ISR(BADISR_vect)
 
 #include <dcf77_decoder.h>
 
+bool synced = false;
+
 /* RTC */
 
 #include <twi.h>
@@ -404,8 +406,6 @@ struct buzzer_note alarm_beep[] =
 
 #include <dcf77_decoder.h>
 
-#define PRESC 256
-
 static void timer1_capt_cb(uint16_t icr);
 
 static struct timer_cfg timer1_cfg = 
@@ -434,8 +434,8 @@ static struct timer_cfg timer1_cfg =
 
 static struct timer_obj timer1_obj;
 
+#define PRESC 256
 #define TICKS_TO_MS(ticks, presc) ((uint32_t)ticks * 1000UL / (F_CPU / presc)) // out
-
 
 static void timer1_capt_cb(uint16_t icr)
 {
@@ -455,7 +455,10 @@ static void timer1_capt_cb(uint16_t icr)
 
     /* Ignore short pulses (triggered on rising edge) REVERSED */
     // if (!rising_edge && (icr < MS_TO_TICKS(35, PRESC)))
-    if (!rising_edge && (TICKS_TO_MS(icr, PRESC) < 35))
+    // if (!rising_edge && (TICKS_TO_MS(icr, PRESC) < 35))
+    //     return;
+
+    if (dcf77_ignore_short_pulse(TICKS_TO_MS(icr, PRESC), !rising_edge))
         return;
 
     // /* Ignore short pauses (triggered on rising edge) REVERSED */
@@ -552,61 +555,82 @@ int main()
             new_sec = false;
         }
 
-        static bool prev_edge_rising = false;
+        static bool prev_triggered_on_bit = false;
+        struct dcf77_status *radio_status = dcf77_get_status();
 
-        if (prev_edge_rising != last_edge_rising)
+        if (prev_triggered_on_bit != radio_status->last_triggered_on_bit)
         {
 
             char buf[16] = {0};
-            utoa(last_ticks, buf, 10);
+            utoa(radio_status->last_time_ms, buf, 10);
 
-            uint8_t pos = !last_edge_rising ? 8 : 0;
+            uint8_t pos = radio_status->last_triggered_on_bit ? 0 : 8;
 
             hd44780_set_pos(&lcd_obj, 0, pos);
             hd44780_print(&lcd_obj, "       ");
             hd44780_set_pos(&lcd_obj, 0, pos);
             hd44780_print(&lcd_obj, buf);
 
-            if (last_frame_started)
+            if (radio_status->last_frame_started)
             {
                 hd44780_set_pos(&lcd_obj, 0, 15);
                 hd44780_print(&lcd_obj, "S");
-                last_frame_started = false;
+                radio_status->last_frame_started = false;
             }
 
-            if (last_error)
+            if (radio_status->last_error)
             {
                 hd44780_set_pos(&lcd_obj, 0, 15);
                 hd44780_print(&lcd_obj, "E");
-                last_error = false;
+                radio_status->last_error = false;
             }
 
-            if (last_synced)
+            if (radio_status->last_synced)
             {
+                static struct ds1307_time unix_time_dcf;
+
+                unix_time_dcf.clock_halt = 0;
+                unix_time_dcf.hour_mode = 0;
+                unix_time_dcf.hours_tens = radio_status->last_frame->hours_tens;
+                unix_time_dcf.hours_units = radio_status->last_frame->hours_units;
+                unix_time_dcf.minutes_tens = radio_status->last_frame->minutes_tens;
+                unix_time_dcf.minutes_units = radio_status->last_frame->minutes_units;
+                unix_time_dcf.date_tens = radio_status->last_frame->month_day_tens;
+                unix_time_dcf.date_units = radio_status->last_frame->month_days_units;
+                unix_time_dcf.month_tens = radio_status->last_frame->months_tens;
+                unix_time_dcf.month_units = radio_status->last_frame->months_units;
+                unix_time_dcf.year_tens = radio_status->last_frame->years_tens;
+                unix_time_dcf.year_units = radio_status->last_frame->years_units;
+                unix_time_dcf.seconds_tens = 0;
+                unix_time_dcf.seconds_units = 0;
+
+                ds1307_set_time(&rtc_obj, &unix_time_dcf);
+
                 uint8_t i = 0;
-                buf[i++] = (last_frame->hours_tens + '0');
-                buf[i++] = (last_frame->hours_units + '0');
+                buf[i++] = (radio_status->last_frame->hours_tens + '0');
+                buf[i++] = (radio_status->last_frame->hours_units + '0');
                 buf[i++] = (':');
-                buf[i++] = (last_frame->minutes_tens + '0');
-                buf[i++] = (last_frame->minutes_units + '0');
+                buf[i++] = (radio_status->last_frame->minutes_tens + '0');
+                buf[i++] = (radio_status->last_frame->minutes_units + '0');
                 buf[i++] = (' ');
-                buf[i++] = (last_frame->month_day_tens + '0');
-                buf[i++] = (last_frame->month_days_units + '0');
+                buf[i++] = (radio_status->last_frame->month_day_tens + '0');
+                buf[i++] = (radio_status->last_frame->month_days_units + '0');
                 buf[i++] = ('.');
-                buf[i++] = (last_frame->months_tens + '0');
-                buf[i++] = (last_frame->months_units + '0');
+                buf[i++] = (radio_status->last_frame->months_tens + '0');
+                buf[i++] = (radio_status->last_frame->months_units + '0');
                 buf[i++] = ('.');
-                buf[i++] = (last_frame->years_tens + '0');
-                buf[i++] = (last_frame->years_units + '0');
+                buf[i++] = (radio_status->last_frame->years_tens + '0');
+                buf[i++] = (radio_status->last_frame->years_units + '0');
                 buf[i++] = 0;
 
                 hd44780_set_pos(&lcd_obj, 0, 0);
                 hd44780_print(&lcd_obj, buf);
 
-                last_synced = false;
+                radio_status->last_synced = false;
+                synced = true;
             }
 
-            prev_edge_rising = last_edge_rising;
+            prev_triggered_on_bit = radio_status->last_triggered_on_bit;
         }
 
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
