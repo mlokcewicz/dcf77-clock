@@ -434,6 +434,9 @@ static struct timer_cfg timer1_cfg =
 
 static struct timer_obj timer1_obj;
 
+#define TICKS_TO_MS(ticks, presc) ((uint32_t)ticks * 1000UL / (F_CPU / presc)) // out
+
+
 static void timer1_capt_cb(uint16_t icr)
 {
     if (synced)
@@ -451,7 +454,8 @@ static void timer1_capt_cb(uint16_t icr)
     rising_edge ^= 1;
 
     /* Ignore short pulses (triggered on rising edge) REVERSED */
-    if (!rising_edge && (icr < MS_TO_TICKS(35, PRESC)))
+    // if (!rising_edge && (icr < MS_TO_TICKS(35, PRESC)))
+    if (!rising_edge && (TICKS_TO_MS(icr, PRESC) < 35))
         return;
 
     // /* Ignore short pauses (triggered on rising edge) REVERSED */
@@ -462,7 +466,7 @@ static void timer1_capt_cb(uint16_t icr)
 
     TCNT1 = 0;
 
-    dcf77_decode(icr, !rising_edge); // restore real trigger source edge
+    dcf77_decode(TICKS_TO_MS(icr, PRESC), !rising_edge); // restore real trigger source edge
 };
 
 int main()

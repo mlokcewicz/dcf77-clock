@@ -24,9 +24,13 @@ enum dcf77_bit_val
     DCF77_BIT_VAL_ERROR,
 };
 
-#define PRESC 256 // out
+// #define PRESC 256 // out
 
-#define MS_TO_TICKS(ms, presc) (ms * (F_CPU / 1000UL) / presc) // out
+// #define MS_TO_TICKS(ms, presc) (ms * (F_CPU / 1000UL) / presc) // out
+
+// #define TICKS_TO_MS(ticks, presc) ((uint32_t)ticks * presc * 1000UL / F_CPU) // out
+
+
 
 
 static bool is_in_range(uint16_t ms, uint16_t min, uint16_t max)
@@ -34,13 +38,20 @@ static bool is_in_range(uint16_t ms, uint16_t min, uint16_t max)
     return (ms >= min) && (ms < max);
 }
 
-static enum dcf77_bit_val get_bit_val(uint16_t ticks)
+static enum dcf77_bit_val get_bit_val(uint16_t ms)
 {
-    if (is_in_range(ticks, MS_TO_TICKS(40, PRESC), MS_TO_TICKS(130, PRESC)))
+    // if (is_in_range(ticks, MS_TO_TICKS(40, PRESC), MS_TO_TICKS(130, PRESC)))
+    //     return DCF77_BIT_VAL_0;
+    // if (is_in_range(ticks, MS_TO_TICKS(140, PRESC), MS_TO_TICKS(250, PRESC)))
+    //     return DCF77_BIT_VAL_1;
+    // if (is_in_range(ticks, MS_TO_TICKS(1500, PRESC), MS_TO_TICKS(2200, PRESC)))
+    //     return DCF77_BIT_VAL_NONE;
+
+    if (is_in_range(ms, 40, 130))
         return DCF77_BIT_VAL_0;
-    if (is_in_range(ticks, MS_TO_TICKS(140, PRESC), MS_TO_TICKS(250, PRESC)))
+    if (is_in_range(ms, 140, 250))
         return DCF77_BIT_VAL_1;
-    if (is_in_range(ticks, MS_TO_TICKS(1500, PRESC), MS_TO_TICKS(2200, PRESC)))
+    if (is_in_range(ms, 1500, 2200))
         return DCF77_BIT_VAL_NONE;
 
     return DCF77_BIT_VAL_ERROR;
@@ -61,6 +72,8 @@ void dcf77_decode(uint16_t ticks, bool rising_edge)
     static uint8_t frame[8] = {0};  
     static uint8_t bit_cnt = 0;
 
+
+    // ticks = TICKS_TO_MS(ticks, PRESC);
     last_edge_rising = rising_edge;
     last_ticks = ticks;
 
