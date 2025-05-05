@@ -396,6 +396,31 @@ static void exti_encoder1_cb(void)
     rotary_encoder_process(&encoder1_obj);
 }
 
+/* MAS6181B */
+
+#include <mas6181b.h>
+
+void mas6181b1_io_init_cb(void)
+{
+    gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
+    gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
+}
+
+void mas6181b1_pwr_down_cb(bool pwr_down)
+{
+    gpio_set(GPIO_PORT_B, GPIO_PIN_1, pwr_down);
+}
+
+//------------------------------------------------------------------------------
+
+static struct mas6181b_cfg mas6181b1_cfg = 
+{
+    .io_init = mas6181b1_io_init_cb,
+    .pwr_down = mas6181b1_pwr_down_cb,
+};
+
+static struct mas6181b_obj mas6181b1_obj;
+
 /* DCF77 */
 
 #include <stdlib.h>
@@ -407,7 +432,7 @@ static void timer1_capt_cb(uint16_t icr);
 static struct timer_cfg timer1_cfg = 
 {  
     .id = TIMER_ID_1,
-    .clock = TIMER_CLOCK_PRESC_256,
+    .clock = TIMER_CLOCK_PRESC_256, 
     .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
     .mode = TIMER_MODE_16_BIT_NORMAL,
     .com_a_cfg = TIMER_CM_DISABLED,
@@ -470,10 +495,7 @@ int main()
     gpio_set(GPIO_PORT_D, GPIO_PIN_6, false);
 
     /* DCF */
-    gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
-    gpio_set(GPIO_PORT_B, GPIO_PIN_1, false);
-
-    gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
+    mas6181b_init(&mas6181b1_obj, &mas6181b1_cfg);
 
     system_timer_init();
 
