@@ -25,7 +25,7 @@ struct gpio_context
 	const struct port_object port_obj_map[GPIO_PORT_D + 1];
 };
 
-static struct gpio_context ctx = 
+static const struct gpio_context ctx = 
 {
 	.port_obj_map = 
 	{
