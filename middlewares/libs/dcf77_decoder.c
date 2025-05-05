@@ -123,8 +123,8 @@ static bool validate_frame(void)
                     (dcf_frame->months_units << 9) | (dcf_frame->months_tens << 8) | 
                     (dcf_frame->years_units << 4) | dcf_frame->years_tens ;
        
-        if (get_parity_even_bit(date) != dcf_frame->date_parity)
-            return false;
+    if (get_parity_even_bit(date) != dcf_frame->date_parity)
+        return false;
     
 
     // uint8_t month_day_parity = get_parity_even_bit((dcf_frame->month_day_tens << 4) | dcf_frame->month_day_units);
