@@ -41,6 +41,7 @@ ISR(BADISR_vect)
 
 #include <core.h>
 #include <wdg.h>
+// #include <avr/wdt.h>
 #include <gpio.h>
 
 bool synced = false;
@@ -146,17 +147,17 @@ static void lcd_pin_init_cb(void)
     gpio_init(GPIO_PORT_D, GPIO_PIN_7, true, false);
 }
 
-static void lcd_pin_deinit_cb(void)
-{
+// static void lcd_pin_deinit_cb(void)
+// {
     
-}
+// }
 
 static struct hd44780_cfg lcd_cfg = 
 {
     .set_pin_state = lcd_set_pin_cb,
     .delay_us = lcd_delay_cb,
     .pin_init = lcd_pin_init_cb,
-    .pin_deinit = lcd_pin_deinit_cb,
+    .pin_deinit = NULL,//lcd_pin_deinit_cb,
 };
 
 static struct hd44780_obj lcd_obj;
@@ -167,15 +168,13 @@ static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
 {
     // return;
     uint16_t delay_us = 1000000UL / (frequency_hz * 2); 
-    uint16_t cycles = (frequency_hz * duration_ms) / 1000;
+    uint16_t cycles = 2 * (frequency_hz * duration_ms) / 1000;
 
     DDRB |= (1 << PB3);  
 
-    for (uint16_t i = 0; i < cycles; i++) 
+    while (cycles--) 
     {
-        PORTB |= (1 << PB3);  
-        lcd_delay_cb(delay_us);
-        PORTB &= ~(1 << PB3); 
+        PORTB ^= (1 << PB3); 
         lcd_delay_cb(delay_us);
     }
 }
@@ -248,17 +247,17 @@ static void buzzer1_stop_cb(void)
     timer_start(&timer2_obj, false);
 }
 
-static bool buzzer1_deinit_cb(void)
-{
-    return true;
-}
+// static bool buzzer1_deinit_cb(void)
+// {
+//     return true;
+// }
 
 static struct buzzer_cfg buzzer1_cfg = 
 {
 	.init = buzzer1_init_cb,
 	.play = buzzer1_play_cb,
 	.stop = buzzer1_stop_cb,
-	.deinit = buzzer1_deinit_cb,
+	.deinit = NULL,//buzzer1_deinit_cb,
 };
 
 static struct buzzer_obj buzzer1_obj;
@@ -279,7 +278,6 @@ static struct buzzer_note alarm_beep[] =
 /* BUTTON */
 
 #include <button.h>
-#include <string.h>
 
 static bool button1_init_cb(void)
 {
@@ -297,23 +295,27 @@ static void button1_pressed_cb(void)
 
     hd44780_clear(&lcd_obj);
 
-    memset(&unix_time, 0x00, sizeof(unix_time));
+    // memset(&unix_time, 0x00, sizeof(unix_time));
+
+    for (uint8_t i = 0; i < sizeof(unix_time); i++) {
+        ((uint8_t*)&unix_time)[i] = 0;
+    }
     ds1307_set_time(&rtc_obj, &unix_time);
 
     synced = false;
 }
 
-static bool button1_deinit_cb(void)
-{
-    return true;
-}
+// static bool button1_deinit_cb(void)
+// {
+//     return true;
+// }
 
 static struct button_cfg button1_cfg = 
 {
 	.init = button1_init_cb,
 	.get_state = button1_get_state_cb,
 	.pressed = button1_pressed_cb,
-	.deinit = button1_deinit_cb,
+	.deinit = NULL,//button1_deinit_cb,
     
     .active_low = true,
     .irq_cfg = true,
@@ -356,17 +358,17 @@ static bool encoder1_init_cb(void)
     return true;
 }
 
-static bool encoder1_deinit_cb(void)
-{
-    return true;
-}
+// static bool encoder1_deinit_cb(void)
+// {
+//     return true;
+// }
 
 static struct rotary_encoder_cfg encoder1_cfg = 
 {
     .get_a_cb = encoder1_get_a_cb,
     .get_b_cb = encoder1_get_b_cb,
     .init_cb = encoder1_init_cb,
-    .deinit_cb = encoder1_deinit_cb,
+    .deinit_cb = NULL,//encoder1_deinit_cb,
     .rotation_cb = encoder1_rotation_cb,
     .sub_steps_count = 4,
     .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_A,
@@ -423,8 +425,6 @@ static struct mas6181b_obj mas6181b1_obj;
 
 /* DCF77 */
 
-#include <stdlib.h>
-
 #include <dcf77_decoder.h>
 
 static void timer1_capt_cb(uint16_t icr);
@@ -467,23 +467,17 @@ static void timer1_capt_cb(uint16_t icr)
     if (synced)
         return;
 
-    /* Now trigger on RISING edge is on BIT edge*/
+    /* Now trigger on RISING edge is on BIT edge */
 
-    static bool rising_edge = false; // This has to be the same as initialization
-
-    if (rising_edge) // Triggered on rising edge, bit was measuered, change to falling
-        TCCR1B &= ~(1 << ICES1);
-    else // Triggered on falling edge, break was measured, change to rising
-        TCCR1B |= (1 << ICES1); 
+    bool rising_edge = (TCCR1B & (1 << ICES1)); 
     
-    rising_edge ^= 1;
-
+    TCCR1B ^= (1 << ICES1); // Change trigger edge
     TCNT1 = 0;
 
-    last_triggered_on_bit = !rising_edge;
+    last_triggered_on_bit = rising_edge;
     last_time_ms = TICKS_TO_MS(icr, PRESC);
 
-    decoder_status = dcf77_decode(TICKS_TO_MS(icr, PRESC), !rising_edge); // restore real trigger source edge
+    decoder_status = dcf77_decode(TICKS_TO_MS(icr, PRESC), rising_edge); 
 };
 
 static char buf[16]; 
@@ -509,9 +503,27 @@ static void print_time(uint8_t line)
     hd44780_print(&lcd_obj, buf);
 }
 
+static void uint16_to_str(uint16_t value, char *buffer) 
+{
+    uint8_t i = 0;
+    do {
+        buffer[i++] = (value % 10) + '0';
+        value /= 10;
+    } while (value > 0);
+    buffer[i] = '\0';
+
+    // Reverse the string
+    for (uint8_t j = 0; j < i / 2; j++) {
+        char temp = buffer[j];
+        buffer[j] = buffer[i - j - 1];
+        buffer[i - j - 1] = temp;
+    }
+}
+
 int main()
 {
     wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
+    // wdt_enable(WDTO_8S);
 
     /* LED */
     gpio_init(GPIO_PORT_D, GPIO_PIN_6, true, false);
@@ -575,7 +587,7 @@ int main()
 
         if (prev_triggered_on_bit != last_triggered_on_bit)
         {
-            utoa(last_time_ms, buf, 10);
+            uint16_to_str(last_time_ms, buf);
 
             uint8_t pos = last_triggered_on_bit ? 0 : 8;
 
@@ -619,6 +631,7 @@ int main()
 
                 synced = true;
             }
+
             prev_triggered_on_bit = last_triggered_on_bit;
         }
 
@@ -643,6 +656,7 @@ int main()
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
         
         wdg_feed();
+        // wdt_reset();
         core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
     }
 }

@@ -77,7 +77,7 @@ static bool process_irq(struct button_obj *obj)
 
 bool button_init(struct button_obj *obj, struct button_cfg *cfg)
 {
-    if (!cfg || !cfg->init || !cfg->get_state || !cfg->pressed || !cfg->deinit)
+    if (!cfg || !cfg->init || !cfg->get_state || !cfg->pressed)
         return false;
 
     obj->init = cfg->init;

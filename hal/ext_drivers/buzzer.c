@@ -11,7 +11,7 @@
 
 bool buzzer_init(struct buzzer_obj *obj, struct buzzer_cfg *cfg)
 {
-	if (!cfg || !cfg->init || !cfg->play || !cfg->stop || !cfg->deinit)
+	if (!cfg || !cfg->init || !cfg->play || !cfg->stop)
 		return false;
 
 	obj->init = cfg->init;

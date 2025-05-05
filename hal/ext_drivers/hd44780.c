@@ -93,7 +93,7 @@ static void send_byte(struct hd44780_obj *obj, uint8_t byte, enum hd44780_mode m
 
 bool hd44780_init(struct hd44780_obj *obj, struct hd44780_cfg *cfg)
 {
-    if (!obj || !cfg || !cfg->pin_init || !cfg->pin_deinit || !cfg->set_pin_state || !cfg->delay_us)
+    if (!obj || !cfg || !cfg->pin_init || !cfg->set_pin_state || !cfg->delay_us)
         return false;
 
     /* Assign callbacks */

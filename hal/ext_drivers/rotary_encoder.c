@@ -99,7 +99,7 @@ static enum rotary_encoder_direction process_irq(struct rotary_encoder_obj *obj)
 
 bool rotary_encoder_init(struct rotary_encoder_obj *obj, struct rotary_encoder_cfg *cfg)
 {
-    if (!cfg || ! cfg->get_a_cb || !cfg->get_b_cb || !cfg->init_cb || !cfg->deinit_cb || !cfg->rotation_cb)
+    if (!cfg || ! cfg->get_a_cb || !cfg->get_b_cb || !cfg->init_cb || !cfg->rotation_cb)
         return false;
 
     obj->get_a_cb = cfg->get_a_cb;
