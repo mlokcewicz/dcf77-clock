@@ -63,6 +63,9 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
 
 enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
 {
+    enum dcf77_bit_val val = 0;
+    struct dcf77_frame *dcf_frame = (struct dcf77_frame *)ctx.frame[0];
+
     if (!ctx.frame_started)
     {
         if (get_bit_val(ms) == DCF77_BIT_VAL_NONE)
@@ -74,8 +77,6 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
 
         return DCF77_DECODER_STATUS_WAITING;
     }
-
-    enum dcf77_bit_val val = 0;
 
     if (triggered_on_bit) // Bit transmission
     {
@@ -95,9 +96,10 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
 
         ctx.bit_cnt++;
 
-        if (ctx.bit_cnt >= 59)
+        if (ctx.bit_cnt >= 59 + dcf_frame->leap_second)
         {
             memcpy(ctx.frame[1], ctx.frame[0], sizeof(ctx.frame[1]));
+            memset(ctx.frame[0], 0x00, sizeof(ctx.frame[0]));
 
             ctx.frame_started = false;
             ctx.bit_cnt = 0;
