@@ -31,6 +31,16 @@ enum dcf77_bit_val
 
 //------------------------------------------------------------------------------
 
+struct dcf77_frame_validator
+{
+    uint8_t frame_start_always_zero : 1;
+    uint32_t other : 19;
+    uint8_t time_start_always_one : 1;
+    uint8_t minutes_with_parity : 8;
+    uint8_t hours_with_parity : 7;
+    uint32_t date_with_parity : 23;
+} __attribute__((__packed__));
+
 struct dcf77_ctx 
 {
     bool frame_started;
@@ -59,32 +69,9 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
     return DCF77_BIT_VAL_ERROR;
 }
 
-static bool get_parity_even_bit(uint32_t data)
-{
-    // uint8_t no_of_ones = 0;
-    // uint8_t i = 32;
-
-    // while(i--)
-    // {
-    //     no_of_ones += (data & 1);
-    //     data >>= 1;
-    // }
-
-    // return (no_of_ones & 1);
-
-    // data ^= data >> 16;
-    // data ^= data >> 8;
-    // data ^= data >> 4;
-    // data ^= data >> 2;
-    // data ^= data >> 1;
-    // return data & 1;
-
-    return __builtin_parity(data);
-}
-
 static bool validate_frame(void)
 {
-    struct dcf77_frame *dcf_frame = (struct dcf77_frame *)ctx.frame[0];
+    struct dcf77_frame_validator *dcf_frame = (struct dcf77_frame_validator *)ctx.frame[0];
 
     if (dcf_frame->frame_start_always_zero != 0)
         return false;
@@ -92,47 +79,14 @@ static bool validate_frame(void)
     if (dcf_frame->time_start_always_one != 1)
         return false;
 
-
-    // uint16_t minutes_with_parity;
-    // memcpy(&minutes_with_parity, &(ctx.frame[0][2]), 2);
-    // minutes_with_parity >>= 4;
-
-    // if (get_parity_even_bit(minutes_with_parity))
-    //     return false;
-
-    if (get_parity_even_bit((dcf_frame->minutes_tens << 4) | dcf_frame->minutes_units) != dcf_frame->minutes_parity)
+    if (__builtin_parity(dcf_frame->minutes_with_parity))
         return false;
 
-    // uint16_t hours_with_parity;
-    // memcpy(&hours_with_parity, &(ctx.frame[0][3]), 2);
-    // hours_with_parity >>= 4;
-
-    // if (get_parity_even_bit(hours_with_parity))
-    //     return false;
-
-    if (get_parity_even_bit((dcf_frame->hours_tens << 4) | dcf_frame->hours_units) != dcf_frame->hours_parity)
+    if (__builtin_parity(dcf_frame->hours_with_parity))
         return false;
 
-        
-    // uint32_t date;
-    // memcpy(&date, &(ctx.frame[0][5]), 4);
-    // date >>= 4;
-
-    uint32_t date = ((uint32_t)dcf_frame->month_day_units << 18) | ((uint32_t)dcf_frame->month_day_tens << 16) | 
-                    (dcf_frame->weekday << 13) | 
-                    (dcf_frame->months_units << 9) | (dcf_frame->months_tens << 8) | 
-                    (dcf_frame->years_units << 4) | dcf_frame->years_tens ;
-       
-    if (get_parity_even_bit(date) != dcf_frame->date_parity)
+    if (__builtin_parity(dcf_frame->date_with_parity))
         return false;
-    
-
-    // uint8_t month_day_parity = get_parity_even_bit((dcf_frame->month_day_tens << 4) | dcf_frame->month_day_units);
-    // uint8_t month_parity = get_parity_even_bit((dcf_frame->months_tens << 7) | (dcf_frame->months_units << 3) | dcf_frame->weekday);
-    // uint8_t years_parity = get_parity_even_bit((dcf_frame->years_tens << 4) | dcf_frame->years_units);
-
-    // if (get_parity_even_bit((month_day_parity << 2) | (month_parity << 1) | years_parity) != dcf_frame->date_parity)
-    //     return false;
 
     return true;
 }
