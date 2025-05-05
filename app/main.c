@@ -486,6 +486,29 @@ static void timer1_capt_cb(uint16_t icr)
     decoder_status = dcf77_decode(TICKS_TO_MS(icr, PRESC), !rising_edge); // restore real trigger source edge
 };
 
+static char buf[16]; 
+static void print_time(uint8_t line)
+{
+    uint8_t i = 0;
+    buf[i++] = (unix_time.hours_tens + '0');
+    buf[i++] = (unix_time.hours_units + '0');
+    buf[i++] = (':');
+    buf[i++] = (unix_time.minutes_tens + '0');
+    buf[i++] = (unix_time.minutes_units + '0');
+    buf[i++] = (' ');
+    buf[i++] = (unix_time.date_tens + '0');
+    buf[i++] = (unix_time.date_units + '0');
+    buf[i++] = ('.');
+    buf[i++] = (unix_time.month_tens + '0');
+    buf[i++] = (unix_time.month_units + '0');
+    buf[i++] = (' ');
+    buf[i++] = (unix_time.seconds_tens + '0');
+    buf[i++] = (unix_time.seconds_units + '0');
+    buf[i++] = 0;
+    hd44780_set_pos(&lcd_obj, line, 0);
+    hd44780_print(&lcd_obj, buf);
+}
+
 int main()
 {
     wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
@@ -543,26 +566,8 @@ int main()
 
         if (new_sec)
         {
-            char buf[16];
             ds1307_get_time(&rtc_obj, &unix_time);
-            uint8_t i = 0;
-            buf[i++] = (unix_time.hours_tens + '0');
-            buf[i++] = (unix_time.hours_units + '0');
-            buf[i++] = (':');
-            buf[i++] = (unix_time.minutes_tens + '0');
-            buf[i++] = (unix_time.minutes_units + '0');
-            buf[i++] = (' ');
-            buf[i++] = (unix_time.date_tens + '0');
-            buf[i++] = (unix_time.date_units + '0');
-            buf[i++] = ('.');
-            buf[i++] = (unix_time.month_tens + '0');
-            buf[i++] = (unix_time.month_units + '0');
-            buf[i++] = (' ');
-            buf[i++] = (unix_time.seconds_tens + '0');
-            buf[i++] = (unix_time.seconds_units + '0');
-            buf[i++] = 0;
-            hd44780_set_pos(&lcd_obj, 1, 0);
-            hd44780_print(&lcd_obj, buf);
+            print_time(1);
             new_sec = false;
         }
 
@@ -570,7 +575,6 @@ int main()
 
         if (prev_triggered_on_bit != last_triggered_on_bit)
         {
-            char buf[16] = {0};
             utoa(last_time_ms, buf, 10);
 
             uint8_t pos = last_triggered_on_bit ? 0 : 8;
@@ -592,45 +596,26 @@ int main()
             }
             else if (decoder_status == DCF77_DECODER_STATUS_SYNCED && !synced)
             {
-                static struct ds1307_time unix_time_dcf;
                 struct dcf77_frame *dcf_frame = dcf77_get_frame();
 
-                unix_time_dcf.clock_halt = 0;
-                unix_time_dcf.hour_mode = 0;
-                unix_time_dcf.hours_tens = dcf_frame->hours_tens;
-                unix_time_dcf.hours_units = dcf_frame->hours_units;
-                unix_time_dcf.minutes_tens = dcf_frame->minutes_tens;
-                unix_time_dcf.minutes_units = dcf_frame->minutes_units;
-                unix_time_dcf.date_tens = dcf_frame->month_day_tens;
-                unix_time_dcf.date_units = dcf_frame->month_day_units;
-                unix_time_dcf.month_tens = dcf_frame->months_tens;
-                unix_time_dcf.month_units = dcf_frame->months_units;
-                unix_time_dcf.year_tens = dcf_frame->years_tens;
-                unix_time_dcf.year_units = dcf_frame->years_units;
-                unix_time_dcf.seconds_tens = 0;
-                unix_time_dcf.seconds_units = 0;
+                unix_time.clock_halt = 0;
+                unix_time.hour_mode = 0;
+                unix_time.hours_tens = dcf_frame->hours_tens;
+                unix_time.hours_units = dcf_frame->hours_units;
+                unix_time.minutes_tens = dcf_frame->minutes_tens;
+                unix_time.minutes_units = dcf_frame->minutes_units;
+                unix_time.date_tens = dcf_frame->month_day_tens;
+                unix_time.date_units = dcf_frame->month_day_units;
+                unix_time.month_tens = dcf_frame->months_tens;
+                unix_time.month_units = dcf_frame->months_units;
+                unix_time.year_tens = dcf_frame->years_tens;
+                unix_time.year_units = dcf_frame->years_units;
+                unix_time.seconds_tens = 0;
+                unix_time.seconds_units = 0;
 
-                ds1307_set_time(&rtc_obj, &unix_time_dcf);
+                ds1307_set_time(&rtc_obj, &unix_time);
 
-                uint8_t i = 0;
-                buf[i++] = (dcf_frame->hours_tens + '0');
-                buf[i++] = (dcf_frame->hours_units + '0');
-                buf[i++] = (':');
-                buf[i++] = (dcf_frame->minutes_tens + '0');
-                buf[i++] = (dcf_frame->minutes_units + '0');
-                buf[i++] = (' ');
-                buf[i++] = (dcf_frame->month_day_tens + '0');
-                buf[i++] = (dcf_frame->month_day_units + '0');
-                buf[i++] = ('.');
-                buf[i++] = (dcf_frame->months_tens + '0');
-                buf[i++] = (dcf_frame->months_units + '0');
-                buf[i++] = ('.');
-                buf[i++] = (dcf_frame->years_tens + '0');
-                buf[i++] = (dcf_frame->years_units + '0');
-                buf[i++] = 0;
-
-                hd44780_set_pos(&lcd_obj, 0, 0);
-                hd44780_print(&lcd_obj, buf);
+                print_time(0);
 
                 synced = true;
             }
