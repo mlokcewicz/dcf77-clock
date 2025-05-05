@@ -60,34 +60,30 @@ enum hd44780_ommand
 
 //------------------------------------------------------------------------------
 
+static void send_nibble(struct hd44780_obj *obj, uint8_t nibble)
+{
+    /* Send nibble */
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        obj->set_pin_state(LCD_D4 + i, nibble & 1);
+        nibble >>= 1;
+    }
+
+    /* Toggle enable pin */
+    obj->set_pin_state(LCD_E, true);
+    obj->delay_us(5);
+    obj->set_pin_state(LCD_E, false);
+    obj->delay_us(5);
+}
+
 static void send_byte(struct hd44780_obj *obj, uint8_t byte, enum hd44780_mode mode)
 {
     /* Set mode for data pins */
-    obj->set_pin_state(LCD_RS, !mode); // RS high (data)
-
-    /* Send first nibble */
-    obj->set_pin_state(LCD_D4, byte & 1 << 4);
-    obj->set_pin_state(LCD_D5, byte & 1 << 5);
-    obj->set_pin_state(LCD_D6, byte & 1 << 6);
-    obj->set_pin_state(LCD_D7, byte & 1 << 7);
-
-    /* Toggle enable pin */
-    obj->set_pin_state(LCD_E, true);
-    obj->delay_us(5); 
-    obj->set_pin_state(LCD_E, false);
-    obj->delay_us(5); 
-
-    /* Send second nibble */
-    obj->set_pin_state(LCD_D4, byte & 1 << 0);
-    obj->set_pin_state(LCD_D5, byte & 1 << 1);
-    obj->set_pin_state(LCD_D6, byte & 1 << 2);
-    obj->set_pin_state(LCD_D7, byte & 1 << 3);
-
-    /* Toggle enable pin */
-    obj->set_pin_state(LCD_E, true);
-    obj->delay_us(5); 
-    obj->set_pin_state(LCD_E, false);
-    obj->delay_us(5); 
+    obj->set_pin_state(LCD_RS, !mode);
+    
+    /* Send first and second nibble */
+    send_nibble(obj, byte >> 4);
+    send_nibble(obj, byte);
 
     obj->delay_us(40); 
 
@@ -109,31 +105,31 @@ bool hd44780_init(struct hd44780_obj *obj, struct hd44780_cfg *cfg)
     /* Initialize IO */
     obj->pin_init();
 
-    obj->set_pin_state(LCD_RS, false);
-    obj->set_pin_state(LCD_RW, false);
-    obj->set_pin_state(LCD_E, false);
-    obj->set_pin_state(LCD_D4, false);
-    obj->set_pin_state(LCD_D5, false);
-    obj->set_pin_state(LCD_D6, false);
-    obj->set_pin_state(LCD_D7, false);
-
+    for (uint8_t i = 0; i < 7; i++)
+        obj->set_pin_state(LCD_RS + i, false);
+    
     /* Initialize LCD */
-    obj->delay_us(50000);
+    obj->delay_us(50000); // Done twice to reduce delay parameter size to uint16_t
     obj->delay_us(50000);
 
     /* LCD is initialized by default with 8-bit data bus so there is a need to double each nibble */
     /* Set 8-bit data bus command at least 3 times - specific for some displays */
     /* Then 4-bit but still in 8 bit mode - lower nibble has to be 4 bit set command */
-    send_byte(obj, HD44780_CMD_FUNCTION_SET_DL_8_BITS | (HD44780_CMD_FUNCTION_SET_DL_8_BITS >> 4), MODE_COMMAND);
-    send_byte(obj, HD44780_CMD_FUNCTION_SET_DL_8_BITS | (HD44780_CMD_FUNCTION_SET_DL_4_BITS >> 4), MODE_COMMAND);
 
-    /* LCD configuration */
-    send_byte(obj, HD44780_CMD_DISPLAY_ON_OFF_CONTROL_DISP_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_BLINK_OFF, MODE_COMMAND);
-    send_byte(obj, HD44780_CMD_FUNCTION_SET_DL_4_BITS | HD44780_CMD_FUNCTION_SET_LINES_2 | HD44780_CMD_FUNCTION_SET_FONT_5x8, MODE_COMMAND);
-    send_byte(obj, HD44780_CMD_ENTRY_MODE_SET_INC | HD44780_CMD_ENTRY_MODE_SET_DISP_NOSHIFT, MODE_COMMAND);
-    send_byte(obj, HD44780_CMD_CLEAR_DISPLAY, MODE_COMMAND);
-    send_byte(obj, HD44780_CMD_RETURN_HOME, MODE_COMMAND);
-    send_byte(obj, HD44780_CMD_DISPLAY_ON_OFF_CONTROL_DISP_ON | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_BLINK_OFF, MODE_COMMAND);
+    static const uint8_t initialization_bytes[] = 
+    {
+        HD44780_CMD_FUNCTION_SET_DL_8_BITS | (HD44780_CMD_FUNCTION_SET_DL_8_BITS >> 4),
+        HD44780_CMD_FUNCTION_SET_DL_8_BITS | (HD44780_CMD_FUNCTION_SET_DL_4_BITS >> 4),
+        HD44780_CMD_DISPLAY_ON_OFF_CONTROL_DISP_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_BLINK_OFF,
+        HD44780_CMD_FUNCTION_SET_DL_4_BITS | HD44780_CMD_FUNCTION_SET_LINES_2 | HD44780_CMD_FUNCTION_SET_FONT_5x8,
+        HD44780_CMD_ENTRY_MODE_SET_INC | HD44780_CMD_ENTRY_MODE_SET_DISP_NOSHIFT,
+        HD44780_CMD_CLEAR_DISPLAY,
+        HD44780_CMD_RETURN_HOME,
+        HD44780_CMD_DISPLAY_ON_OFF_CONTROL_DISP_ON | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_BLINK_OFF,
+    };
+
+    for (uint8_t i = 0; i < sizeof(initialization_bytes); i++)
+        send_byte(obj, initialization_bytes[i], MODE_COMMAND);
 
     /* Load user defined characters to CGRAM */
     if (cfg->user_defined_char_tab)
@@ -198,13 +194,8 @@ void hd44780_deinit(struct hd44780_obj *obj)
     send_byte(obj, HD44780_CMD_DISPLAY_ON_OFF_CONTROL_DISP_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_OFF | HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_BLINK_OFF, MODE_COMMAND);
 
     /* Enter power down state */
-    obj->set_pin_state(LCD_RS, false);
-    obj->set_pin_state(LCD_RW, false);
-    obj->set_pin_state(LCD_E, false);
-    obj->set_pin_state(LCD_D4, false);
-    obj->set_pin_state(LCD_D5, false);
-    obj->set_pin_state(LCD_D6, false);
-    obj->set_pin_state(LCD_D7, false);
+    for (uint8_t i = 0; i < 7; i++)
+        obj->set_pin_state(LCD_RS + i, false);
 
     /* Deinitialize IO */
     obj->pin_deinit();
