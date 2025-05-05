@@ -37,13 +37,11 @@ ISR(BADISR_vect)
 //------------------------------------------------------------------------------
 
 /* Common */
+#include <stdbool.h>
+
 #include <core.h>
 #include <wdg.h>
 #include <gpio.h>
-
-#include <stdbool.h>
-
-#include <dcf77_decoder.h>
 
 bool synced = false;
 
@@ -182,6 +180,102 @@ static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
     }
 }
 
+#include <timer.h>
+#include <buzzer.h>
+
+static struct timer_cfg timer2_cfg = 
+{  
+    .id = TIMER_ID_2,
+    .clock = TIMER_CLOCK_PRESC_8,
+    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
+    .mode = TIMER_MODE_CTC,
+    .com_a_cfg = TIMER_CM_CHANGE_PIN_STATE,
+    .com_b_cfg = TIMER_CM_DISABLED,
+
+    .counter_val = 0,
+    .ovrfv_cb = NULL,
+
+    .out_comp_a_val = 0,
+    .out_comp_b_val = 0,
+    .out_comp_a_cb = NULL,
+    .out_comp_b_cb = NULL,
+    
+    .input_capture_val = 0,
+    .input_capture_pullup = false,
+    .input_capture_noise_canceler = false,
+    .input_capture_rising_edge = false,
+    .in_capt_cb = NULL,
+};
+
+static struct timer_obj timer2_obj;
+
+bool buzzer1_init_cb(void)
+{
+    return true;
+}
+
+bool buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
+{
+    static uint32_t start_tickstamp = 0;
+
+    if (start_tickstamp == 0) // note not started
+    {
+        if (tone != BUZZER_TONE_STOP)
+        {
+            timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * tone)) - 1;
+            timer_init(&timer2_obj, &timer2_cfg);
+            timer_start(&timer2_obj, true);
+        }
+        else
+            timer_start(&timer2_obj, false);
+
+        start_tickstamp = system_timer_get();
+        
+        return true;
+    }
+
+    /* Note is playing */
+    if (!system_timer_timeout_passed(start_tickstamp, time_ms))
+        return true;
+
+    start_tickstamp = 0;
+
+    return false; // note is played
+}
+
+void buzzer1_stop_cb(void)
+{
+    timer_start(&timer2_obj, false);
+}
+
+bool buzzer1_deinit_cb(void)
+{
+    return true;
+}
+
+static struct buzzer_cfg buzzer1_cfg = 
+{
+	.init = buzzer1_init_cb,
+	.play = buzzer1_play_cb,
+	.stop = buzzer1_stop_cb,
+	.deinit = buzzer1_deinit_cb,
+};
+
+static struct buzzer_obj buzzer1_obj;
+
+struct buzzer_note alarm_beep[] = 
+{
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
+	{BUZZER_TONE_STOP, 1000UL * 800},
+};
+
 /* BUTTON */
 
 #include <button.h>
@@ -302,104 +396,6 @@ static void exti_encoder1_cb(void)
     rotary_encoder_process(&encoder1_obj);
 }
 
-/* Buzzer */
-
-#include <timer.h>
-#include <buzzer.h>
-
-static struct timer_cfg timer2_cfg = 
-{  
-    .id = TIMER_ID_2,
-    .clock = TIMER_CLOCK_PRESC_8,
-    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
-    .mode = TIMER_MODE_CTC,
-    .com_a_cfg = TIMER_CM_CHANGE_PIN_STATE,
-    .com_b_cfg = TIMER_CM_DISABLED,
-
-    .counter_val = 0,
-    .ovrfv_cb = NULL,
-
-    .out_comp_a_val = 0,
-    .out_comp_b_val = 0,
-    .out_comp_a_cb = NULL,
-    .out_comp_b_cb = NULL,
-    
-    .input_capture_val = 0,
-    .input_capture_pullup = false,
-    .input_capture_noise_canceler = false,
-    .input_capture_rising_edge = false,
-    .in_capt_cb = NULL,
-};
-
-static struct timer_obj timer2_obj;
-
-bool buzzer1_init_cb(void)
-{
-    return true;
-}
-
-bool buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
-{
-    static uint32_t start_tickstamp = 0;
-
-    if (start_tickstamp == 0) // note not started
-    {
-        if (tone != BUZZER_TONE_STOP)
-        {
-            timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * tone)) - 1;
-            timer_init(&timer2_obj, &timer2_cfg);
-            timer_start(&timer2_obj, true);
-        }
-        else
-            timer_start(&timer2_obj, false);
-
-        start_tickstamp = system_timer_get();
-        
-        return true;
-    }
-
-    /* Note is playing */
-    if (!system_timer_timeout_passed(start_tickstamp, time_ms))
-        return true;
-
-    start_tickstamp = 0;
-
-    return false; // note is played
-}
-
-void buzzer1_stop_cb(void)
-{
-    timer_start(&timer2_obj, false);
-}
-
-bool buzzer1_deinit_cb(void)
-{
-    return true;
-}
-
-static struct buzzer_cfg buzzer1_cfg = 
-{
-	.init = buzzer1_init_cb,
-	.play = buzzer1_play_cb,
-	.stop = buzzer1_stop_cb,
-	.deinit = buzzer1_deinit_cb,
-};
-
-static struct buzzer_obj buzzer1_obj;
-
-struct buzzer_note alarm_beep[] = 
-{
-	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_STOP, 1000UL * 800},
-};
-
 /* DCF77 */
 
 #include <stdlib.h>
@@ -434,6 +430,10 @@ static struct timer_cfg timer1_cfg =
 
 static struct timer_obj timer1_obj;
 
+static enum dcf77_decoder_status decoder_status = DCF77_DECODER_STATUS_WAITING;
+static bool last_triggered_on_bit;
+static uint16_t last_time_ms;
+
 #define PRESC 256
 #define TICKS_TO_MS(ticks, presc) ((uint32_t)ticks * 1000UL / (F_CPU / presc)) // out
 
@@ -453,23 +453,12 @@ static void timer1_capt_cb(uint16_t icr)
     
     rising_edge ^= 1;
 
-    /* Ignore short pulses (triggered on rising edge) REVERSED */
-    // if (!rising_edge && (icr < MS_TO_TICKS(35, PRESC)))
-    // if (!rising_edge && (TICKS_TO_MS(icr, PRESC) < 35))
-    //     return;
-
-    if (dcf77_ignore_short_pulse(TICKS_TO_MS(icr, PRESC), !rising_edge))
-        return;
-
-    // /* Ignore short pauses (triggered on rising edge) REVERSED */
-    // if (rising_edge && (tick_to_ms(icr, 256) < 600))
-    //     return;
-
-    // TODO: Check pauses since last ignored short pulse (static timestapm) or ignore everything for at least 600 ms
-
     TCNT1 = 0;
 
-    dcf77_decode(TICKS_TO_MS(icr, PRESC), !rising_edge); // restore real trigger source edge
+    last_triggered_on_bit = !rising_edge;
+    last_time_ms = TICKS_TO_MS(icr, PRESC);
+
+    decoder_status = dcf77_decode(TICKS_TO_MS(icr, PRESC), !rising_edge); // restore real trigger source edge
 };
 
 int main()
@@ -556,102 +545,79 @@ int main()
         }
 
         static bool prev_triggered_on_bit = false;
-        struct dcf77_status *radio_status = dcf77_get_status();
 
-        if (prev_triggered_on_bit != radio_status->last_triggered_on_bit)
+        if (prev_triggered_on_bit != last_triggered_on_bit)
         {
-
             char buf[16] = {0};
-            utoa(radio_status->last_time_ms, buf, 10);
+            utoa(last_time_ms, buf, 10);
 
-            uint8_t pos = radio_status->last_triggered_on_bit ? 0 : 8;
+            uint8_t pos = last_triggered_on_bit ? 0 : 8;
 
             hd44780_set_pos(&lcd_obj, 0, pos);
             hd44780_print(&lcd_obj, "       ");
             hd44780_set_pos(&lcd_obj, 0, pos);
             hd44780_print(&lcd_obj, buf);
 
-            if (radio_status->last_frame_started)
+            if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED)
             {
                 hd44780_set_pos(&lcd_obj, 0, 15);
                 hd44780_print(&lcd_obj, "S");
-                radio_status->last_frame_started = false;
             }
-
-            if (radio_status->last_error)
+            else if (decoder_status == DCF77_DECODER_STATUS_ERROR)
             {
                 hd44780_set_pos(&lcd_obj, 0, 15);
                 hd44780_print(&lcd_obj, "E");
-                radio_status->last_error = false;
             }
-
-            if (radio_status->last_synced)
+            else if (decoder_status == DCF77_DECODER_STATUS_SYNCED && !synced)
             {
                 static struct ds1307_time unix_time_dcf;
+                struct dcf77_frame *dcf_frame = dcf77_get_frame();
 
                 unix_time_dcf.clock_halt = 0;
                 unix_time_dcf.hour_mode = 0;
-                unix_time_dcf.hours_tens = radio_status->last_frame->hours_tens;
-                unix_time_dcf.hours_units = radio_status->last_frame->hours_units;
-                unix_time_dcf.minutes_tens = radio_status->last_frame->minutes_tens;
-                unix_time_dcf.minutes_units = radio_status->last_frame->minutes_units;
-                unix_time_dcf.date_tens = radio_status->last_frame->month_day_tens;
-                unix_time_dcf.date_units = radio_status->last_frame->month_days_units;
-                unix_time_dcf.month_tens = radio_status->last_frame->months_tens;
-                unix_time_dcf.month_units = radio_status->last_frame->months_units;
-                unix_time_dcf.year_tens = radio_status->last_frame->years_tens;
-                unix_time_dcf.year_units = radio_status->last_frame->years_units;
+                unix_time_dcf.hours_tens = dcf_frame->hours_tens;
+                unix_time_dcf.hours_units = dcf_frame->hours_units;
+                unix_time_dcf.minutes_tens = dcf_frame->minutes_tens;
+                unix_time_dcf.minutes_units = dcf_frame->minutes_units;
+                unix_time_dcf.date_tens = dcf_frame->month_day_tens;
+                unix_time_dcf.date_units = dcf_frame->month_days_units;
+                unix_time_dcf.month_tens = dcf_frame->months_tens;
+                unix_time_dcf.month_units = dcf_frame->months_units;
+                unix_time_dcf.year_tens = dcf_frame->years_tens;
+                unix_time_dcf.year_units = dcf_frame->years_units;
                 unix_time_dcf.seconds_tens = 0;
                 unix_time_dcf.seconds_units = 0;
 
                 ds1307_set_time(&rtc_obj, &unix_time_dcf);
 
                 uint8_t i = 0;
-                buf[i++] = (radio_status->last_frame->hours_tens + '0');
-                buf[i++] = (radio_status->last_frame->hours_units + '0');
+                buf[i++] = (dcf_frame->hours_tens + '0');
+                buf[i++] = (dcf_frame->hours_units + '0');
                 buf[i++] = (':');
-                buf[i++] = (radio_status->last_frame->minutes_tens + '0');
-                buf[i++] = (radio_status->last_frame->minutes_units + '0');
+                buf[i++] = (dcf_frame->minutes_tens + '0');
+                buf[i++] = (dcf_frame->minutes_units + '0');
                 buf[i++] = (' ');
-                buf[i++] = (radio_status->last_frame->month_day_tens + '0');
-                buf[i++] = (radio_status->last_frame->month_days_units + '0');
+                buf[i++] = (dcf_frame->month_day_tens + '0');
+                buf[i++] = (dcf_frame->month_days_units + '0');
                 buf[i++] = ('.');
-                buf[i++] = (radio_status->last_frame->months_tens + '0');
-                buf[i++] = (radio_status->last_frame->months_units + '0');
+                buf[i++] = (dcf_frame->months_tens + '0');
+                buf[i++] = (dcf_frame->months_units + '0');
                 buf[i++] = ('.');
-                buf[i++] = (radio_status->last_frame->years_tens + '0');
-                buf[i++] = (radio_status->last_frame->years_units + '0');
+                buf[i++] = (dcf_frame->years_tens + '0');
+                buf[i++] = (dcf_frame->years_units + '0');
                 buf[i++] = 0;
 
                 hd44780_set_pos(&lcd_obj, 0, 0);
                 hd44780_print(&lcd_obj, buf);
 
-                radio_status->last_synced = false;
                 synced = true;
             }
-
-            prev_triggered_on_bit = radio_status->last_triggered_on_bit;
+            prev_triggered_on_bit = last_triggered_on_bit;
         }
 
         // buzzer_play_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
         // _delay_ms(1000);
         // buzzer_process(&buzzer1_obj);
-        
-        // timer2_cfg.out_comp_a_val = (F_CPU / (2 * 8 * 1000)) - 1;
-        // timer_init(&timer2_obj, &timer2_cfg);
-        // timer_start(&timer2_obj, true);
-        // _delay_ms(200);
-        // timer_start(&timer2_obj, false);
-        // _delay_ms(200);
-
-        // uint8_t sec_buf = 6;
-        // uint8_t sec_addr = 0x00;
-
-        // twi_send(0b11010001, &sec_addr, 1, true);
-        // twi_receive(0b11010001, &sec_buf, 1);
-
-        // hd44780_set_pos(&lcd_obj, 1, 10);
-        // hd44780_putc(&lcd_obj, (sec_buf & 0x0F) + '0');
         
         // uint8_t *str = "DUPA";
         // ds1307_save_to_ram(&rtc_obj, 5, str, 4);

@@ -19,6 +19,18 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+enum dcf77_decoder_status
+{
+    DCF77_DECODER_STATUS_WAITING,
+    DCF77_DECODER_STATUS_FRAME_STARTED,
+    DCF77_DECODER_STATUS_BIT_RECEIVED,
+    DCF77_DECODER_STATUS_BREAK_RECEIVED,
+    DCF77_DECODER_STATUS_ERROR,
+    DCF77_DECODER_STATUS_SYNCED,
+};
+
+//------------------------------------------------------------------------------
+
 struct dcf77_frame
 {
     uint8_t frame_start_always_zero : 1;
@@ -44,31 +56,17 @@ struct dcf77_frame
     uint8_t date_parity: 1;
 } __attribute__((__packed__));
 
-struct dcf77_status
-{
-    bool last_triggered_on_bit;
-    uint16_t last_time_ms;
-    bool last_error;
-    bool last_frame_started;
-    bool last_synced;
-    struct dcf77_frame *last_frame;
-};
-
 //------------------------------------------------------------------------------
 
-/// @brief 
-/// @param ms 
-/// @param triggered_on_bit 
-void dcf77_decode(uint16_t ms, bool triggered_on_bit);
+/// @brief Decodes given pulse (not re-entrant)
+/// @param ms time in ms of detected pulse
+/// @param triggered_on_bit true if given pulse is considered as a bit value (not break)
+/// @return current status @ref enum dcf77_decoder_status
+enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit);
 
-/// @brief 
-/// @param ms 
-/// @param triggered_on_bit 
-/// @return 
-bool dcf77_ignore_short_pulse(uint16_t ms, bool triggered_on_bit);
-
-/// @brief 
-struct dcf77_status *dcf77_get_status(void);
+/// @brief Returns pointer do last received time frame
+/// @return last received frame pointer @ref struct dcf77_frame
+struct dcf77_frame *dcf77_get_frame(void);
 
 //------------------------------------------------------------------------------
 
