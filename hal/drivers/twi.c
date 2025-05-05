@@ -141,6 +141,7 @@ bool twi_send(uint8_t addr, uint8_t *data, uint8_t size, bool generate_stop_cond
     /* Handle interrupt mode */
     if (ctx.irq_mode)
     {
+    #if TWI_USE_TWI_ISR
         ctx.addr = addr;
         ctx.data = data;
         ctx.data_size = size;
@@ -150,8 +151,9 @@ bool twi_send(uint8_t addr, uint8_t *data, uint8_t size, bool generate_stop_cond
 
         /* Generate START condition */
         TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
+    #endif
 
-        return true;
+        return TWI_USE_TWI_ISR;
     }
 
     /* Generate START condition */
@@ -192,6 +194,7 @@ bool twi_receive(uint8_t addr, uint8_t *data, uint8_t size)
 
     if (ctx.irq_mode)
     {
+    #if TWI_USE_TWI_ISR
         ctx.addr = addr;
         ctx.data = data;
         ctx.data_size = size;
@@ -202,7 +205,8 @@ bool twi_receive(uint8_t addr, uint8_t *data, uint8_t size)
         /* Generate START condition */
         TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
 
-        return true;
+    #endif
+        return TWI_USE_TWI_ISR;
     }
 
     /* Generate START condition */
