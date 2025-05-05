@@ -5,7 +5,7 @@
 
 //------------------------------------------------------------------------------
 
-#include <stdio.h>
+#include <stddef.h>
 
 #include <util/delay.h>
 #include <avr/io.h>
