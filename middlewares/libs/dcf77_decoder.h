@@ -39,14 +39,14 @@ struct dcf77_frame
     uint8_t time_change_announcement : 1;
     uint8_t winter_time : 2;
     uint8_t leap_second : 1;
-    uint8_t time_start_always_zero : 1;
+    uint8_t time_start_always_one : 1;
     uint8_t minutes_units : 4;
     uint8_t minutes_tens : 3;
     uint8_t minutes_parity : 1;
     uint8_t hours_units : 4;
     uint8_t hours_tens : 2;
     uint8_t hours_parity : 1;
-    uint8_t month_days_units : 4;
+    uint8_t month_day_units : 4;
     uint8_t month_day_tens : 2;
     uint8_t weekday : 3;
     uint8_t months_units : 4;

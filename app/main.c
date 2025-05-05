@@ -602,7 +602,7 @@ int main()
                 unix_time_dcf.minutes_tens = dcf_frame->minutes_tens;
                 unix_time_dcf.minutes_units = dcf_frame->minutes_units;
                 unix_time_dcf.date_tens = dcf_frame->month_day_tens;
-                unix_time_dcf.date_units = dcf_frame->month_days_units;
+                unix_time_dcf.date_units = dcf_frame->month_day_units;
                 unix_time_dcf.month_tens = dcf_frame->months_tens;
                 unix_time_dcf.month_units = dcf_frame->months_units;
                 unix_time_dcf.year_tens = dcf_frame->years_tens;
@@ -620,7 +620,7 @@ int main()
                 buf[i++] = (dcf_frame->minutes_units + '0');
                 buf[i++] = (' ');
                 buf[i++] = (dcf_frame->month_day_tens + '0');
-                buf[i++] = (dcf_frame->month_days_units + '0');
+                buf[i++] = (dcf_frame->month_day_units + '0');
                 buf[i++] = ('.');
                 buf[i++] = (dcf_frame->months_tens + '0');
                 buf[i++] = (dcf_frame->months_units + '0');
