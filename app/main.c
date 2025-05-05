@@ -278,6 +278,7 @@ static struct buzzer_note alarm_beep[] =
 /* BUTTON */
 
 #include <button.h>
+#include <string.h>
 
 static bool button1_init_cb(void)
 {
@@ -295,11 +296,8 @@ static void button1_pressed_cb(void)
 
     hd44780_clear(&lcd_obj);
 
-    // memset(&unix_time, 0x00, sizeof(unix_time));
+    memset(&unix_time, 0x00, sizeof(unix_time));
 
-    for (uint8_t i = 0; i < sizeof(unix_time); i++) {
-        ((uint8_t*)&unix_time)[i] = 0;
-    }
     ds1307_set_time(&rtc_obj, &unix_time);
 
     synced = false;
