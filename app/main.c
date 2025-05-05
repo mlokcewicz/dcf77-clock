@@ -84,7 +84,7 @@ static struct ds1307_cfg rtc_cfg =
     .rs = DS1307_RS_1HZ,
 };
 
-struct ds1307_obj rtc_obj;
+static struct ds1307_obj rtc_obj;
 
 static struct ds1307_time unix_time = 
 {
@@ -209,12 +209,12 @@ static struct timer_cfg timer2_cfg =
 
 static struct timer_obj timer2_obj;
 
-bool buzzer1_init_cb(void)
+static bool buzzer1_init_cb(void)
 {
     return true;
 }
 
-bool buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
+static bool buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
 {
     static uint32_t start_tickstamp = 0;
 
@@ -243,12 +243,12 @@ bool buzzer1_play_cb(uint16_t tone, uint16_t time_ms)
     return false; // note is played
 }
 
-void buzzer1_stop_cb(void)
+static void buzzer1_stop_cb(void)
 {
     timer_start(&timer2_obj, false);
 }
 
-bool buzzer1_deinit_cb(void)
+static bool buzzer1_deinit_cb(void)
 {
     return true;
 }
@@ -263,7 +263,7 @@ static struct buzzer_cfg buzzer1_cfg =
 
 static struct buzzer_obj buzzer1_obj;
 
-struct buzzer_note alarm_beep[] = 
+static struct buzzer_note alarm_beep[] = 
 {
 	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
 	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
@@ -281,17 +281,17 @@ struct buzzer_note alarm_beep[] =
 #include <button.h>
 #include <string.h>
 
-bool button1_init_cb(void)
+static bool button1_init_cb(void)
 {
     return gpio_init(GPIO_PORT_B, GPIO_PIN_2, false, false);
 }
 
-bool button1_get_state_cb(void)
+static bool button1_get_state_cb(void)
 {
     return gpio_get(GPIO_PORT_B, GPIO_PIN_2);
 }
 
-void button1_pressed_cb(void)
+static void button1_pressed_cb(void)
 {
     buzzer_beep(6000, 50);
 
@@ -303,7 +303,7 @@ void button1_pressed_cb(void)
     synced = false;
 }
 
-bool button1_deinit_cb(void)
+static bool button1_deinit_cb(void)
 {
     return true;
 }
@@ -400,13 +400,13 @@ static void exti_encoder1_cb(void)
 
 #include <mas6181b.h>
 
-void mas6181b1_io_init_cb(void)
+static void mas6181b1_io_init_cb(void)
 {
     gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
     gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
 }
 
-void mas6181b1_pwr_down_cb(bool pwr_down)
+static void mas6181b1_pwr_down_cb(bool pwr_down)
 {
     gpio_set(GPIO_PORT_B, GPIO_PIN_1, pwr_down);
 }
