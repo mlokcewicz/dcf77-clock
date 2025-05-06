@@ -213,7 +213,7 @@ static struct button_cfg button1_cfg =
 	.init = button1_init_cb,
 	.get_state = button1_get_state_cb,
 	.pressed = button1_pressed_cb,
-	.deinit = NULL,//button1_deinit_cb,
+	.deinit = NULL,
     
     .active_low = true,
     .irq_cfg = true,
@@ -261,7 +261,7 @@ static struct rotary_encoder_cfg encoder1_cfg =
     .get_a_cb = encoder1_get_a_cb,
     .get_b_cb = encoder1_get_b_cb,
     .init_cb = encoder1_init_cb,
-    .deinit_cb = NULL,//encoder1_deinit_cb,
+    .deinit_cb = NULL,
     .rotation_cb = encoder1_rotation_cb,
     .sub_steps_count = 4,
     .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_A,
