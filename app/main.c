@@ -454,6 +454,7 @@ static struct timer_cfg timer1_cfg =
 static struct timer_obj timer1_obj;
 
 static enum dcf77_decoder_status decoder_status = DCF77_DECODER_STATUS_WAITING;
+static enum dcf77_decoder_status prev_decoder_status = DCF77_DECODER_STATUS_WAITING;
 static bool last_triggered_on_bit;
 static uint16_t last_time_ms;
 
@@ -474,6 +475,8 @@ static void timer1_capt_cb(uint16_t icr)
 
     last_triggered_on_bit = rising_edge;
     last_time_ms = TICKS_TO_MS(icr, PRESC);
+
+    prev_decoder_status = decoder_status;
 
     decoder_status = dcf77_decode(TICKS_TO_MS(icr, PRESC), rising_edge); 
 };
@@ -504,14 +507,17 @@ static void print_time(uint8_t line)
 static void uint16_to_str(uint16_t value, char *buffer) 
 {
     uint8_t i = 0;
-    do {
+    do 
+    {
         buffer[i++] = (value % 10) + '0';
         value /= 10;
     } while (value > 0);
+    
     buffer[i] = '\0';
 
-    // Reverse the string
-    for (uint8_t j = 0; j < i / 2; j++) {
+    /* Reverse the string */
+    for (uint8_t j = 0; j < i / 2; j++) 
+    {
         char temp = buffer[j];
         buffer[j] = buffer[i - j - 1];
         buffer[i - j - 1] = temp;
@@ -604,7 +610,7 @@ int main()
                 hd44780_set_pos(&lcd_obj, 0, 15);
                 hd44780_print(&lcd_obj, "E");
             }
-            else if (decoder_status == DCF77_DECODER_STATUS_SYNCED && !synced)
+            if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && prev_decoder_status == DCF77_DECODER_STATUS_SYNCED && !synced)
             {
                 struct dcf77_frame *dcf_frame = dcf77_get_frame();
 
