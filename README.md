@@ -5,9 +5,9 @@ DCF77 controlled radio clock based on ATmega88 microcontroller, MAS6181B AM rece
 Capabilities:
 * Time and date displaying
 * Alarm handling 
-* Automatic and manual remote time / date / weather info synchronization to DCF77 signal
+* Automatic and manual remote time and date synchronization to DCF77 signal
 * Time zone configuration
-* Time and date maintaining by CR2032 battery
+* Time and date retention by CR2032 battery
 
 Hardware:
 * ATmega88
@@ -18,7 +18,7 @@ Hardware:
 
 Software:
 * C
-* Protothreads?
+* Protothreads
 * Own MCU peripherals and external circuits drivers
 
 ## Tools
