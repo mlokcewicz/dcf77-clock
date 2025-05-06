@@ -7,73 +7,30 @@
 
 #include "ui_manager.h"
 
-//------------------------------------------------------------------------------
+#include <string.h>
+
+#include <util/delay.h>
 
 #include <gpio.h>
-#include <util/delay.h>
-#include <stddef.h>
-#include <avr/io.h>  
+#include <exti.h>
+#include <timer.h>
 
+#include <buzzer.h>
+#include <button.h>
+#include <hd44780.h>
 #include <ds1307.h>
+
+//------------------------------------------------------------------------------
  
 extern struct ds1307_time unix_time;
 extern struct ds1307_obj rtc_obj;
 extern bool synced;
 
-/* LCD */
-
-#include <hd44780.h>
-
-static void lcd_set_pin_cb(uint8_t pin, bool state)
-{
-    struct gpio_tuple
-    {
-        enum gpio_port port;
-        enum gpio_pin pin;
-    };
-
-    static const struct gpio_tuple lcd_pins[] =
-    {
-        [LCD_RS] = {GPIO_PORT_C, GPIO_PIN_3},
-        [LCD_E] = {GPIO_PORT_D, GPIO_PIN_4},
-        [LCD_D4] = {GPIO_PORT_B, GPIO_PIN_6},
-        [LCD_D5] = {GPIO_PORT_B, GPIO_PIN_7},
-        [LCD_D6] = {GPIO_PORT_D, GPIO_PIN_7},
-        [LCD_D7] = {GPIO_PORT_D, GPIO_PIN_5},
-    };
-
-    gpio_set(lcd_pins[pin].port, lcd_pins[pin].pin, state);
-}
-
-static void lcd_delay_cb(uint16_t us) 
-{
-    while (us--)
-        _delay_us(1);
-}
-
-static void lcd_pin_init_cb(void)
-{
-    gpio_init(GPIO_PORT_C, GPIO_PIN_3, true, false);
-    gpio_init(GPIO_PORT_B, GPIO_PIN_6, true, false);
-    gpio_init(GPIO_PORT_B, GPIO_PIN_7, true, false);
-    gpio_init(GPIO_PORT_D, GPIO_PIN_4, true, false);
-    gpio_init(GPIO_PORT_D, GPIO_PIN_5, true, false);
-    gpio_init(GPIO_PORT_D, GPIO_PIN_7, true, false);
-}
-
-
-static struct hd44780_cfg lcd_cfg = 
-{
-    .set_pin_state = lcd_set_pin_cb,
-    .delay_us = lcd_delay_cb,
-    .pin_init = lcd_pin_init_cb,
-    .pin_deinit = NULL,
-};
-
-struct hd44780_obj lcd_obj;
-
 /* BUZZER */
 
+static void lcd_delay_cb(uint16_t us);
+
+#include <avr/io.h>  
 static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms) 
 {
     // return;
@@ -88,9 +45,6 @@ static void buzzer_beep(uint16_t frequency_hz, uint16_t duration_ms)
         lcd_delay_cb(delay_us);
     }
 }
-
-#include <timer.h>
-#include <buzzer.h>
 
 static struct timer_cfg timer2_cfg = 
 {  
@@ -162,7 +116,7 @@ static struct buzzer_cfg buzzer1_cfg =
 	.init = buzzer1_init_cb,
 	.play = buzzer1_play_cb,
 	.stop = buzzer1_stop_cb,
-	.deinit = NULL,//buzzer1_deinit_cb,
+	.deinit = NULL,
 };
 
 static struct buzzer_obj buzzer1_obj;
@@ -180,10 +134,56 @@ static struct buzzer_note alarm_beep[] =
 	{BUZZER_TONE_STOP, 1000UL * 800},
 };
 
-/* BUTTON */
+/* LCD */
 
-#include <button.h>
-#include <string.h>
+static void lcd_set_pin_cb(uint8_t pin, bool state)
+{
+    struct gpio_tuple
+    {
+        enum gpio_port port;
+        enum gpio_pin pin;
+    };
+
+    static const struct gpio_tuple lcd_pins[] =
+    {
+        [LCD_RS] = {GPIO_PORT_C, GPIO_PIN_3},
+        [LCD_E] = {GPIO_PORT_D, GPIO_PIN_4},
+        [LCD_D4] = {GPIO_PORT_B, GPIO_PIN_6},
+        [LCD_D5] = {GPIO_PORT_B, GPIO_PIN_7},
+        [LCD_D6] = {GPIO_PORT_D, GPIO_PIN_7},
+        [LCD_D7] = {GPIO_PORT_D, GPIO_PIN_5},
+    };
+
+    gpio_set(lcd_pins[pin].port, lcd_pins[pin].pin, state);
+}
+
+static void lcd_delay_cb(uint16_t us) 
+{
+    while (us--)
+        _delay_us(1);
+}
+
+static void lcd_pin_init_cb(void)
+{
+    gpio_init(GPIO_PORT_C, GPIO_PIN_3, true, false);
+    gpio_init(GPIO_PORT_B, GPIO_PIN_6, true, false);
+    gpio_init(GPIO_PORT_B, GPIO_PIN_7, true, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_4, true, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_5, true, false);
+    gpio_init(GPIO_PORT_D, GPIO_PIN_7, true, false);
+}
+
+static struct hd44780_cfg lcd_cfg = 
+{
+    .set_pin_state = lcd_set_pin_cb,
+    .delay_us = lcd_delay_cb,
+    .pin_init = lcd_pin_init_cb,
+    .pin_deinit = NULL,
+};
+
+struct hd44780_obj lcd_obj;
+
+/* BUTTON */
 
 static bool button1_init_cb(void)
 {
@@ -271,15 +271,10 @@ static struct rotary_encoder_obj encoder1_obj;
 
 /* EXTI */
 
-#include <exti.h>
-
 static void exti_button1_cb(void)
 {
     button_process(&button1_obj);
 }
-
-// static bool new_sec = false;
-
 
 static void exti_encoder1_cb(void)
 {
@@ -294,17 +289,22 @@ bool ui_manager_init(void)
     gpio_init(GPIO_PORT_D, GPIO_PIN_6, true, false);
     gpio_set(GPIO_PORT_D, GPIO_PIN_6, false);
 
+    /* BUZZER */
+    buzzer_init(&buzzer1_obj, &buzzer1_cfg);
+    buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
+
+    /* LCD */
     hd44780_init(&lcd_obj, &lcd_cfg);
     hd44780_print(&lcd_obj, "TEST");
     hd44780_set_pos(&lcd_obj, 1, 0);
 
+    /* BUTTON */
     button_init(&button1_obj, &button1_cfg);
+
+    /* ROTARY ENCODER */
     rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
-    buzzer_init(&buzzer1_obj, &buzzer1_cfg);
-
-    buzzer_set_pattern(&buzzer1_obj, alarm_beep, sizeof(alarm_beep), 800);
-
+    /* EXTI */
     exti_init(EXTI_ID_PCINT2, EXTI_TRIGGER_CHANGE, exti_button1_cb);
     exti_enable(EXTI_ID_PCINT2, true);
     exti_init(EXTI_ID_INT0, EXTI_TRIGGER_FALLING_EDGE, exti_encoder1_cb);

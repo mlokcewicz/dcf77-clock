@@ -7,35 +7,29 @@
 
 #include "radio_manager.h"
 
-#include "stddef.h"
+#include <stddef.h>
 
-//------------------------------------------------------------------------------
+#include <avr/io.h>
 
-#include <gpio.h>
-
-/* MAS6181B */
-
-#include <mas6181b.h>
-#include <timer.h>
 #include <dcf77_decoder.h>
 
+#include <gpio.h>
+#include <timer.h>
+
+#include <mas6181b.h>
 #include <ds1307.h>
 #include <hd44780.h>
 
-#include <avr/io.h>
+//------------------------------------------------------------------------------
 
 extern struct hd44780_obj lcd_obj;
 extern struct ds1307_obj rtc_obj;
 extern struct ds1307_time unix_time;
+extern bool new_sec;
 
 bool synced = false;
-bool new_sec = false;
-
-
 
 /* DCF77 */
-
-#include <dcf77_decoder.h>
 
 static void timer1_capt_cb(uint16_t icr);
 
@@ -136,6 +130,8 @@ static void uint16_to_str(uint16_t value, char *buffer)
     }
 }
 
+/* MAS6181B */
+
 static void mas6181b1_io_init_cb(void)
 {
     gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
@@ -160,12 +156,10 @@ static struct mas6181b_obj mas6181b1_obj;
 
 //------------------------------------------------------------------------------
 
-
 bool radio_manager_init(void)
 {
     /* DCF */
     mas6181b_init(&mas6181b1_obj, &mas6181b1_cfg);
-
 
     return true;
 }

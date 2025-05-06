@@ -7,28 +7,22 @@
 
 #include <stddef.h>
 
-#include <util/delay.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
+
+#include <radio_manager.h>
+#include <clock_manager.h>
+#include <ui_manager.h>
 
 //------------------------------------------------------------------------------
 
 /* Common */
 #include <stdbool.h>
 
+#include <avr/interrupt.h>
+#include <timer.h>
 #include <core.h>
 #include <wdg.h>
-// #include <avr/wdt.h>
 
 #include <ds1307.h>
-#include <gpio.h>
-
-#include <radio_manager.h>
-#include <clock_manager.h>
-#include <ui_manager.h>
-
-#include <timer.h>
-
 
 struct ds1307_time unix_time = 
 {
@@ -52,7 +46,6 @@ struct ds1307_time unix_time =
 int main()
 {
     wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
-    // wdt_enable(WDTO_8S);
     
     system_timer_init();
 
@@ -61,7 +54,6 @@ int main()
     radio_manager_init();
     clock_manager_init();
     ui_manager_init();
-
     
     sei();
 
@@ -96,7 +88,6 @@ int main()
         // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
         
         wdg_feed();
-        // wdt_reset();
         core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
     }
 }

@@ -13,12 +13,10 @@
 
 #include <twi.h>
 #include <ds1307.h>
-#include <avr/interrupt.h>
 #include <exti.h>
 #include <gpio.h>   
-// #include <time.h>
 
-extern bool new_sec;
+bool new_sec = false;
 
 static struct twi_cfg twi1_cfg = 
 {
@@ -64,13 +62,10 @@ static void exti_sqw_cb(void)
 
 bool clock_manager_init(void)
 {
-
     exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
     exti_enable(EXTI_ID_PCINT10, true);
 
     ds1307_init(&rtc_obj, &rtc_cfg);
-
-
 
     return true;
 }

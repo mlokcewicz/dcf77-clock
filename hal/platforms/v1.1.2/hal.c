@@ -7,7 +7,7 @@
 
 #include "hal.h"
 
-#include <avr/fuse.h>
+#include <avr/io.h>
 #include <avr/interrupt.h>
 
 //------------------------------------------------------------------------------
