@@ -6,7 +6,7 @@
         {
             "label": "configure",
             "type": "shell",
-            "command": "cmake --preset v0.0.1",
+            "command": "cmake --preset v1.1.2",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
@@ -14,7 +14,7 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "cmake --build --preset v0.0.1",
+            "command": "cmake --build --preset v1.1.2",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

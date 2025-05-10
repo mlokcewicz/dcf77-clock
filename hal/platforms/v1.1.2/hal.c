@@ -1,33 +1,35 @@
 //------------------------------------------------------------------------------
 
-/// @file clock_manager.h
+/// @file hal.c
 /// @note Copyright (C) Michał Łokcewicz. All rights reserved.
 
 //------------------------------------------------------------------------------
 
-#ifndef CLOCK_MANAGER_H_
-#define CLOCK_MANAGER_H_
+#include "hal.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 //------------------------------------------------------------------------------
 
-#include <stdbool.h>
+/* Fuse and lock bits are active-low so to program given bit use & operator */
+
+LOCKBITS = 0xFF;
+
+FUSES =
+{
+    .low = LFUSE_DEFAULT,
+    .high = HFUSE_DEFAULT,
+    .extended = EFUSE_DEFAULT,
+};
 
 //------------------------------------------------------------------------------
 
-bool clock_manager_init(void);
+/* Non implemented ISR handling */
 
-void clock_manager_process(void);
-
-//------------------------------------------------------------------------------
-
-#ifdef __cplusplus
+ISR(BADISR_vect)
+{
+    /* Add error handling */
 }
-#endif
-
-#endif /* CLOCK_MANAGER_H_ */
 
 //------------------------------------------------------------------------------
