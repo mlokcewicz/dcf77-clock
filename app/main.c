@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 
+#include <hal.h>
 
 #include <radio_manager.h>
 #include <clock_manager.h>
@@ -45,9 +46,7 @@ struct ds1307_time unix_time =
 
 int main()
 {
-    wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
-    
-    system_timer_init();
+    hal_init();
 
     // set_system_time(1744458473);
 

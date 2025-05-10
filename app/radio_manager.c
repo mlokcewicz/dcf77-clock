@@ -9,7 +9,7 @@
 
 #include <stddef.h>
 
-#include <avr/io.h>
+#include <hal.h>
 
 #include <dcf77_decoder.h>
 
@@ -18,73 +18,31 @@
 
 #include <mas6181b.h>
 #include <ds1307.h>
-#include <hd44780.h>
 
 //------------------------------------------------------------------------------
 
-extern struct hd44780_obj lcd_obj;
 extern struct ds1307_obj rtc_obj;
 extern struct ds1307_time unix_time;
 extern bool new_sec;
 
 bool synced = false;
 
-/* DCF77 */
-
-static void timer1_capt_cb(uint16_t icr);
-
-static struct timer_cfg timer1_cfg = 
-{  
-    .id = TIMER_ID_1,
-    .clock = TIMER_CLOCK_PRESC_256, 
-    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
-    .mode = TIMER_MODE_16_BIT_NORMAL,
-    .com_a_cfg = TIMER_CM_DISABLED,
-    .com_b_cfg = TIMER_CM_DISABLED,
-
-    .counter_val = 0,
-    .ovrfv_cb = NULL,
-
-    .out_comp_a_val = 0,
-    .out_comp_b_val = 0,
-    .out_comp_a_cb = NULL,
-    .out_comp_b_cb = NULL,
-    
-    .input_capture_val = 0,
-    .input_capture_pullup = false,
-    .input_capture_noise_canceler = false,
-    .input_capture_rising_edge = false,
-    .in_capt_cb = timer1_capt_cb,
-};
-
-static struct timer_obj timer1_obj;
-
 static enum dcf77_decoder_status decoder_status = DCF77_DECODER_STATUS_WAITING;
 static enum dcf77_decoder_status prev_decoder_status = DCF77_DECODER_STATUS_WAITING;
 static bool last_triggered_on_bit;
 static uint16_t last_time_ms;
 
-#define PRESC 256
-#define TICKS_TO_MS(ticks, presc) ((uint32_t)ticks * 1000UL / (F_CPU / presc)) // out
-
-static void timer1_capt_cb(uint16_t icr)
+void hal_dcf_cb(uint16_t ms, bool rising_edge)
 {
     if (synced)
         return;
 
-    /* Now trigger on RISING edge is on BIT edge */
-
-    bool rising_edge = (TCCR1B & (1 << ICES1)); 
-    
-    TCCR1B ^= (1 << ICES1); // Change trigger edge
-    TCNT1 = 0;
-
     last_triggered_on_bit = rising_edge;
-    last_time_ms = TICKS_TO_MS(icr, PRESC);
+    last_time_ms = ms;
 
     prev_decoder_status = decoder_status;
 
-    decoder_status = dcf77_decode(TICKS_TO_MS(icr, PRESC), rising_edge); 
+    decoder_status = dcf77_decode(ms, rising_edge); 
 };
 
 static char buf[16]; 
@@ -106,8 +64,7 @@ static void print_time(uint8_t line)
     buf[i++] = (unix_time.seconds_tens + '0');
     buf[i++] = (unix_time.seconds_units + '0');
     buf[i++] = 0;
-    hd44780_set_pos(&lcd_obj, line, 0);
-    hd44780_print(&lcd_obj, buf);
+    hal_lcd_print(buf, line, 0);
 }
 
 static void uint16_to_str(uint16_t value, char *buffer) 
@@ -130,37 +87,10 @@ static void uint16_to_str(uint16_t value, char *buffer)
     }
 }
 
-/* MAS6181B */
-
-static void mas6181b1_io_init_cb(void)
-{
-    gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
-    gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
-
-    timer_init(&timer1_obj, &timer1_cfg);
-    timer_start(&timer1_obj, true);
-}
-
-static void mas6181b1_pwr_down_cb(bool pwr_down)
-{
-    gpio_set(GPIO_PORT_B, GPIO_PIN_1, pwr_down);
-}
-
-static struct mas6181b_cfg mas6181b1_cfg = 
-{
-    .io_init = mas6181b1_io_init_cb,
-    .pwr_down = mas6181b1_pwr_down_cb,
-};
-
-static struct mas6181b_obj mas6181b1_obj;
-
 //------------------------------------------------------------------------------
 
 bool radio_manager_init(void)
 {
-    /* DCF */
-    mas6181b_init(&mas6181b1_obj, &mas6181b1_cfg);
-
     return true;
 }
 
@@ -191,20 +121,16 @@ void radio_manager_process(void)
 
         uint8_t pos = last_triggered_on_bit ? 0 : 8;
 
-        hd44780_set_pos(&lcd_obj, 0, pos);
-        hd44780_print(&lcd_obj, "       ");
-        hd44780_set_pos(&lcd_obj, 0, pos);
-        hd44780_print(&lcd_obj, buf);
+        hal_lcd_print("       ", 0, pos);
+        hal_lcd_print(buf, 0, pos);
 
         if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED)
         {
-            hd44780_set_pos(&lcd_obj, 0, 15);
-            hd44780_print(&lcd_obj, "S");
+            hal_lcd_print("F", 0, 15);
         }
         else if (decoder_status == DCF77_DECODER_STATUS_ERROR)
         {
-            hd44780_set_pos(&lcd_obj, 0, 15);
-            hd44780_print(&lcd_obj, "E");
+            hal_lcd_print("E", 0, 15);
         }
         if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && prev_decoder_status == DCF77_DECODER_STATUS_SYNCED && !synced)
         {
