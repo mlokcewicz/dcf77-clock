@@ -9,158 +9,46 @@
 
 #include <stddef.h>
 
-#include <avr/io.h>
+#include <hal.h>
 
+#include <simple_stdio.h>
 #include <dcf77_decoder.h>
 
 #include <gpio.h>
-#include <timer.h>
-
 #include <mas6181b.h>
-#include <ds1307.h>
-#include <hd44780.h>
 
 //------------------------------------------------------------------------------
 
-extern struct hd44780_obj lcd_obj;
-extern struct ds1307_obj rtc_obj;
+/* From Clock Manager */
 extern struct ds1307_time unix_time;
-extern bool new_sec;
+
+/* From UI Manager */
+extern void print_time(uint8_t line);
 
 bool synced = false;
-
-/* DCF77 */
-
-static void timer1_capt_cb(uint16_t icr);
-
-static struct timer_cfg timer1_cfg = 
-{  
-    .id = TIMER_ID_1,
-    .clock = TIMER_CLOCK_PRESC_256, 
-    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
-    .mode = TIMER_MODE_16_BIT_NORMAL,
-    .com_a_cfg = TIMER_CM_DISABLED,
-    .com_b_cfg = TIMER_CM_DISABLED,
-
-    .counter_val = 0,
-    .ovrfv_cb = NULL,
-
-    .out_comp_a_val = 0,
-    .out_comp_b_val = 0,
-    .out_comp_a_cb = NULL,
-    .out_comp_b_cb = NULL,
-    
-    .input_capture_val = 0,
-    .input_capture_pullup = false,
-    .input_capture_noise_canceler = false,
-    .input_capture_rising_edge = false,
-    .in_capt_cb = timer1_capt_cb,
-};
-
-static struct timer_obj timer1_obj;
 
 static enum dcf77_decoder_status decoder_status = DCF77_DECODER_STATUS_WAITING;
 static enum dcf77_decoder_status prev_decoder_status = DCF77_DECODER_STATUS_WAITING;
 static bool last_triggered_on_bit;
 static uint16_t last_time_ms;
 
-#define PRESC 256
-#define TICKS_TO_MS(ticks, presc) ((uint32_t)ticks * 1000UL / (F_CPU / presc)) // out
-
-static void timer1_capt_cb(uint16_t icr)
+void hal_dcf_cb(uint16_t ms, bool rising_edge)
 {
     if (synced)
         return;
 
-    /* Now trigger on RISING edge is on BIT edge */
-
-    bool rising_edge = (TCCR1B & (1 << ICES1)); 
-    
-    TCCR1B ^= (1 << ICES1); // Change trigger edge
-    TCNT1 = 0;
-
     last_triggered_on_bit = rising_edge;
-    last_time_ms = TICKS_TO_MS(icr, PRESC);
+    last_time_ms = ms;
 
     prev_decoder_status = decoder_status;
 
-    decoder_status = dcf77_decode(TICKS_TO_MS(icr, PRESC), rising_edge); 
+    decoder_status = dcf77_decode(ms, rising_edge); 
 };
-
-static char buf[16]; 
-static void print_time(uint8_t line)
-{
-    uint8_t i = 0;
-    buf[i++] = (unix_time.hours_tens + '0');
-    buf[i++] = (unix_time.hours_units + '0');
-    buf[i++] = (':');
-    buf[i++] = (unix_time.minutes_tens + '0');
-    buf[i++] = (unix_time.minutes_units + '0');
-    buf[i++] = (' ');
-    buf[i++] = (unix_time.date_tens + '0');
-    buf[i++] = (unix_time.date_units + '0');
-    buf[i++] = ('.');
-    buf[i++] = (unix_time.month_tens + '0');
-    buf[i++] = (unix_time.month_units + '0');
-    buf[i++] = (' ');
-    buf[i++] = (unix_time.seconds_tens + '0');
-    buf[i++] = (unix_time.seconds_units + '0');
-    buf[i++] = 0;
-    hd44780_set_pos(&lcd_obj, line, 0);
-    hd44780_print(&lcd_obj, buf);
-}
-
-static void uint16_to_str(uint16_t value, char *buffer) 
-{
-    uint8_t i = 0;
-    do 
-    {
-        buffer[i++] = (value % 10) + '0';
-        value /= 10;
-    } while (value > 0);
-    
-    buffer[i] = '\0';
-
-    /* Reverse the string */
-    for (uint8_t j = 0; j < i / 2; j++) 
-    {
-        char temp = buffer[j];
-        buffer[j] = buffer[i - j - 1];
-        buffer[i - j - 1] = temp;
-    }
-}
-
-/* MAS6181B */
-
-static void mas6181b1_io_init_cb(void)
-{
-    gpio_init(GPIO_PORT_B, GPIO_PIN_1, true, false);
-    gpio_init(GPIO_PORT_B, GPIO_PIN_0, false, false);
-
-    timer_init(&timer1_obj, &timer1_cfg);
-    timer_start(&timer1_obj, true);
-}
-
-static void mas6181b1_pwr_down_cb(bool pwr_down)
-{
-    gpio_set(GPIO_PORT_B, GPIO_PIN_1, pwr_down);
-}
-
-static struct mas6181b_cfg mas6181b1_cfg = 
-{
-    .io_init = mas6181b1_io_init_cb,
-    .pwr_down = mas6181b1_pwr_down_cb,
-};
-
-static struct mas6181b_obj mas6181b1_obj;
 
 //------------------------------------------------------------------------------
 
 bool radio_manager_init(void)
 {
-    /* DCF */
-    mas6181b_init(&mas6181b1_obj, &mas6181b1_cfg);
-
     return true;
 }
 
@@ -168,43 +56,33 @@ void radio_manager_process(void)
 {
     static bool dcf_prev_val = false;
 
-    bool dcf_val = gpio_get(GPIO_PORT_B, GPIO_PIN_0);
+    bool dcf_val = hal_dcf_get_state();
 
     if (dcf_val != dcf_prev_val)
     {
-        gpio_set(GPIO_PORT_D, GPIO_PIN_6, !dcf_val);
+        hal_led_set(!dcf_val);
         dcf_prev_val = dcf_val;
-    }
-
-    if (new_sec)
-    {
-        ds1307_get_time(&rtc_obj, &unix_time);
-        print_time(1);
-        new_sec = false;
     }
 
     static bool prev_triggered_on_bit = false;
 
     if (prev_triggered_on_bit != last_triggered_on_bit)
     {
-        uint16_to_str(last_time_ms, buf);
+        static char buf[8];
+        simple_stdio_uint16_to_str(last_time_ms, buf);
 
         uint8_t pos = last_triggered_on_bit ? 0 : 8;
 
-        hd44780_set_pos(&lcd_obj, 0, pos);
-        hd44780_print(&lcd_obj, "       ");
-        hd44780_set_pos(&lcd_obj, 0, pos);
-        hd44780_print(&lcd_obj, buf);
+        hal_lcd_print("       ", 0, pos);
+        hal_lcd_print(buf, 0, pos);
 
         if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED)
         {
-            hd44780_set_pos(&lcd_obj, 0, 15);
-            hd44780_print(&lcd_obj, "S");
+            hal_lcd_print("S", 0, 15);
         }
         else if (decoder_status == DCF77_DECODER_STATUS_ERROR)
         {
-            hd44780_set_pos(&lcd_obj, 0, 15);
-            hd44780_print(&lcd_obj, "E");
+            hal_lcd_print("E", 0, 15);
         }
         if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && prev_decoder_status == DCF77_DECODER_STATUS_SYNCED && !synced)
         {
@@ -225,7 +103,7 @@ void radio_manager_process(void)
             unix_time.seconds_tens = 0;
             unix_time.seconds_units = 0;
 
-            ds1307_set_time(&rtc_obj, &unix_time);
+            hal_set_time(&unix_time);
 
             print_time(0);
 

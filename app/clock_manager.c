@@ -7,72 +7,79 @@
 
 #include "clock_manager.h"
 
+#include <hal.h>
+
 //------------------------------------------------------------------------------
+
+/* From Radio Manager */
+
+/* From UI Manager */
+extern void print_time(uint8_t line);
 
 /* RTC */
 
-#include <twi.h>
-#include <ds1307.h>
-#include <exti.h>
-#include <gpio.h>   
-
 bool new_sec = false;
 
-static struct twi_cfg twi1_cfg = 
+void hal_exti_sqw_cb(void)
 {
-    .pull_up_en = false,
-    .frequency = 100,
-    .irq_mode = false,
+    new_sec = true;
+}
+
+struct ds1307_time unix_time = 
+{
+    .clock_halt = 0,
+    .hour_mode = 0,
+    .seconds_units = 2,
+    .seconds_tens = 3,
+    .minutes_units = 5,
+    .minutes_tens = 4,
+    .hours_units = 8,
+    .hours_tens = 1,
+    .date_units = 1,
+    .date_tens = 0,
+    .day = 5,
+    .month_units = 5,
+    .month_tens = 0,
+    .year_units = 5,
+    .year_tens = 2,
 };
-
-bool ds1307_io_init_cb1(void)
-{
-    return twi_init(&twi1_cfg);
-}
-
-bool ds1307_serial_send_cb1(uint8_t device_addr, uint8_t *data, uint16_t len)
-{
-    return twi_send(device_addr, data, len, true);
-}
-
-bool ds1307_serial_receive_cb1(uint8_t device_addr, uint8_t *data, uint16_t len)
-{
-    return twi_receive(device_addr, data, len);
-}
-
-static struct ds1307_cfg rtc_cfg = 
-{
-    .io_init = ds1307_io_init_cb1,
-    .serial_send = ds1307_serial_send_cb1,
-    .serial_receive = ds1307_serial_receive_cb1,
-
-    .sqw_en = true,
-    .rs = DS1307_RS_1HZ,
-};
-
-struct ds1307_obj rtc_obj;
-
-static void exti_sqw_cb(void)
-{
-    if (!gpio_get(GPIO_PORT_C, GPIO_PIN_2))
-        new_sec = true;
-}
 
 //------------------------------------------------------------------------------
 
 bool clock_manager_init(void)
 {
-    exti_init(EXTI_ID_PCINT10, EXTI_TRIGGER_CHANGE, exti_sqw_cb);
-    exti_enable(EXTI_ID_PCINT10, true);
+    // set_system_time(1744458473);
 
-    ds1307_init(&rtc_obj, &rtc_cfg);
+    // if (!ds1307_is_running(&rtc_obj))
+    //     ds1307_set_time(&rtc_obj, &unix_time);
 
     return true;
 }
 
 void clock_manager_process(void)
 {
+    if (new_sec)
+    {
+        hal_get_time(&unix_time);
+        print_time(1);
+        new_sec = false;
+    }
 
+    // uint8_t *str = "DUPA";
+    // ds1307_save_to_ram(&rtc_obj, 5, str, 4);
+    // char buf2[10] = {0};
+    // ds1307_read_from_ram(&rtc_obj, 4, buf2, 4);
+    // hd44780_set_pos(&lcd_obj, 0, 8);
+    // hd44780_print(&lcd_obj, buf2);
+    // _delay_ms(5000);
+
+    // hd44780_set_pos(&lcd_obj, 1, 0);
+    // char buff[16] = {0};
+    // hd44780_print(&lcd_obj, ltoa(system_timer_get(), buff, 10));
+
+    // uint32_t unix_time = time(NULL);
+    // hd44780_set_pos(&lcd_obj, 1, 0);
+    // hd44780_print(&lcd_obj, ctime(&unix_time) + 4);
 }
 
 //------------------------------------------------------------------------------
