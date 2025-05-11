@@ -117,6 +117,7 @@ void ui_manager_process(void)
     if (event_get() & EVENT_UPDATE_TIME_REQ)
     {
         print_time(1, event_get_data(EVENT_UPDATE_TIME_REQ));
+        
         event_clear(EVENT_UPDATE_TIME_REQ);
     }
 }

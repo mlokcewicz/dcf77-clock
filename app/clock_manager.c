@@ -31,6 +31,26 @@ void hal_exti_sqw_cb(void)
 
 //------------------------------------------------------------------------------
 
+// struct clock_manager_timestamp
+// {
+//     uint8_t minutes_units : 4;
+//     uint8_t minutes_tens : 3;
+//     uint8_t hours_units : 4;
+//     uint8_t hours_tens : 2;
+// };
+
+// static bool time_is_equal(struct event_update_time_req_data_t *time, struct clock_manager_timestamp *timestamp)
+// {
+//     return (time->seconds_units == 0 && 
+//             time->seconds_tens == 0 && 
+//             time->minutes_units == timestamp->minutes_units && 
+//             time->minutes_tens == timestamp->minutes_tens &&
+//             time->hours_units == timestamp->hours_units &&
+//             time->hours_tens == timestamp->hours_tens);
+// }
+
+//------------------------------------------------------------------------------
+
 bool clock_manager_init(void)
 {
     if (hal_time_is_reset())
@@ -43,9 +63,21 @@ void clock_manager_process(void)
 {
     if (ctx.new_sec)
     {
-        hal_get_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+        event_update_time_req_data_t *time = event_get_data(EVENT_UPDATE_TIME_REQ);
+
+        hal_get_time(time);
 
         event_set(EVENT_UPDATE_TIME_REQ);
+
+        if (time->seconds_units == 0 && 
+            time->seconds_tens == 0 && 
+            time->minutes_units == 3 && 
+            time->minutes_tens == 2 &&
+            time->hours_units == 0 &&
+            time->hours_tens == 0)
+        {
+            event_set(EVENT_SYNC_TIME_REQ);
+        }
 
         ctx.new_sec = false;
     }

@@ -17,10 +17,6 @@
 
 //------------------------------------------------------------------------------
 
-#define RADIO_MANAGER_SYNC_INTERVAL (24 * 60 * 60 * 1000UL) // 24 hours
-
-//------------------------------------------------------------------------------
-
 struct radio_manager_ctx
 {
     bool synced;
@@ -29,7 +25,6 @@ struct radio_manager_ctx
     bool triggered_on_bit;
     bool prev_triggered_on_bit;
     uint16_t last_time_ms;
-    uint32_t last_sync_timestamp;
 };
 
 static struct radio_manager_ctx ctx;
@@ -60,7 +55,7 @@ bool radio_manager_init(void)
 
 void radio_manager_process(void)
 {
-    if ((event_get() & EVENT_SYNC_TIME_REQ) || (hal_system_timer_timeout_passed(ctx.last_sync_timestamp, RADIO_MANAGER_SYNC_INTERVAL) && ctx.synced))
+    if (event_get() & EVENT_SYNC_TIME_REQ)
     {
         ctx.synced = false;
 
@@ -69,7 +64,7 @@ void radio_manager_process(void)
         event_clear(EVENT_SYNC_TIME_REQ);
     }
 
-    if (ctx.prev_triggered_on_bit != ctx.triggered_on_bit)
+    if (!ctx.synced && ctx.prev_triggered_on_bit != ctx.triggered_on_bit)
     {
         event_sync_time_status_data_t *sync_time_status_data = event_get_data(EVENT_SYNC_TIME_STATUS);
         
@@ -81,7 +76,7 @@ void radio_manager_process(void)
         
         event_set(EVENT_SYNC_TIME_STATUS);
 
-        if (!ctx.synced && ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && ctx.prev_decoder_status == DCF77_DECODER_STATUS_SYNCED)
+        if (ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && ctx.prev_decoder_status == DCF77_DECODER_STATUS_SYNCED)
         {
             sync_time_status_data->dcf_output = true;
 
@@ -109,7 +104,6 @@ void radio_manager_process(void)
             hal_dcf_power_down(true);
 
             ctx.synced = true;
-            ctx.last_sync_timestamp = hal_system_timer_get();
         }
 
         ctx.prev_triggered_on_bit = ctx.triggered_on_bit;
