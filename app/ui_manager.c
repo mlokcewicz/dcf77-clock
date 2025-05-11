@@ -18,8 +18,6 @@
 
 //------------------------------------------------------------------------------
 
-extern bool synced;
-
 static struct buzzer_note alarm_beep[] = 
 {
 	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
@@ -33,6 +31,10 @@ static struct buzzer_note alarm_beep[] =
 	{BUZZER_TONE_STOP, 1000UL * 800},
 };
 
+//------------------------------------------------------------------------------
+
+/* HAL callbacks */
+
 void hal_button_pressed_cb(void)
 {
     hal_lcd_clear();
@@ -41,7 +43,7 @@ void hal_button_pressed_cb(void)
 
     hal_set_time(event_get_data(EVENT_SET_TIME_REQ));
 
-    synced = false;
+    event_set(EVENT_SYNC_TIME_REQ);
 }
 
 void hal_encoder_rotation_cb(bool right)
@@ -49,27 +51,9 @@ void hal_encoder_rotation_cb(bool right)
     (void)right;
 }
 
+//------------------------------------------------------------------------------
+
 static char buf[16]; 
-// void print_time(uint8_t line)
-// {
-//     uint8_t i = 0;
-//     buf[i++] = (unix_time.hours_tens + '0');
-//     buf[i++] = (unix_time.hours_units + '0');
-//     buf[i++] = (':');
-//     buf[i++] = (unix_time.minutes_tens + '0');
-//     buf[i++] = (unix_time.minutes_units + '0');
-//     buf[i++] = (' ');
-//     buf[i++] = (unix_time.date_tens + '0');
-//     buf[i++] = (unix_time.date_units + '0');
-//     buf[i++] = ('.');
-//     buf[i++] = (unix_time.month_tens + '0');
-//     buf[i++] = (unix_time.month_units + '0');
-//     buf[i++] = (' ');
-//     buf[i++] = (unix_time.seconds_tens + '0');
-//     buf[i++] = (unix_time.seconds_units + '0');
-//     buf[i++] = 0;
-//     hal_lcd_print(buf, line, 0);
-// }
 
 void print_time(uint8_t line, struct ds1307_time *unix_time)
 {
@@ -107,7 +91,7 @@ void ui_manager_process(void)
 
     if (event_get() & EVENT_SYNC_TIME_STATUS)
     {
-        struct event_sync_time_status_data *sync_time_status_data = event_get_data(EVENT_SYNC_TIME_STATUS);
+        event_sync_time_status_data_t *sync_time_status_data = event_get_data(EVENT_SYNC_TIME_STATUS);
 
         static char buf2[8];
         simple_stdio_uint16_to_str(sync_time_status_data->time_ms, buf2);
@@ -126,12 +110,14 @@ void ui_manager_process(void)
             hal_lcd_print("E", 0, 15);
         }
 
+        hal_led_set(!sync_time_status_data->dcf_output);
+
         event_clear(EVENT_SYNC_TIME_STATUS);
     }
-    if (event_get() & EVENT_TIME_UPDATE_REQ)
+    if (event_get() & EVENT_UPDATE_TIME_REQ)
     {
-        print_time(1, event_get_data(EVENT_TIME_UPDATE_REQ));
-        event_clear(EVENT_TIME_UPDATE_REQ);
+        print_time(1, event_get_data(EVENT_UPDATE_TIME_REQ));
+        event_clear(EVENT_UPDATE_TIME_REQ);
     }
 }
 

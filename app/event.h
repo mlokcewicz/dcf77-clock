@@ -16,6 +16,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include <hal.h> /* Do not duplicate struct ds1307_time (in this case flash consumption reduction > clean code) */
+
 //------------------------------------------------------------------------------
 
 enum event_type
@@ -25,16 +27,21 @@ enum event_type
     EVENT_SET_TIME_REQ = 1 << 2,
     EVENT_SET_ALARM_REQ = 1 << 3,
     EVENT_ALARM_REQ = 1 << 4,
-    EVENT_TIME_UPDATE_REQ = 1 << 5, 
+    EVENT_UPDATE_TIME_REQ = 1 << 5, 
 };
 
-struct event_sync_time_status_data
+typedef struct event_sync_time_status_data
 {
     uint8_t error : 1;
     uint8_t frame_started : 1;
     uint8_t rising_edge : 1;
+    uint8_t dcf_output : 1;
     uint16_t time_ms;
-}__attribute__((packed));
+}__attribute__((packed)) event_sync_time_status_data_t;
+
+typedef struct ds1307_time event_set_time_req_data_t;
+typedef struct ds1307_time event_set_alarm_req_data_t;
+typedef struct ds1307_time event_update_time_req_data_t;
 
 //------------------------------------------------------------------------------
 

@@ -36,12 +36,3 @@ int main()
 }
 
 //------------------------------------------------------------------------------
-
-// Events:
-// * SYNC_TIME_REQ (UM --> RM)
-// * SYNC_TIME_STATUS + data (RM --> UM)
-// * SET_TIME_REQ + data (UM / RM --> CM)
-// * SET_ALARM_REQ + data (UM --> CM)
-// * ALARM_REQ (CM --> UM)
-// * TIME_UPDATE_REQ (CM --> UM)
-

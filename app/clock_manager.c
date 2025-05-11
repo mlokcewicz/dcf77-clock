@@ -13,15 +13,20 @@
 
 //------------------------------------------------------------------------------
 
-/* From Radio Manager */
-extern bool synced;
+struct clock_manager_ctx
+{
+     bool new_sec;
+};
 
-/* RTC */
-static bool new_sec = false;
+static struct clock_manager_ctx ctx;
+
+//------------------------------------------------------------------------------
+
+/* HAL callbacks */
 
 void hal_exti_sqw_cb(void)
 {
-    new_sec = true;
+    ctx.new_sec = true;
 }
 
 //------------------------------------------------------------------------------
@@ -29,20 +34,20 @@ void hal_exti_sqw_cb(void)
 bool clock_manager_init(void)
 {
     if (hal_time_is_reset())
-        synced = false;
+        event_set(EVENT_SYNC_TIME_REQ);
 
     return true;
 }
 
 void clock_manager_process(void)
 {
-    if (new_sec)
+    if (ctx.new_sec)
     {
-        hal_get_time(event_get_data(EVENT_TIME_UPDATE_REQ));
+        hal_get_time(event_get_data(EVENT_UPDATE_TIME_REQ));
 
-        event_set(EVENT_TIME_UPDATE_REQ);
+        event_set(EVENT_UPDATE_TIME_REQ);
 
-        new_sec = false;
+        ctx.new_sec = false;
     }
 
     if (event_get() & EVENT_SET_TIME_REQ)

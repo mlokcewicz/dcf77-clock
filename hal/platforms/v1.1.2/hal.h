@@ -59,6 +59,10 @@ bool hal_time_is_reset(void);
 /// @return true if DCF77 receiver output is high, otherwise false
 bool hal_dcf_get_state(void);
 
+/// @brief Sets DCF77 receiver power down state
+/// @param pwr_down true to power down DCF77 receiver, otherwise false
+void hal_dcf_power_down(bool pwr_down);
+
 //------------------------------------------------------------------------------
 
 #endif /* HAL_H_ */

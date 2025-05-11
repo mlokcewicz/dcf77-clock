@@ -525,4 +525,9 @@ bool hal_dcf_get_state(void)
     return mas6181b_get_state(&mas6181b1_obj);
 }
 
+void hal_dcf_power_down(bool pwr_down)
+{
+    mas6181b_power_down(&mas6181b1_obj, pwr_down);
+}
+
 //------------------------------------------------------------------------------
