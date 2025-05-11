@@ -16,16 +16,11 @@ struct event_ctx
 {
     uint8_t event_buf;
     event_sync_time_status_data_t sync_time_status_data;
-    event_set_time_req_data_t time_alarm_data;
+    event_set_time_req_data_t time_data;
+    event_set_alarm_req_data_t alarm_data;
 };
 
 static struct event_ctx ctx;
-
-// static uint8_t event_buf;
-
-// static event_sync_time_status_data_t sync_time_status_data;
-
-// static event_set_time_req_data_t time_alarm_data;
 
 //------------------------------------------------------------------------------
 
@@ -44,14 +39,14 @@ void *event_get_data(enum event_type event)
     if (event == EVENT_SYNC_TIME_STATUS)    
         return &ctx.sync_time_status_data;
 
+    if (event == EVENT_UPDATE_TIME_REQ)
+        return &ctx.time_data;
+
     if (event == EVENT_SET_TIME_REQ)
-        return &ctx.time_alarm_data;
+        return &ctx.time_data;
 
     if (event == EVENT_SET_ALARM_REQ)
-        return &ctx.time_alarm_data;
-
-    if (event == EVENT_UPDATE_TIME_REQ)
-        return &ctx.time_alarm_data;
+        return &ctx.alarm_data;
 
     return NULL; // No data available for the event
 }

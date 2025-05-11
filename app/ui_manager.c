@@ -129,8 +129,6 @@ void ui_manager_process(void)
 
         event_clear(EVENT_SYNC_TIME_STATUS);
     }
-
-
 }
 
 //------------------------------------------------------------------------------

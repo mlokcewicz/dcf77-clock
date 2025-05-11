@@ -12,6 +12,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h> 
+#include <avr/eeprom.h> 
 
 #include <button.h>
 #include <buzzer.h> 
@@ -520,12 +521,12 @@ void hal_get_time(struct ds1307_time *time)
 
 void hal_set_alarm(struct hal_timestamp *alarm)
 {
-    ds1307_save_to_ram(&rtc_obj, 0, (uint8_t*)alarm, sizeof(struct hal_timestamp));
+    eeprom_write_block((const void *)alarm, (void *)0x00, sizeof(struct hal_timestamp));
 }
 
 void hal_get_alarm(struct hal_timestamp *alarm)
 {
-    ds1307_read_from_ram(&rtc_obj, 0, (uint8_t*)alarm, sizeof(struct hal_timestamp));
+    eeprom_read_block((void *)alarm, (const void *)0x00, sizeof(struct hal_timestamp));
 }
 
 bool hal_time_is_reset(void)

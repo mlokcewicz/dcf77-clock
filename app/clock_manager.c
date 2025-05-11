@@ -75,6 +75,13 @@ void clock_manager_process(void)
         event_clear(EVENT_SET_TIME_REQ);
     }
 
+    if (event_get() & EVENT_SET_ALARM_REQ)
+    {
+        hal_set_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+
+        event_clear(EVENT_SET_ALARM_REQ);
+    }
+
     if (ctx.new_sec)
     {
         event_update_time_req_data_t *time = event_get_data(EVENT_UPDATE_TIME_REQ);

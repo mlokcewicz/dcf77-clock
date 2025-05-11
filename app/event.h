@@ -16,7 +16,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#include <hal.h> /* Do not duplicate struct ds1307_time (in this case flash consumption reduction > clean code) */
+#include <hal.h> /* Do not duplicate struct ds1307_time and hal_timestamp (in this case flash consumption reduction > clean code) */
 
 //------------------------------------------------------------------------------
 
@@ -39,9 +39,9 @@ typedef struct event_sync_time_status_data
     uint16_t time_ms;
 }__attribute__((packed)) event_sync_time_status_data_t;
 
-typedef struct ds1307_time event_set_time_req_data_t;
-typedef struct ds1307_time event_set_alarm_req_data_t;
 typedef struct ds1307_time event_update_time_req_data_t;
+typedef struct ds1307_time event_set_time_req_data_t;
+typedef struct hal_timestamp event_set_alarm_req_data_t;
 
 //------------------------------------------------------------------------------
 
