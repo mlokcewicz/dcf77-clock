@@ -32,9 +32,7 @@ static struct buzzer_note alarm_beep[] =
 void hal_button_pressed_cb(void)
 {
     hal_lcd_clear();
-
-    memset(&unix_time, 0x00, sizeof(unix_time));
-
+    
     hal_set_time(&unix_time);
 
     synced = false;
