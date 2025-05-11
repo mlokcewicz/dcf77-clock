@@ -12,12 +12,12 @@
 //------------------------------------------------------------------------------
 
 /* From Radio Manager */
+extern bool synced;
 
 /* From UI Manager */
 extern void print_time(uint8_t line);
 
 /* RTC */
-
 bool new_sec = false;
 
 void hal_exti_sqw_cb(void)
@@ -50,8 +50,8 @@ bool clock_manager_init(void)
 {
     // set_system_time(1744458473);
 
-    // if (!ds1307_is_running(&rtc_obj))
-    //     ds1307_set_time(&rtc_obj, &unix_time);
+    if (hal_time_is_reset())
+        synced = false;
 
     return true;
 }

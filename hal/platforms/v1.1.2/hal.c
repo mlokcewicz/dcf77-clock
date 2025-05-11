@@ -515,6 +515,11 @@ void hal_get_time(struct ds1307_time *time)
     ds1307_get_time(&rtc_obj, time);
 }
 
+bool hal_time_is_reset(void)
+{
+    return ds1307_is_running(&rtc_obj);
+}
+
 bool hal_dcf_get_state(void)
 {
     return mas6181b_get_state(&mas6181b1_obj);
