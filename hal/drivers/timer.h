@@ -173,7 +173,7 @@ uint32_t system_timer_get(void);
 /// @param tickstamp precious timestamp
 /// @param timeout timeout
 /// @return true if timeout passed
-bool system_timer_timeout_passed(uint16_t tickstamp, uint16_t timeout);
+bool system_timer_timeout_passed(uint32_t tickstamp, uint32_t timeout);
 
 //------------------------------------------------------------------------------
 

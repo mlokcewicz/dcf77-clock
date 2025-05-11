@@ -473,7 +473,7 @@ ISR(TIMER2_COMPB_vect)
 
 struct system_timer_ctx
 {
-    volatile uint16_t current_ms;
+    volatile uint32_t current_ms;
 };
 
 static struct system_timer_ctx system_timer_ctx;
@@ -531,7 +531,7 @@ uint32_t system_timer_get(void)
     return val;
 }
 
-bool system_timer_timeout_passed(uint16_t tickstamp, uint16_t timeout)
+bool system_timer_timeout_passed(uint32_t tickstamp, uint32_t timeout)
 {
     return tickstamp + timeout < system_timer_get();
 }
