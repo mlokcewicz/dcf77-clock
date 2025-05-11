@@ -9,24 +9,21 @@
 
 #include <stddef.h>
 
-#include <hal.h>
+#include <event.h>
 
 #include <simple_stdio.h>
 #include <dcf77_decoder.h>
 
+#include <hal.h>
+
 //------------------------------------------------------------------------------
-
-/* From Clock Manager */
-extern struct ds1307_time unix_time;
-
-/* From UI Manager */
-extern void print_time(uint8_t line);
 
 bool synced = false;
 
 static enum dcf77_decoder_status decoder_status = DCF77_DECODER_STATUS_WAITING;
 static enum dcf77_decoder_status prev_decoder_status = DCF77_DECODER_STATUS_WAITING;
 static bool last_triggered_on_bit;
+static bool prev_triggered_on_bit = false;
 static uint16_t last_time_ms;
 
 void hal_dcf_cb(uint16_t ms, bool rising_edge)
@@ -61,48 +58,38 @@ void radio_manager_process(void)
         dcf_prev_val = dcf_val;
     }
 
-    static bool prev_triggered_on_bit = false;
-
     if (prev_triggered_on_bit != last_triggered_on_bit)
     {
-        static char buf[8];
-        simple_stdio_uint16_to_str(last_time_ms, buf);
+        struct event_sync_time_status_data *sync_time_status_data = event_get_data(EVENT_SYNC_TIME_STATUS);
+        sync_time_status_data->rising_edge = last_triggered_on_bit;
+        sync_time_status_data->time_ms = last_time_ms;
+        sync_time_status_data->frame_started = (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED);
+        sync_time_status_data->error = (decoder_status == DCF77_DECODER_STATUS_ERROR);
+        
+        event_set(EVENT_SYNC_TIME_STATUS);
 
-        uint8_t pos = last_triggered_on_bit ? 0 : 8;
-
-        hal_lcd_print("       ", 0, pos);
-        hal_lcd_print(buf, 0, pos);
-
-        if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED)
-        {
-            hal_lcd_print("S", 0, 15);
-        }
-        else if (decoder_status == DCF77_DECODER_STATUS_ERROR)
-        {
-            hal_lcd_print("E", 0, 15);
-        }
         if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && prev_decoder_status == DCF77_DECODER_STATUS_SYNCED && !synced)
         {
             struct dcf77_frame *dcf_frame = dcf77_get_frame();
+            
+            struct ds1307_time *set_time_req_data = event_get_data(EVENT_SET_TIME_REQ);
 
-            unix_time.clock_halt = 0;
-            unix_time.hour_mode = 0;
-            unix_time.hours_tens = dcf_frame->hours_tens;
-            unix_time.hours_units = dcf_frame->hours_units;
-            unix_time.minutes_tens = dcf_frame->minutes_tens;
-            unix_time.minutes_units = dcf_frame->minutes_units;
-            unix_time.date_tens = dcf_frame->month_day_tens;
-            unix_time.date_units = dcf_frame->month_day_units;
-            unix_time.month_tens = dcf_frame->months_tens;
-            unix_time.month_units = dcf_frame->months_units;
-            unix_time.year_tens = dcf_frame->years_tens;
-            unix_time.year_units = dcf_frame->years_units;
-            unix_time.seconds_tens = 0;
-            unix_time.seconds_units = 0;
+            set_time_req_data->seconds_units = 0;
+            set_time_req_data->seconds_tens = 0;    
+            set_time_req_data->minutes_units = dcf_frame->minutes_units;
+            set_time_req_data->minutes_tens = dcf_frame->minutes_tens;
+            set_time_req_data->hours_units = dcf_frame->hours_units;
+            set_time_req_data->hours_tens = dcf_frame->hours_tens;
+            set_time_req_data->hour_mode = 0;
+            set_time_req_data->date_units = dcf_frame->month_day_units;
+            set_time_req_data->date_tens = dcf_frame->month_day_tens;
+            set_time_req_data->month_units = dcf_frame->months_units;
+            set_time_req_data->month_tens = dcf_frame->months_tens;
+            set_time_req_data->year_units = dcf_frame->years_units;
+            set_time_req_data->year_tens = dcf_frame->years_tens;
+            set_time_req_data->clock_halt = 0;
 
-            hal_set_time(&unix_time);
-
-            print_time(0);
+            event_set(EVENT_SET_TIME_REQ);
 
             synced = true;
         }
