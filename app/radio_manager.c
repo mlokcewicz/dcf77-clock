@@ -61,6 +61,7 @@ void radio_manager_process(void)
     if (prev_triggered_on_bit != last_triggered_on_bit)
     {
         struct event_sync_time_status_data *sync_time_status_data = event_get_data(EVENT_SYNC_TIME_STATUS);
+        
         sync_time_status_data->rising_edge = last_triggered_on_bit;
         sync_time_status_data->time_ms = last_time_ms;
         sync_time_status_data->frame_started = (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED);
