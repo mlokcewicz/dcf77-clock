@@ -71,7 +71,7 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
 
 static bool validate_frame(void)
 {
-    struct dcf77_frame_validator *dcf_frame = (struct dcf77_frame_validator *)ctx.frame[0];
+    struct dcf77_frame_validator *dcf_frame = (struct dcf77_frame_validator *)ctx.frame[1];
 
     if (dcf_frame->frame_start_always_zero != 0)
         return false;
@@ -131,6 +131,7 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
         if (ctx.bit_cnt >= 59 + dcf_frame->leap_second)
         {
             memcpy(ctx.frame[1], ctx.frame[0], sizeof(ctx.frame[1]));
+            memset(ctx.frame[0], 0x00, sizeof(ctx.frame[0]));
 
             ctx.frame_started = false;
             ctx.bit_cnt = 0;
