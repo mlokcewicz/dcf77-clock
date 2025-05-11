@@ -11,6 +11,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/wdt.h> 
 
 #include <button.h>
 #include <buzzer.h> 
@@ -20,7 +21,7 @@
 #include <mas6181b.h>
 
 #include <core.h>
-#include <wdg.h>
+// #include <wdg.h>
 #include <gpio.h>
 #include <exti.h>  
 #include <twi.h>
@@ -429,7 +430,8 @@ static void timer1_capt_cb(uint16_t icr)
 void hal_init(void)
 {
     /* Watchdog */
-    wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
+    // wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
+    wdt_enable(WDTO_8S);
     
     /* System timer */
     system_timer_init();
@@ -475,7 +477,8 @@ void hal_init(void)
 
 void hal_process(void)
 {
-    wdg_feed();
+    // wdg_feed();
+    wdt_reset();
     core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
 }
 
@@ -517,12 +520,12 @@ void hal_get_time(struct ds1307_time *time)
 
 void hal_set_alarm(struct hal_timestamp *alarm)
 {
-    ds1307_save_to_ram(&rtc_obj, 0, alarm, sizeof(struct hal_timestamp));
+    ds1307_save_to_ram(&rtc_obj, 0, (uint8_t*)alarm, sizeof(struct hal_timestamp));
 }
 
 void hal_get_alarm(struct hal_timestamp *alarm)
 {
-    ds1307_read_from_ram(&rtc_obj, 0, alarm, sizeof(struct hal_timestamp));
+    ds1307_read_from_ram(&rtc_obj, 0, (uint8_t*)alarm, sizeof(struct hal_timestamp));
 }
 
 bool hal_time_is_reset(void)
