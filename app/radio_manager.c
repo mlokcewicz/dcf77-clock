@@ -14,9 +14,6 @@
 #include <simple_stdio.h>
 #include <dcf77_decoder.h>
 
-#include <gpio.h>
-#include <mas6181b.h>
-
 //------------------------------------------------------------------------------
 
 /* From Clock Manager */

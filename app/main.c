@@ -43,4 +43,5 @@ int main()
 // * SET_TIME_REQ + data (UM / RM --> CM)
 // * SET_ALARM_REQ + data (UM --> CM)
 // * ALARM_REQ (CM --> UM)
+// * TIME_UPDATE_REQ (CM --> UM)
 
