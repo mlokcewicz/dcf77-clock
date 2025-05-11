@@ -51,6 +51,10 @@ void hal_set_time(struct ds1307_time *time);
 /// @param time pointer to time structure @ref struct ds1307_time
 void hal_get_time(struct ds1307_time *time);
 
+/// @brief Checks if RTC is running
+/// @return true if RTC is running, otherwise false
+bool hal_time_is_reset(void);
+
 /// @brief Gets actual DCF77 receiver output state
 /// @return true if DCF77 receiver output is high, otherwise false
 bool hal_dcf_get_state(void);
