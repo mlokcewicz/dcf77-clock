@@ -13,9 +13,29 @@
 
 //------------------------------------------------------------------------------
 
+#define CLOCK_MANAGER_TIMESTAMP(h_tens, h_units, m_tens, m_units) \
+{ \
+    .hours_tens = h_tens, \
+    .hours_units = h_units, \
+    .minutes_tens = m_tens, \
+    .minutes_units = m_units \
+}
+
+#define CLOCK_MANAGER_SYNC_TIMESTAMP (struct clock_manager_timestamp)CLOCK_MANAGER_TIMESTAMP(0, 1, 0, 5)
+
+//------------------------------------------------------------------------------
+
+struct clock_manager_timestamp
+{
+    uint8_t hours_tens : 2;
+    uint8_t hours_units : 4;
+    uint8_t minutes_tens : 3;
+    uint8_t minutes_units : 4;
+}__attribute__((packed));
+
 struct clock_manager_ctx
 {
-     bool new_sec;
+    bool new_sec;
 };
 
 static struct clock_manager_ctx ctx;
@@ -31,23 +51,15 @@ void hal_exti_sqw_cb(void)
 
 //------------------------------------------------------------------------------
 
-// struct clock_manager_timestamp
-// {
-//     uint8_t minutes_units : 4;
-//     uint8_t minutes_tens : 3;
-//     uint8_t hours_units : 4;
-//     uint8_t hours_tens : 2;
-// };
-
-// static bool time_is_equal(struct event_update_time_req_data_t *time, struct clock_manager_timestamp *timestamp)
-// {
-//     return (time->seconds_units == 0 && 
-//             time->seconds_tens == 0 && 
-//             time->minutes_units == timestamp->minutes_units && 
-//             time->minutes_tens == timestamp->minutes_tens &&
-//             time->hours_units == timestamp->hours_units &&
-//             time->hours_tens == timestamp->hours_tens);
-// }
+static bool time_is_equal(event_update_time_req_data_t *time, struct clock_manager_timestamp *timestamp)
+{
+    return (time->seconds_units == 0 && 
+            time->seconds_tens == 0 && 
+            time->minutes_units == timestamp->minutes_units && 
+            time->minutes_tens == timestamp->minutes_tens &&
+            time->hours_units == timestamp->hours_units &&
+            time->hours_tens == timestamp->hours_tens);
+}
 
 //------------------------------------------------------------------------------
 
@@ -69,15 +81,8 @@ void clock_manager_process(void)
 
         event_set(EVENT_UPDATE_TIME_REQ);
 
-        if (time->seconds_units == 0 && 
-            time->seconds_tens == 0 && 
-            time->minutes_units == 3 && 
-            time->minutes_tens == 2 &&
-            time->hours_units == 0 &&
-            time->hours_tens == 0)
-        {
+        if (time_is_equal(time, &CLOCK_MANAGER_SYNC_TIMESTAMP))
             event_set(EVENT_SYNC_TIME_REQ);
-        }
 
         ctx.new_sec = false;
     }
