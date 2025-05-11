@@ -12,8 +12,19 @@
 
 #include <stdint.h>
 
-#include <buzzer.h> /* Do not duplicate struct buzzer_note (flash consumption reduction > clean code) */
+#include <buzzer.h> /* Do not duplicate struct buzzer_note (in this case FLASH consumption reduction > clean code) */
 #include <ds1307.h> /* Do not duplicate struct ds1307_time */
+
+//------------------------------------------------------------------------------
+
+struct hal_timestamp
+{
+    uint8_t hours_tens : 2;
+    uint8_t hours_units : 4;
+    uint8_t minutes_tens : 3;
+    uint8_t minutes_units : 4;
+    uint8_t is_enabled : 1;
+}__attribute__((packed));
 
 //------------------------------------------------------------------------------
 
@@ -50,6 +61,14 @@ void hal_set_time(struct ds1307_time *time);
 /// @brief  Gets time from RTC
 /// @param time pointer to time structure @ref struct ds1307_time
 void hal_get_time(struct ds1307_time *time);
+
+/// @brief Sets alarm on RTC
+/// @param alarm pointer to alarm structure @ref struct hal_timestamp
+void hal_set_alarm(struct hal_timestamp *alarm);
+
+/// @brief  Gets alarm from RTC
+/// @param alarm pointer to alarm structure @ref struct hal_timestamp
+void hal_get_alarm(struct hal_timestamp *alarm);
 
 /// @brief Checks if RTC is running
 /// @return true if RTC is running, otherwise false

@@ -42,8 +42,10 @@ void hal_button_pressed_cb(void)
     memset(event_get_data(EVENT_SET_TIME_REQ), 0x00, sizeof(struct ds1307_time));
 
     hal_set_time(event_get_data(EVENT_SET_TIME_REQ));
-
+    
     event_set(EVENT_SYNC_TIME_REQ);
+
+    hal_audio_set_pattern(NULL, 0, 0);
 }
 
 void hal_encoder_rotation_cb(bool right)
@@ -89,17 +91,30 @@ void ui_manager_process(void)
 {
     hal_audio_process();
 
+    if (event_get() & EVENT_UPDATE_TIME_REQ)
+    {
+        print_time(1, event_get_data(EVENT_UPDATE_TIME_REQ));
+
+        event_clear(EVENT_UPDATE_TIME_REQ);
+    }
+
+    if (event_get() & EVENT_ALARM_REQ)
+    {
+        hal_audio_set_pattern(alarm_beep, sizeof(alarm_beep), 800);
+
+        event_clear(EVENT_ALARM_REQ);
+    }
+
     if (event_get() & EVENT_SYNC_TIME_STATUS)
     {
         event_sync_time_status_data_t *sync_time_status_data = event_get_data(EVENT_SYNC_TIME_STATUS);
 
-        static char buf2[8];
-        simple_stdio_uint16_to_str(sync_time_status_data->time_ms, buf2);
+        simple_stdio_uint16_to_str(sync_time_status_data->time_ms, buf);
     
         uint8_t pos = sync_time_status_data->rising_edge ? 0 : 8;
     
         hal_lcd_print("       ", 0, pos);
-        hal_lcd_print(buf2, 0, pos);
+        hal_lcd_print(buf, 0, pos);
     
         if (sync_time_status_data->frame_started)
         {
@@ -114,12 +129,8 @@ void ui_manager_process(void)
 
         event_clear(EVENT_SYNC_TIME_STATUS);
     }
-    if (event_get() & EVENT_UPDATE_TIME_REQ)
-    {
-        print_time(1, event_get_data(EVENT_UPDATE_TIME_REQ));
-        
-        event_clear(EVENT_UPDATE_TIME_REQ);
-    }
+
+
 }
 
 //------------------------------------------------------------------------------

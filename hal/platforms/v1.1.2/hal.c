@@ -515,6 +515,16 @@ void hal_get_time(struct ds1307_time *time)
     ds1307_get_time(&rtc_obj, time);
 }
 
+void hal_set_alarm(struct hal_timestamp *alarm)
+{
+    ds1307_save_to_ram(&rtc_obj, 0, alarm, sizeof(struct hal_timestamp));
+}
+
+void hal_get_alarm(struct hal_timestamp *alarm)
+{
+    ds1307_read_from_ram(&rtc_obj, 0, alarm, sizeof(struct hal_timestamp));
+}
+
 bool hal_time_is_reset(void)
 {
     return ds1307_is_running(&rtc_obj);
