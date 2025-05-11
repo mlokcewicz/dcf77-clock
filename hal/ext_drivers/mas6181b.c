@@ -16,6 +16,7 @@ bool mas6181b_init(struct mas6181b_obj *obj, struct mas6181b_cfg *cfg)
 
     obj->io_init = cfg->io_init;
     obj->pwr_down = cfg->pwr_down;
+    obj->get = cfg->get;
 
     obj->io_init();
 
@@ -32,6 +33,11 @@ bool mas6181b_power_down(struct mas6181b_obj *obj, bool power_down)
     obj->pwr_down(power_down);
 
     return true;
+}
+
+bool mas6181b_get_state(struct mas6181b_obj *obj)
+{
+    return obj && obj->get && obj->get();
 }
 
 //------------------------------------------------------------------------------

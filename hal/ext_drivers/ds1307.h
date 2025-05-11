@@ -103,8 +103,7 @@ bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *unix_time);
 /// @param obj given DS1307 object pointer
 /// @param unix_time unix timestamp 
 /// @return true if got correctly, otherwiste false
-bool ds1307_get_time(struct ds1307_obj *obj,struct ds1307_time *unix_time);
-
+bool ds1307_get_time(struct ds1307_obj *obj, struct ds1307_time *unix_time);
 
 /// @brief Saves data under given memory address (starting from 0 to 55)
 /// @param obj given DS1307 object pointer

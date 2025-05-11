@@ -11,19 +11,19 @@
 
 #include <hal.h>
 
+#include <simple_stdio.h>
 #include <dcf77_decoder.h>
 
 #include <gpio.h>
-#include <timer.h>
-
 #include <mas6181b.h>
-#include <ds1307.h>
 
 //------------------------------------------------------------------------------
 
-extern struct ds1307_obj rtc_obj;
+/* From Clock Manager */
 extern struct ds1307_time unix_time;
-extern bool new_sec;
+
+/* From UI Manager */
+extern void print_time(uint8_t line);
 
 bool synced = false;
 
@@ -45,48 +45,6 @@ void hal_dcf_cb(uint16_t ms, bool rising_edge)
     decoder_status = dcf77_decode(ms, rising_edge); 
 };
 
-static char buf[16]; 
-static void print_time(uint8_t line)
-{
-    uint8_t i = 0;
-    buf[i++] = (unix_time.hours_tens + '0');
-    buf[i++] = (unix_time.hours_units + '0');
-    buf[i++] = (':');
-    buf[i++] = (unix_time.minutes_tens + '0');
-    buf[i++] = (unix_time.minutes_units + '0');
-    buf[i++] = (' ');
-    buf[i++] = (unix_time.date_tens + '0');
-    buf[i++] = (unix_time.date_units + '0');
-    buf[i++] = ('.');
-    buf[i++] = (unix_time.month_tens + '0');
-    buf[i++] = (unix_time.month_units + '0');
-    buf[i++] = (' ');
-    buf[i++] = (unix_time.seconds_tens + '0');
-    buf[i++] = (unix_time.seconds_units + '0');
-    buf[i++] = 0;
-    hal_lcd_print(buf, line, 0);
-}
-
-static void uint16_to_str(uint16_t value, char *buffer) 
-{
-    uint8_t i = 0;
-    do 
-    {
-        buffer[i++] = (value % 10) + '0';
-        value /= 10;
-    } while (value > 0);
-    
-    buffer[i] = '\0';
-
-    /* Reverse the string */
-    for (uint8_t j = 0; j < i / 2; j++) 
-    {
-        char temp = buffer[j];
-        buffer[j] = buffer[i - j - 1];
-        buffer[i - j - 1] = temp;
-    }
-}
-
 //------------------------------------------------------------------------------
 
 bool radio_manager_init(void)
@@ -98,26 +56,20 @@ void radio_manager_process(void)
 {
     static bool dcf_prev_val = false;
 
-    bool dcf_val = gpio_get(GPIO_PORT_B, GPIO_PIN_0);
+    bool dcf_val = hal_dcf_get_state();
 
     if (dcf_val != dcf_prev_val)
     {
-        gpio_set(GPIO_PORT_D, GPIO_PIN_6, !dcf_val);
+        hal_led_set(!dcf_val);
         dcf_prev_val = dcf_val;
-    }
-
-    if (new_sec)
-    {
-        ds1307_get_time(&rtc_obj, &unix_time);
-        print_time(1);
-        new_sec = false;
     }
 
     static bool prev_triggered_on_bit = false;
 
     if (prev_triggered_on_bit != last_triggered_on_bit)
     {
-        uint16_to_str(last_time_ms, buf);
+        static char buf[8];
+        simple_stdio_uint16_to_str(last_time_ms, buf);
 
         uint8_t pos = last_triggered_on_bit ? 0 : 8;
 
@@ -126,7 +78,7 @@ void radio_manager_process(void)
 
         if (decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED)
         {
-            hal_lcd_print("F", 0, 15);
+            hal_lcd_print("S", 0, 15);
         }
         else if (decoder_status == DCF77_DECODER_STATUS_ERROR)
         {
@@ -151,7 +103,7 @@ void radio_manager_process(void)
             unix_time.seconds_tens = 0;
             unix_time.seconds_units = 0;
 
-            ds1307_set_time(&rtc_obj, &unix_time);
+            hal_set_time(&unix_time);
 
             print_time(0);
 
