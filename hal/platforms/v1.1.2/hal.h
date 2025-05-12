@@ -86,11 +86,11 @@ void hal_dcf_power_down(bool pwr_down);
 /// @param timestamp start tickstamp
 /// @param timeout timeout in milliseconds
 /// @return True if the timeout has passed, otherwise false
-bool hal_system_timer_timeout_passed(uint32_t timestamp, uint32_t timeout);
+bool hal_system_timer_timeout_passed(uint16_t timestamp, uint16_t timeout);
 
 /// @brief  Gets the current system timer tickstamp
 /// @return Current system timer tickstamp
-uint32_t hal_system_timer_get(void);
+uint16_t hal_system_timer_get(void);
 
 //------------------------------------------------------------------------------
 

@@ -473,7 +473,7 @@ ISR(TIMER2_COMPB_vect)
 
 struct system_timer_ctx
 {
-    volatile uint32_t current_ms;
+    volatile uint16_t current_ms;
 };
 
 static struct system_timer_ctx system_timer_ctx;
@@ -519,9 +519,9 @@ void system_timer_init(void)
     timer_start(&timer0_obj, true);
 }
 
-uint32_t system_timer_get(void)
+uint16_t system_timer_get(void)
 {
-    volatile uint32_t val = 0;
+    volatile uint16_t val = 0;
 
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
@@ -531,7 +531,7 @@ uint32_t system_timer_get(void)
     return val;
 }
 
-bool system_timer_timeout_passed(uint32_t tickstamp, uint32_t timeout)
+bool system_timer_timeout_passed(uint16_t tickstamp, uint16_t timeout)
 {
     return tickstamp + timeout < system_timer_get();
 }

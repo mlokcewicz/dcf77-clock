@@ -549,12 +549,12 @@ void hal_dcf_power_down(bool pwr_down)
     mas6181b_power_down(&mas6181b1_obj, pwr_down);
 }
 
-bool hal_system_timer_timeout_passed(uint32_t timestamp, uint32_t timeout)
+bool hal_system_timer_timeout_passed(uint16_t timestamp, uint16_t timeout)
 {
     return system_timer_timeout_passed(timestamp, timeout);
 }
 
-uint32_t hal_system_timer_get(void)
+uint16_t hal_system_timer_get(void)
 {
     return system_timer_get();
 }

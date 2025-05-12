@@ -167,13 +167,13 @@ void system_timer_init(void);
 
 /// @brief Gets current system timer value
 /// @return current system timer value [ms]
-uint32_t system_timer_get(void);
+uint16_t system_timer_get(void);
 
 /// @brief Checks if current tickstamp is older compared to timeout and previous tickstamp
 /// @param tickstamp precious timestamp
 /// @param timeout timeout
 /// @return true if timeout passed
-bool system_timer_timeout_passed(uint32_t tickstamp, uint32_t timeout);
+bool system_timer_timeout_passed(uint16_t tickstamp, uint16_t timeout);
 
 //------------------------------------------------------------------------------
 
