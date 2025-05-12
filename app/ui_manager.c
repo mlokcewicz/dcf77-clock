@@ -82,8 +82,6 @@ void print_time(uint8_t line, struct ds1307_time *unix_time)
 
 bool ui_manager_init(void)
 {
-    // hal_audio_set_pattern(alarm_beep, sizeof(alarm_beep), 800);
-
     return true;
 }
 

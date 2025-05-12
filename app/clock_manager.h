@@ -18,8 +18,12 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+/// @brief Initializes Clock Manager
+/// @return true if initialization was successful, false otherwise
 bool clock_manager_init(void);
 
+/// @brief Processes Clock Manager
+/// @note This function should be called in the main loop
 void clock_manager_process(void);
 
 //------------------------------------------------------------------------------

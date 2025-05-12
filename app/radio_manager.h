@@ -18,8 +18,12 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+/// @brief Initializes Radio Manager
+/// @return true if initialization was successful, false otherwise
 bool radio_manager_init(void);
 
+/// @brief Processes Radio Manager
+/// @note This function should be called in the main loop
 void radio_manager_process(void);
 
 //------------------------------------------------------------------------------

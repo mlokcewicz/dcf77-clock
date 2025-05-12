@@ -18,9 +18,13 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+/// @brief Initializes UI Manager
+/// @return true if initialization was successful, false otherwise 
 bool ui_manager_init(void);
 
-void ui_manager_process(void);
+/// @brief Processes UI Manager
+/// @note This function should be called in the main loop
+void ui_manager_process(void);  
 
 //------------------------------------------------------------------------------
 
