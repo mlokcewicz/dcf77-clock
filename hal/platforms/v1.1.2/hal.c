@@ -89,7 +89,7 @@ __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit);
 #define HAL_BUTTON_PORT GPIO_PORT_B
 
 #define HAL_BUTTON_EXTI_ID EXTI_ID_PCINT2
-#define HAL_BUTTON_EXTI_TRIGGER EXTI_TRIGGER_CHANGE   
+#define HAL_MAS6181B_BUTTON_EXTI_TRIGGER EXTI_TRIGGER_CHANGE   
 
 #define HAL_ENCODER_A_PIN GPIO_PIN_2
 #define HAL_ENCODER_A_PORT GPIO_PORT_D  
@@ -109,6 +109,8 @@ __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit);
 
 #define HAL_MAS6181B_OUT_PIN GPIO_PIN_0
 #define HAL_MAS6181B_OUT_PORT GPIO_PORT_B
+
+#define HAL_MAS6181B_EXTI_ID EXTI_ID_PCINT0
 
 /* Buzzer */
 
@@ -262,11 +264,6 @@ static struct button_cfg button1_cfg =
 
 static struct button_obj button1_obj;
 
-static void exti_button1_cb(void)
-{
-    button_process(&button1_obj);
-}
-
 /* Rotary encoder */
 
 static bool encoder1_get_a_cb(void)
@@ -382,49 +379,20 @@ static struct mas6181b_cfg mas6181b1_cfg =
 
 static struct mas6181b_obj mas6181b1_obj;
 
-/* DCF77 Decider Timer */
+/* DCF77 Decoder and button Interrupt */
 
-static void timer1_capt_cb(uint16_t icr);
-
-static struct timer_cfg timer1_cfg = 
-{  
-    .id = TIMER_ID_1,
-    .clock = TIMER_CLOCK_PRESC_256, 
-    .async_clock = TIMER_ASYNC_CLOCK_DISABLED,
-    .mode = TIMER_MODE_16_BIT_NORMAL,
-    .com_a_cfg = TIMER_CM_DISABLED,
-    .com_b_cfg = TIMER_CM_DISABLED,
-
-    .counter_val = 0,
-    .ovrfv_cb = NULL,
-
-    .out_comp_a_val = 0,
-    .out_comp_b_val = 0,
-    .out_comp_a_cb = NULL,
-    .out_comp_b_cb = NULL,
-    
-    .input_capture_val = 0,
-    .input_capture_pullup = false,
-    .input_capture_noise_canceler = false,
-    .input_capture_rising_edge = false,
-    .in_capt_cb = timer1_capt_cb,
-};
-
-static struct timer_obj timer1_obj;
-
-static void timer1_capt_cb(uint16_t icr)
+static void exti_mas6181B_and_button1_cb(void)
 {
-    /* Now trigger on RISING edge is on BIT edge */
+    static uint16_t last_time = 0;
+    uint16_t current_time = system_timer_get();
+    uint16_t time_diff = current_time - last_time;
+    last_time = current_time;
 
-    bool triggred_on_bit = timer1_cfg.input_capture_rising_edge;
-    timer1_cfg.input_capture_rising_edge ^= 1;
-    timer1_cfg.counter_val = 0;
-
-    timer_init(&timer1_obj, &timer1_cfg);
-    timer_start(&timer1_obj, true);
-
-    hal_dcf_cb(TICKS_TO_MS(icr, 256), triggred_on_bit);
-};
+    if (!gpio_get(HAL_BUTTON_PORT, HAL_BUTTON_PIN))
+        button_process(&button1_obj);
+    else
+        hal_dcf_cb(time_diff, gpio_get(HAL_MAS6181B_OUT_PORT, HAL_MAS6181B_OUT_PIN));
+}
 
 //------------------------------------------------------------------------------
 
@@ -460,10 +428,13 @@ void hal_init(void)
     rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
     /* External interrupts */
-    exti_init(HAL_BUTTON_EXTI_ID, HAL_BUTTON_EXTI_TRIGGER, exti_button1_cb);
+    exti_init(HAL_BUTTON_EXTI_ID, HAL_MAS6181B_BUTTON_EXTI_TRIGGER, exti_mas6181B_and_button1_cb);
     exti_enable(HAL_BUTTON_EXTI_ID, true);
+    exti_enable(HAL_MAS6181B_EXTI_ID, true); 
+
     exti_init(HAL_ENCODER_EXTI_ID, HAL_ENCODER_EXTI_TRIGGER, exti_encoder1_cb);
     exti_enable(HAL_ENCODER_EXTI_ID, true);
+
     exti_init(HAL_SQW_EXTI_ID, HAL_SQW_EXTI_TRIGGER, exti_sqw_cb);
     exti_enable(HAL_SQW_EXTI_ID, true);
 
@@ -473,10 +444,6 @@ void hal_init(void)
     /* MAS6181B */
     mas6181b_init(&mas6181b1_obj, &mas6181b1_cfg);
     
-    /* DCF77 Decoder Timer */
-    timer_init(&timer1_obj, &timer1_cfg);
-    timer_start(&timer1_obj, true);
-
     sei();
 }
 
