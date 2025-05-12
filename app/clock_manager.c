@@ -21,7 +21,7 @@
     .minutes_units = m_units \
 }
 
-#define CLOCK_MANAGER_SYNC_TIMESTAMP (struct hal_timestamp)CLOCK_MANAGER_TIMESTAMP(0, 1, 0, 5)
+#define CLOCK_MANAGER_SYNC_TIMESTAMP (struct hal_timestamp)CLOCK_MANAGER_TIMESTAMP(0, 4, 0, 0)
 
 //------------------------------------------------------------------------------
 
