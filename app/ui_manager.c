@@ -111,7 +111,7 @@ void ui_manager_process(void)
 
         simple_stdio_uint16_to_str(sync_time_status_data->time_ms, buf);
     
-        uint8_t pos = sync_time_status_data->rising_edge ? 0 : 8;
+        uint8_t pos = sync_time_status_data->triggred_on_bit ? 0 : 8;
     
         hal_lcd_print("       ", 0, pos);
         hal_lcd_print(buf, 0, pos);

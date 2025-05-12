@@ -33,17 +33,17 @@ static struct radio_manager_ctx ctx;
 
 /* HAL callbacks */
 
-void hal_dcf_cb(uint16_t ms, bool rising_edge)
+void hal_dcf_cb(uint16_t ms, bool triggred_on_bit)
 {
     if (ctx.synced)
         return;
 
-    ctx.triggered_on_bit = rising_edge;
+    ctx.triggered_on_bit = triggred_on_bit;
     ctx.last_time_ms = ms;
 
     ctx.prev_decoder_status = ctx.decoder_status;
 
-    ctx.decoder_status = dcf77_decode(ms, rising_edge); 
+    ctx.decoder_status = dcf77_decode(ms, triggred_on_bit); 
 };
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ void radio_manager_process(void)
     {
         event_sync_time_status_data_t *sync_time_status_data = event_get_data(EVENT_SYNC_TIME_STATUS);
         
-        sync_time_status_data->rising_edge = ctx.triggered_on_bit;
+        sync_time_status_data->triggred_on_bit = ctx.triggered_on_bit;
         sync_time_status_data->time_ms = ctx.last_time_ms;
         sync_time_status_data->frame_started = (ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED);
         sync_time_status_data->error = (ctx.decoder_status == DCF77_DECODER_STATUS_ERROR);

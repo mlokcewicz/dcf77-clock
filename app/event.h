@@ -34,7 +34,7 @@ typedef struct event_sync_time_status_data
 {
     uint8_t error : 1;
     uint8_t frame_started : 1;
-    uint8_t rising_edge : 1;
+    uint8_t triggred_on_bit : 1;
     uint8_t dcf_output : 1;
     uint16_t time_ms;
 }__attribute__((packed)) event_sync_time_status_data_t;

@@ -57,7 +57,7 @@ ISR(BADISR_vect)
 __attribute__((weak)) void hal_exti_sqw_cb(void); 
 __attribute__((weak)) void hal_button_pressed_cb(void); 
 __attribute__((weak)) void hal_encoder_rotation_cb(bool right); 
-__attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool rising_edge); 
+__attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit); 
 
 /* Pin assignement */
 
@@ -416,14 +416,14 @@ static void timer1_capt_cb(uint16_t icr)
 {
     /* Now trigger on RISING edge is on BIT edge */
 
-    bool rising_edge = timer1_cfg.input_capture_rising_edge;
+    bool triggred_on_bit = timer1_cfg.input_capture_rising_edge;
     timer1_cfg.input_capture_rising_edge ^= 1;
     timer1_cfg.counter_val = 0;
 
     timer_init(&timer1_obj, &timer1_cfg);
     timer_start(&timer1_obj, true);
 
-    hal_dcf_cb(TICKS_TO_MS(icr, 256), rising_edge);
+    hal_dcf_cb(TICKS_TO_MS(icr, 256), triggred_on_bit);
 };
 
 //------------------------------------------------------------------------------
