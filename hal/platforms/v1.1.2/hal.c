@@ -450,9 +450,6 @@ void hal_init(void)
 void hal_process(void)
 {
     wdt_reset();
-
-    set_sleep_mode(SLEEP_MODE_IDLE);
-    sleep_mode();
 }
 
 void hal_led_set(bool state)
