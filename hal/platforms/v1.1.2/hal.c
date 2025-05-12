@@ -12,6 +12,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/wdt.h> 
+#include <avr/sleep.h>
+#include <avr/power.h>
 #include <avr/eeprom.h> 
 
 #include <button.h>
@@ -21,8 +23,6 @@
 #include <ds1307.h>
 #include <mas6181b.h>
 
-#include <core.h>
-// #include <wdg.h>
 #include <gpio.h>
 #include <exti.h>  
 #include <twi.h>
@@ -431,8 +431,12 @@ static void timer1_capt_cb(uint16_t icr)
 void hal_init(void)
 {
     /* Watchdog */
-    // wdg_init(WDG_MODE_RST, WDG_PERIOD_8S, NULL);
     wdt_enable(WDTO_8S);
+
+    /* Power down */
+    power_adc_disable();
+    power_usart0_disable();
+    power_spi_disable();
     
     /* System timer */
     system_timer_init();
@@ -478,9 +482,10 @@ void hal_init(void)
 
 void hal_process(void)
 {
-    // wdg_feed();
     wdt_reset();
-    core_enter_sleep_mode(CORE_SLEEP_MODE_IDLE, false);
+
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_mode();
 }
 
 void hal_led_set(bool state)
