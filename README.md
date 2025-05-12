@@ -24,7 +24,7 @@ Software:
 ## Tools
 * CMake 3.20.0
 * Ninja 1.11.1 
-* AVR_8_bit_GNU_Toolchain_3.6.2_1759 5.4.0
+* AVR_8_bit_GNU_Toolchain_3.7.0.1796 GNU 7.3.0
 * AVRDUDE v7.0
 * USBASP drivers libusb_1.2.4.0
 
