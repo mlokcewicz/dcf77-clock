@@ -350,6 +350,8 @@ static void exti_sqw_cb(void)
 {
     if (!gpio_get(HAL_SQW_PORT, HAL_SQW_PIN))
         hal_exti_sqw_cb();  
+
+    sleep_disable();
 }
 
 /* MAS6181B */
@@ -362,6 +364,8 @@ static void mas6181b1_io_init_cb(void)
 
 static void mas6181b1_pwr_down_cb(bool pwr_down)
 {
+    /* Open collector */
+    gpio_init(HAL_MAS6181B_PWR_DOWN_PORT, HAL_MAS6181B_PWR_DOWN_PIN, !pwr_down, false);
     gpio_set(HAL_MAS6181B_PWR_DOWN_PORT, HAL_MAS6181B_PWR_DOWN_PIN, pwr_down);
 }
 
@@ -392,6 +396,8 @@ static void exti_mas6181B_and_button1_cb(void)
         button_process(&button1_obj);
     else
         hal_dcf_cb(time_diff, gpio_get(HAL_MAS6181B_OUT_PORT, HAL_MAS6181B_OUT_PIN));
+
+    sleep_disable();
 }
 
 //------------------------------------------------------------------------------
@@ -450,6 +456,9 @@ void hal_init(void)
 void hal_process(void)
 {
     wdt_reset();
+
+    // set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    // sleep_mode();
 }
 
 void hal_led_set(bool state)

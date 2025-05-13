@@ -58,8 +58,8 @@ static bool time_is_equal(event_update_time_req_data_t *time, struct hal_timesta
 
 bool clock_manager_init(void)
 {
-    if (hal_time_is_reset())
-        event_set(EVENT_SYNC_TIME_REQ);
+    // if (hal_time_is_reset())
+    //     event_set(EVENT_SYNC_TIME_REQ);
 
     hal_get_alarm(&ctx.alarm);
 
