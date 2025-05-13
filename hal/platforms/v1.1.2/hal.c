@@ -362,6 +362,8 @@ static void mas6181b1_io_init_cb(void)
 
 static void mas6181b1_pwr_down_cb(bool pwr_down)
 {
+    /* Open collector */
+    gpio_init(HAL_MAS6181B_PWR_DOWN_PORT, HAL_MAS6181B_PWR_DOWN_PIN, !pwr_down, false);
     gpio_set(HAL_MAS6181B_PWR_DOWN_PORT, HAL_MAS6181B_PWR_DOWN_PIN, pwr_down);
 }
 
@@ -450,6 +452,9 @@ void hal_init(void)
 void hal_process(void)
 {
     wdt_reset();
+
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_mode();
 }
 
 void hal_led_set(bool state)
