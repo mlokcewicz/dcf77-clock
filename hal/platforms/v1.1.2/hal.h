@@ -45,6 +45,20 @@ void hal_lcd_clear(void);
 /// @brief Prints string on LCD display
 void hal_lcd_print(const char* str, uint8_t row, uint8_t col);
 
+/// @brief Sets cursor position on LCD display
+/// @param row selected row
+/// @param col selected column
+void hal_lcd_set_cursor(uint8_t row, uint8_t col);
+
+/// @brief Sets cursor mode on LCD display
+/// @param visible true to set visible cursor, otherwise false
+/// @param blinking true to set blinking cursor, otherwise false
+void hal_lcd_set_cursor_mode(bool visible, bool blinking);
+
+/// @brief Prints character on LCD display
+/// @param ch selected character code
+void hal_lcd_putc(const char ch);
+
 /// @brief Sets audio pattern for buzzer
 /// @param pattern selected audio pattern array @ref struct buzzer_note
 /// @param pattern_len selected audio pattern array size in bytes

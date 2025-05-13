@@ -58,6 +58,7 @@ __attribute__((weak)) void hal_exti_sqw_cb(void);
 __attribute__((weak)) void hal_button_pressed_cb(void); 
 __attribute__((weak)) void hal_encoder_rotation_cb(bool right); 
 __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit); 
+__attribute__((weak)) const uint8_t hal_user_defined_char_tab[4][8];
 
 /* Pin assignement */
 
@@ -232,6 +233,8 @@ static struct hd44780_cfg lcd_cfg =
     .delay_us = lcd_delay_cb,
     .pin_init = lcd_pin_init_cb,
     .pin_deinit = NULL,
+    .user_defined_char_tab = hal_user_defined_char_tab,
+    .user_defined_char_tab_len = sizeof(hal_user_defined_char_tab) / sizeof(hal_user_defined_char_tab[0]),
 };
 
 static struct hd44780_obj lcd_obj;
@@ -471,6 +474,21 @@ void hal_lcd_print(const char* str, uint8_t row, uint8_t col)
 {
     hd44780_set_pos(&lcd_obj, row, col);
     hd44780_print(&lcd_obj, str);
+}
+
+void hal_lcd_set_cursor(uint8_t row, uint8_t col)
+{
+    hd44780_set_pos(&lcd_obj, row, col);
+}
+
+void hal_lcd_set_cursor_mode(bool visible, bool blinking)
+{
+    hd44780_set_cursor_mode(&lcd_obj, visible, blinking);
+}
+
+void hal_lcd_putc(const char ch)
+{
+    hd44780_putc(&lcd_obj, ch);
 }
 
 void hal_audio_set_pattern(struct buzzer_note *pattern, uint16_t pattern_len, uint16_t bpm)

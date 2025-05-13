@@ -181,6 +181,13 @@ void hd44780_shift(struct hd44780_obj *obj, bool disp, bool right)
     send_byte(obj, cmd, MODE_COMMAND);
 }
 
+void hd44780_set_cursor_mode(struct hd44780_obj *obj, bool visible, bool blinking)
+{
+    enum hd44780_ommand cmd = HD44780_CMD_DISPLAY_ON_OFF_CONTROL_DISP_ON | (visible ? HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_ON : HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_OFF) | (blinking ? HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_BLINK_ON : HD44780_CMD_DISPLAY_ON_OFF_CONTROL_CURSOR_BLINK_OFF);
+    
+    send_byte(obj, cmd, MODE_COMMAND);
+}
+
 void hd44780_clear(struct hd44780_obj *obj)
 {
     send_byte(obj, HD44780_CMD_CLEAR_DISPLAY, MODE_COMMAND);

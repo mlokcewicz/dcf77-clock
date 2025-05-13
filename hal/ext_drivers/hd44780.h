@@ -88,6 +88,12 @@ void hd44780_clear(struct hd44780_obj *obj);
 /// @param right true for right, false for left
 void hd44780_shift(struct hd44780_obj *obj, bool disp, bool right);
 
+/// @brief Sets cursor mode
+/// @param obj given LCD object @ref struct hd44780_obj
+/// @param visible true for visible, false for invisible
+/// @param blinking true for blinking, false for no blinking
+void hd44780_set_cursor_mode(struct hd44780_obj *obj, bool visible, bool blinking);
+
 /// @brief Sets cursor position 
 /// @param obj given LCD object @ref struct hd44780_obj
 /// @param line selected line
