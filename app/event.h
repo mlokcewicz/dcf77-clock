@@ -30,15 +30,16 @@ enum event_type
     EVENT_UPDATE_TIME_REQ = 1 << 5, 
 };
 
-typedef struct event_sync_time_status_data
+struct event_sync_time_status_data
 {
-    uint8_t error : 1;
-    uint8_t frame_started : 1;
-    uint8_t triggred_on_bit : 1;
-    uint8_t dcf_output : 1;
+    uint8_t error;
+    uint8_t frame_started;
+    uint8_t triggred_on_bit;
+    uint8_t dcf_output;
     uint16_t time_ms;
-}__attribute__((packed)) event_sync_time_status_data_t;
+}__attribute__((packed));
 
+typedef struct event_sync_time_status_data event_sync_time_status_data_t;
 typedef struct ds1307_time event_update_time_req_data_t;
 typedef struct ds1307_time event_set_time_req_data_t;
 typedef struct hal_timestamp event_set_alarm_req_data_t;
