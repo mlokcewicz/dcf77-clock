@@ -19,11 +19,11 @@
 
 struct hal_timestamp
 {
-    uint8_t hours_tens : 2;
-    uint8_t hours_units : 4;
-    uint8_t minutes_tens : 3;
-    uint8_t minutes_units : 4;
-    uint8_t is_enabled : 1;
+    uint8_t hours_tens;
+    uint8_t hours_units;
+    uint8_t minutes_tens;
+    uint8_t minutes_units;
+    uint8_t is_enabled;
 }__attribute__((packed));
 
 //------------------------------------------------------------------------------
