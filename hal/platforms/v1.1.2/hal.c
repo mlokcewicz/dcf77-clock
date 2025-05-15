@@ -56,7 +56,7 @@ ISR(BADISR_vect)
 
 __attribute__((weak)) void hal_exti_sqw_cb(void); 
 __attribute__((weak)) void hal_button_pressed_cb(void); 
-__attribute__((weak)) void hal_encoder_rotation_cb(bool right); 
+__attribute__((weak)) void hal_encoder_rotation_cb(uint8_t dir); 
 __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit); 
 __attribute__((weak)) const uint8_t hal_user_defined_char_tab[4][8];
 
@@ -290,7 +290,7 @@ static bool encoder1_init_cb(void)
 static void encoder1_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
 {
     (void)step_cnt;
-    hal_encoder_rotation_cb(dir == ROTARY_ENCODER_DIR_RIGHT);
+    hal_encoder_rotation_cb(dir);
 }
 
 static struct rotary_encoder_cfg encoder1_cfg = 

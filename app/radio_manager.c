@@ -50,6 +50,8 @@ void hal_dcf_cb(uint16_t ms, bool triggred_on_bit)
 
 bool radio_manager_init(void)
 {
+    ctx.synced = true;
+    
     return true;
 }
 
