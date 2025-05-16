@@ -86,20 +86,27 @@ void radio_manager_process(void)
             
             struct ds1307_time *set_time_req_data = event_get_data(EVENT_SET_TIME_REQ);
 
-            set_time_req_data->clock_halt = 0;
-            set_time_req_data->hour_mode = 0;
-            set_time_req_data->seconds_units = 0;
-            set_time_req_data->seconds_tens = 0;    
-            set_time_req_data->minutes_units = dcf_frame->minutes_units;
-            set_time_req_data->minutes_tens = dcf_frame->minutes_tens;
-            set_time_req_data->hours_units = dcf_frame->hours_units;
-            set_time_req_data->hours_tens = dcf_frame->hours_tens;
-            set_time_req_data->date_units = dcf_frame->month_day_units;
-            set_time_req_data->date_tens = dcf_frame->month_day_tens;
-            set_time_req_data->month_units = dcf_frame->months_units;
-            set_time_req_data->month_tens = dcf_frame->months_tens;
-            set_time_req_data->year_units = dcf_frame->years_units;
-            set_time_req_data->year_tens = dcf_frame->years_tens;
+            // set_time_req_data->clock_halt = 0;
+            // set_time_req_data->hour_mode = 0;
+            // set_time_req_data->seconds_units = 0;
+            // set_time_req_data->seconds_tens = 0;    
+            // set_time_req_data->minutes_units = dcf_frame->minutes_units;
+            // set_time_req_data->minutes_tens = dcf_frame->minutes_tens;
+            // set_time_req_data->hours_units = dcf_frame->hours_units;
+            // set_time_req_data->hours_tens = dcf_frame->hours_tens;
+            // set_time_req_data->date_units = dcf_frame->month_day_units;
+            // set_time_req_data->date_tens = dcf_frame->month_day_tens;
+            // set_time_req_data->month_units = dcf_frame->months_units;
+            // set_time_req_data->month_tens = dcf_frame->months_tens;
+            // set_time_req_data->year_units = dcf_frame->years_units;
+            // set_time_req_data->year_tens = dcf_frame->years_tens;
+
+            set_time_req_data->seconds = 0;
+            set_time_req_data->minutes = 10 * dcf_frame->minutes_tens + dcf_frame->minutes_units;
+            set_time_req_data->hours = 10 * dcf_frame->hours_tens + dcf_frame->hours_units;
+            set_time_req_data->date = 10 * dcf_frame->month_day_tens + dcf_frame->month_day_units;
+            set_time_req_data->month = 10 * dcf_frame->months_tens + dcf_frame->months_units;
+            set_time_req_data->year = 10 * dcf_frame->years_tens + dcf_frame->years_units;
 
             event_set(EVENT_SET_TIME_REQ);
 

@@ -49,6 +49,7 @@ enum ui_manager_item_property
     UI_MANAGER_ITEM_PROPERTY_POS,
     UI_MANAGER_ITEM_PROPERTY_MAX_VALUE,
     UI_MANAGER_ITEM_PROPERTY_VALUE,
+    UI_MANAGER_ITEM_PROPERTY_OFFSET,
 
     UI_MANAGER_ITEM_PROPERTY_MAX,   
 };
@@ -63,15 +64,36 @@ enum ui_manager_state
 
 //------------------------------------------------------------------------------
 
+// struct ds1307_time {
+//     uint8_t seconds;
+//     uint8_t minutes;
+//     uint8_t hours;
+//     uint8_t day;
+//     uint8_t date;
+//     uint8_t month;
+//     uint8_t year;
+// };
+
+enum offset
+{
+    OFFSET_SECONDS,
+    OFFSET_MINUTES,
+    OFFSET_HOURS,
+    OFFSET_DAY,
+    OFFSET_DATE,
+    OFFSET_MONTH,
+    OFFSET_YEAR
+};
+
 static int8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
 {
-    [UI_MANAGER_ITEM_ID_TIME_H] = {2, 23, 0},
-    [UI_MANAGER_ITEM_ID_TIME_M] = {5, 59, 0},
-    [UI_MANAGER_ITEM_ID_TIME_S] = {8, 59, 0},
-    [UI_MANAGER_ITEM_ID_DATE_D] = {11, 31, 0},
-    [UI_MANAGER_ITEM_ID_DATE_M] = {14, 12, 0},
-    [UI_MANAGER_ITEM_ID_ALARM_H] = {18, 23, 0},
-    [UI_MANAGER_ITEM_ID_ALARM_M] = {21, 59, 0},
+    [UI_MANAGER_ITEM_ID_TIME_H] = {2, 23, 0, OFFSET_HOURS},
+    [UI_MANAGER_ITEM_ID_TIME_M] = {5, 59, 0, OFFSET_MINUTES},
+    [UI_MANAGER_ITEM_ID_TIME_S] = {8, 59, 0, OFFSET_SECONDS},
+    [UI_MANAGER_ITEM_ID_DATE_D] = {11, 31, 0, OFFSET_DATE},
+    [UI_MANAGER_ITEM_ID_DATE_M] = {14, 12, 0, OFFSET_MONTH},
+    [UI_MANAGER_ITEM_ID_ALARM_H] = {18, 23, 0, 0},
+    [UI_MANAGER_ITEM_ID_ALARM_M] = {21, 59, 0, 1},
     [UI_MANAGER_ITEM_ID_SYNC] = {23, 0, 0},
     [UI_MANAGER_ITEM_ID_OK] = {26, 0, 0},
     [UI_MANAGER_ITEM_ID_ESC] = {29, 0, 0},
@@ -97,65 +119,82 @@ static struct buzzer_note alarm_beep[] =
 
 //------------------------------------------------------------------------------
 
-static void copy_item_to_time(event_set_time_req_data_t *time)
-{
-    time->clock_halt = 0;
-    time->hour_mode = 0;
-    time->hours_tens = items[UI_MANAGER_ITEM_ID_TIME_H][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
-    time->hours_units = items[UI_MANAGER_ITEM_ID_TIME_H][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
-    time->minutes_tens = items[UI_MANAGER_ITEM_ID_TIME_M][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
-    time->minutes_units = items[UI_MANAGER_ITEM_ID_TIME_M][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
-    time->seconds_tens = items[UI_MANAGER_ITEM_ID_TIME_S][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
-    time->seconds_units = items[UI_MANAGER_ITEM_ID_TIME_S][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
-    time->date_tens = items[UI_MANAGER_ITEM_ID_DATE_D][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
-    time->date_units = items[UI_MANAGER_ITEM_ID_DATE_D][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
-    time->month_tens = items[UI_MANAGER_ITEM_ID_DATE_M][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
-    time->month_units = items[UI_MANAGER_ITEM_ID_DATE_M][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
-}
+// static void copy_item_to_time(event_set_time_req_data_t *time)
+// {
+//     // time->clock_halt = 0;
+//     // time->hour_mode = 0;
+//     time->hours_tens = items[UI_MANAGER_ITEM_ID_TIME_H][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
+//     time->hours_units = items[UI_MANAGER_ITEM_ID_TIME_H][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
+//     time->minutes_tens = items[UI_MANAGER_ITEM_ID_TIME_M][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
+//     time->minutes_units = items[UI_MANAGER_ITEM_ID_TIME_M][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
+//     time->seconds_tens = items[UI_MANAGER_ITEM_ID_TIME_S][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
+//     time->seconds_units = items[UI_MANAGER_ITEM_ID_TIME_S][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
+//     time->date_tens = items[UI_MANAGER_ITEM_ID_DATE_D][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
+//     time->date_units = items[UI_MANAGER_ITEM_ID_DATE_D][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
+//     time->month_tens = items[UI_MANAGER_ITEM_ID_DATE_M][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
+//     time->month_units = items[UI_MANAGER_ITEM_ID_DATE_M][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
+// }
 
-static void copy_item_to_alarm(event_set_alarm_req_data_t *alarm)
-{
-    alarm->hours_tens = items[UI_MANAGER_ITEM_ID_ALARM_H][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
-    alarm->hours_units = items[UI_MANAGER_ITEM_ID_ALARM_H][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
-    alarm->minutes_tens = items[UI_MANAGER_ITEM_ID_ALARM_M][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
-    alarm->minutes_units = items[UI_MANAGER_ITEM_ID_ALARM_M][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
-    alarm->is_enabled = true;
-}
+// static void copy_item_to_alarm(event_set_alarm_req_data_t *alarm)
+// {
+//     alarm->hours_tens = items[UI_MANAGER_ITEM_ID_ALARM_H][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
+//     alarm->hours_units = items[UI_MANAGER_ITEM_ID_ALARM_H][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
+//     alarm->minutes_tens = items[UI_MANAGER_ITEM_ID_ALARM_M][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10;
+//     alarm->minutes_units = items[UI_MANAGER_ITEM_ID_ALARM_M][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10;
+//     alarm->is_enabled = true;
+// }
 
-static void copy_time_to_item(event_set_time_req_data_t *time)
-{
-    items[UI_MANAGER_ITEM_ID_TIME_H][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->hours_tens * 10 + time->hours_units;
-    items[UI_MANAGER_ITEM_ID_TIME_M][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->minutes_tens * 10 + time->minutes_units;
-    items[UI_MANAGER_ITEM_ID_TIME_S][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->seconds_tens * 10 + time->seconds_units;
-    items[UI_MANAGER_ITEM_ID_DATE_D][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->date_tens * 10 + time->date_units;
-    items[UI_MANAGER_ITEM_ID_DATE_M][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->month_tens * 10 + time->month_units;
-}
+// static void copy_time_to_item(event_set_time_req_data_t *time)
+// {
+//     items[UI_MANAGER_ITEM_ID_TIME_H][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->hours_tens * 10 + time->hours_units;
+//     items[UI_MANAGER_ITEM_ID_TIME_M][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->minutes_tens * 10 + time->minutes_units;
+//     items[UI_MANAGER_ITEM_ID_TIME_S][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->seconds_tens * 10 + time->seconds_units;
+//     items[UI_MANAGER_ITEM_ID_DATE_D][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->date_tens * 10 + time->date_units;
+//     items[UI_MANAGER_ITEM_ID_DATE_M][UI_MANAGER_ITEM_PROPERTY_VALUE] = time->month_tens * 10 + time->month_units;
+// }
 
-static void copy_alarm_to_item(event_set_alarm_req_data_t *alarm)
-{
-    items[UI_MANAGER_ITEM_ID_ALARM_H][UI_MANAGER_ITEM_PROPERTY_VALUE] = alarm->hours_tens * 10 + alarm->hours_units;
-    items[UI_MANAGER_ITEM_ID_ALARM_M][UI_MANAGER_ITEM_PROPERTY_VALUE] = alarm->minutes_tens * 10 + alarm->minutes_units;
-}
+// static void copy_alarm_to_item(event_set_alarm_req_data_t *alarm)
+// {
+//     items[UI_MANAGER_ITEM_ID_ALARM_H][UI_MANAGER_ITEM_PROPERTY_VALUE] = alarm->hours_tens * 10 + alarm->hours_units;
+//     items[UI_MANAGER_ITEM_ID_ALARM_M][UI_MANAGER_ITEM_PROPERTY_VALUE] = alarm->minutes_tens * 10 + alarm->minutes_units;
+// }
 
 static char buf[16]; 
 
 static void print_time(struct ds1307_time *unix_time)
 {
+    // uint8_t i = 0;
+    // buf[i++] = (unix_time->hours_tens + '0');
+    // buf[i++] = (unix_time->hours_units + '0');
+    // buf[i++] = (':');
+    // buf[i++] = (unix_time->minutes_tens + '0');
+    // buf[i++] = (unix_time->minutes_units + '0');
+    // buf[i++] = (':');
+    // buf[i++] = (unix_time->seconds_tens + '0');
+    // buf[i++] = (unix_time->seconds_units + '0');
+    // buf[i++] = (' ');
+    // buf[i++] = (unix_time->date_tens + '0');
+    // buf[i++] = (unix_time->date_units + '0');
+    // buf[i++] = ('.');
+    // buf[i++] = (unix_time->month_tens + '0');
+    // buf[i++] = (unix_time->month_units + '0');
+    // buf[i++] = 0;
+    // hal_lcd_print(buf, 0, 2);
     uint8_t i = 0;
-    buf[i++] = (unix_time->hours_tens + '0');
-    buf[i++] = (unix_time->hours_units + '0');
+    buf[i++] = (unix_time->hours / 10 + '0');
+    buf[i++] = (unix_time->hours % 10 + '0');
     buf[i++] = (':');
-    buf[i++] = (unix_time->minutes_tens + '0');
-    buf[i++] = (unix_time->minutes_units + '0');
+    buf[i++] = (unix_time->minutes / 10 + '0');
+    buf[i++] = (unix_time->minutes % 10 + '0');
     buf[i++] = (':');
-    buf[i++] = (unix_time->seconds_tens + '0');
-    buf[i++] = (unix_time->seconds_units + '0');
+    buf[i++] = (unix_time->seconds / 10 + '0');
+    buf[i++] = (unix_time->seconds % 10 + '0');
     buf[i++] = (' ');
-    buf[i++] = (unix_time->date_tens + '0');
-    buf[i++] = (unix_time->date_units + '0');
+    buf[i++] = (unix_time->date / 10 + '0');
+    buf[i++] = (unix_time->date % 10 + '0');
     buf[i++] = ('.');
-    buf[i++] = (unix_time->month_tens + '0');
-    buf[i++] = (unix_time->month_units + '0');
+    buf[i++] = (unix_time->month / 10 + '0');
+    buf[i++] = (unix_time->month % 10 + '0');
     buf[i++] = 0;
     hal_lcd_print(buf, 0, 2);
 }
@@ -163,13 +202,21 @@ static void print_time(struct ds1307_time *unix_time)
 static void print_alarm(struct hal_timestamp *alarm)
 {
     uint8_t i = 0;
-    buf[i++] = (alarm->hours_tens + '0');
-    buf[i++] = (alarm->hours_units + '0');
+    buf[i++] = (alarm->hours / 10 + '0');
+    buf[i++] = (alarm->hours % 10 + '0');
     buf[i++] = (':');
-    buf[i++] = (alarm->minutes_tens + '0');
-    buf[i++] = (alarm->minutes_units + '0');
+    buf[i++] = (alarm->minutes / 10 + '0');
+    buf[i++] = (alarm->minutes % 10 + '0');
     buf[i++] = 0;
     hal_lcd_print(buf, 1, 2);
+    // uint8_t i = 0;
+    // buf[i++] = (alarm->hours_tens + '0');
+    // buf[i++] = (alarm->hours_units + '0');
+    // buf[i++] = (':');
+    // buf[i++] = (alarm->minutes_tens + '0');
+    // buf[i++] = (alarm->minutes_units + '0');
+    // buf[i++] = 0;
+    // hal_lcd_print(buf, 1, 2);
 }
 
 static void print_static_icons(void)
@@ -208,13 +255,12 @@ static void print_sync_status( event_sync_time_status_data_t *sync_time_status_d
     hal_led_set(!sync_time_status_data->dcf_output);
 }
 
-#include "ui_manager.h" // Upewnij się, że enum ui_manager_item_id jest dostępny
-
-// static void update_time(enum ui_manager_item_id item_id, int8_t val)
+// static void update_time(enum ui_manager_item_id id, int8_t val)
 // {
-//     event_update_time_req_data_t *time = (event_update_time_req_data_t *)event_get_data(EVENT_UPDATE_TIME_REQ);
+//     event_set_time_req_data_t *time = (event_set_time_req_data_t *)event_get_data(EVENT_SET_TIME_REQ);
+//     event_set_alarm_req_data_t *alarm = (event_set_alarm_req_data_t *)event_get_data(EVENT_SET_ALARM_REQ);
 
-//     switch (item_id)
+//     switch (id)
 //     {
 //         case UI_MANAGER_ITEM_ID_TIME_H:
 //             {
@@ -266,8 +312,8 @@ static void print_sync_status( event_sync_time_status_data_t *sync_time_status_d
 //                 int8_t h = time->hours_tens * 10 + time->hours_units + val;
 //                 if (h < 0) h = 23;
 //                 if (h > 23) h = 0;
-//                 time->hours_tens = h / 10;
-//                 time->hours_units = h % 10;
+//                 alarm->hours_tens = h / 10;
+//                 alarm->hours_units = h % 10;
 //             }
 //             break;
 //         case UI_MANAGER_ITEM_ID_ALARM_M:
@@ -275,14 +321,62 @@ static void print_sync_status( event_sync_time_status_data_t *sync_time_status_d
 //                 int8_t m = time->minutes_tens * 10 + time->minutes_units + val;
 //                 if (m < 0) m = 59;
 //                 if (m > 59) m = 0;
-//                 time->minutes_tens = m / 10;
-//                 time->minutes_units = m % 10;
+//                 alarm->minutes_tens = m / 10;
+//                 alarm->minutes_units = m % 10;
 //             }
 //             break;
 //         default:
 //             break;
 //     }
 // }
+
+static int8_t limit_value(int8_t val, int8_t min, int8_t max)
+{
+    if (val < min) return max;
+    if (val > max) return min;
+    return val;
+}
+
+static void update_time(enum ui_manager_item_id item_id2, int8_t val)
+{
+    struct ds1307_time *time = (struct ds1307_time *)event_get_data(EVENT_SET_TIME_REQ);
+    struct hal_timestamp *alarm = (struct hal_timestamp *)event_get_data(EVENT_SET_ALARM_REQ);
+
+    uint8_t *ptr_tab[] = {(uint8_t*)time, (uint8_t*)alarm};
+    // uint8_t *time_tab = (uint8_t*)time;
+
+    ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = limit_value(ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, 0, items[item_id2][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
+
+
+    // switch (item_id)
+    // {
+    //     case UI_MANAGER_ITEM_ID_TIME_H:
+    //         time->hours = limit_value(time->hours + val, 0, 23);
+    //         break;
+    //     case UI_MANAGER_ITEM_ID_TIME_M:
+    //         time->minutes = limit_value(time->minutes + val, 0, 59);
+    //         break;
+    //     case UI_MANAGER_ITEM_ID_TIME_S:
+    //         time->seconds = limit_value(time->seconds + val, 0, 59);
+    //         break;
+    //     case UI_MANAGER_ITEM_ID_DATE_D:
+    //         time->date = limit_value(time->date + val, 1, 31);
+    //         break;
+    //     case UI_MANAGER_ITEM_ID_DATE_M:
+    //         time->month = limit_value(time->month + val, 1, 12);
+    //         break;
+    //     // case UI_MANAGER_ITEM_ID_ALARM_H:
+    //     //     alarm->hours = limit_value(alarm->hours + val, 0, 23);
+    //     //     alarm->is_enabled = 1;
+    //     //     break;
+    //     // case UI_MANAGER_ITEM_ID_ALARM_M:
+    //     //     alarm->minutes = limit_value(alarm->minutes + val, 0, 59);
+    //     //     alarm->is_enabled = 1;
+    //         break;
+    //     default:
+    //         break;
+    // }
+}
 
 //------------------------------------------------------------------------------
 /* HAL callbacks and structures */
@@ -305,6 +399,8 @@ void hal_button_pressed_cb(void)
 
             // copy_alarm_to_item(event_get_data(EVENT_SET_ALARM_REQ));
             // copy_time_to_item(event_get_data(EVENT_UPDATE_TIME_REQ));
+
+            memcpy(event_get_data(EVENT_SET_TIME_REQ), event_get_data(EVENT_UPDATE_TIME_REQ), sizeof(event_set_time_req_data_t));
 
             hal_lcd_print("OK", 1, 10);
             hal_lcd_print("E", 1, 13);
@@ -400,12 +496,18 @@ void hal_encoder_rotation_cb(uint8_t dir)
 
         case UI_MANAGER_STATE_VALUE_SELECT:
             
-            items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] += dir;
-            items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] = (items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] + items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE] + 1) % (items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE] + 1);
-            hal_lcd_putc(items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10 + '0');
-            hal_lcd_putc(items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10 + '0');
+            // items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] += dir;
+            // items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] = (items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] + items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE] + 1) % (items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE] + 1);
+            // hal_lcd_putc(items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] / 10 + '0');
+            // hal_lcd_putc(items[item_id][UI_MANAGER_ITEM_PROPERTY_VALUE] % 10 + '0');
+
+            update_time(item_id, dir);
+            print_time(event_get_data(EVENT_SET_TIME_REQ));
+            print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 
             hal_lcd_set_cursor(items[item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+
+            
 
             break;
         default:
