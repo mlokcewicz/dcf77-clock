@@ -242,11 +242,13 @@ void hal_button_pressed_cb(void)
 
             if (ctx.item_id == UI_MANAGER_ITEM_ID_ESC)
             {
+                print_alarm_date_display_screen();
                 hal_lcd_set_cursor_mode(false, false);
                 ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
             }
             else if (ctx.item_id == UI_MANAGER_ITEM_ID_OK)
             {
+                print_alarm_date_display_screen();
                 hal_lcd_set_cursor_mode(false, false);
 
                 event_set(EVENT_SET_TIME_REQ);
