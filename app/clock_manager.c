@@ -13,22 +13,9 @@
 
 //------------------------------------------------------------------------------
 
-// #define CLOCK_MANAGER_TIMESTAMP(h_tens, h_units, m_tens, m_units) \
-// { \
-//     .hours_tens = h_tens, \
-//     .hours_units = h_units, \
-//     .minutes_tens = m_tens, \
-//     .minutes_units = m_units \
-// }
+#define CLOCK_MANAGER_TIMESTAMP(h, m) (struct hal_timestamp){.hours = h, .minutes = m}
 
-// #define CLOCK_MANAGER_SYNC_TIMESTAMP (struct hal_timestamp)CLOCK_MANAGER_TIMESTAMP(0, 4, 0, 0)
-#define CLOCK_MANAGER_TIMESTAMP(h, m) \
-{ \
-    .hours = h, \
-    .minutes = m \
-}
-
-#define CLOCK_MANAGER_SYNC_TIMESTAMP (struct hal_timestamp)CLOCK_MANAGER_TIMESTAMP(4, 0)
+#define CLOCK_MANAGER_SYNC_TIMESTAMP CLOCK_MANAGER_TIMESTAMP(4, 0)
 
 //------------------------------------------------------------------------------
 
@@ -56,17 +43,6 @@ static bool time_is_equal(event_update_time_req_data_t *time, struct hal_timesta
     return (time->seconds == 0 && 
             time->minutes == timestamp->minutes && 
             time->hours == timestamp->hours);
-    // return (time->seconds == 0 && 
-    //         time->minutes / 10 == timestamp->minutes_units && 
-    //         time->minutes % 10 == timestamp->minutes_tens &&
-    //         time->hours / 10 == timestamp->hours_units &&
-    //         time->hours % 10 == timestamp->hours_tens);
-    // // return (time->seconds_units == 0 && 
-    //         time->seconds_tens == 0 && 
-    //         time->minutes_units == timestamp->minutes_units && 
-    //         time->minutes_tens == timestamp->minutes_tens &&
-    //         time->hours_units == timestamp->hours_units &&
-    //         time->hours_tens == timestamp->hours_tens);
 }
 
 //------------------------------------------------------------------------------

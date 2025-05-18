@@ -31,6 +31,18 @@ enum ds1307_reg_addr
 
 //------------------------------------------------------------------------------
 
+static uint8_t to_bcd(uint8_t val) 
+{
+    return ((val / 10) << 4) | (val % 10);
+}
+
+static uint8_t from_bcd(uint8_t bcd) 
+{
+    return ((bcd >> 4) * 10) + (bcd & 0x0F);
+}
+
+//------------------------------------------------------------------------------
+
 bool ds1307_init(struct ds1307_obj *obj, struct ds1307_cfg *cfg)
 {
     if (!obj || !cfg || !cfg->serial_send || !cfg->serial_receive)
@@ -66,50 +78,6 @@ bool ds1307_is_running(struct ds1307_obj *obj)
     return (msg[0] & (1 << 7)) == 0;
 }
 
-// bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *unix_time)
-// {
-//     if (!obj || !unix_time)
-//         return false;
-
-//     struct msg_time
-//     {   
-//         uint8_t addr;
-//         struct ds1307_time unix_time;
-//     };
-
-//     struct msg_time msg = {DS1307_REG_ADDR_SECONDS};
-//     memcpy(&(msg.unix_time), unix_time, sizeof(*unix_time));
-    
-//     if (!obj->serial_send(DS1307_ADDR, (uint8_t*)&msg, sizeof(msg)))
-//         return false;
-
-//     return true;
-// }
-
-// bool ds1307_get_time(struct ds1307_obj *obj, struct ds1307_time *unix_time)
-// {   
-//     if (!obj || !unix_time)
-//         return false;
-
-//     uint8_t msg[] = {DS1307_REG_ADDR_SECONDS};
-
-//     if (!obj->serial_send(DS1307_ADDR, msg, sizeof(msg)))
-//         return false;
-
-//     if (!obj->serial_receive(DS1307_ADDR, (uint8_t*)unix_time, sizeof(*unix_time)))
-//         return false;
-
-//     return true;
-// }
-
-static uint8_t to_bcd(uint8_t val) {
-    return ((val / 10) << 4) | (val % 10);
-}
-
-static uint8_t from_bcd(uint8_t bcd) {
-    return ((bcd >> 4) * 10) + (bcd & 0x0F);
-}
-
 bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *time)
 {
     if (!obj || !time)
@@ -119,7 +87,7 @@ bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *time)
     msg[0] = DS1307_REG_ADDR_SECONDS;
     msg[1] = to_bcd(time->seconds) & 0x7F; // Bit 7 = CH (Clock Halt)
     msg[2] = to_bcd(time->minutes);
-    msg[3] = to_bcd(time->hours); // Zakładamy 24h
+    msg[3] = to_bcd(time->hours); // 24h mode
     msg[4] = to_bcd(time->day);
     msg[5] = to_bcd(time->date);
     msg[6] = to_bcd(time->month);
@@ -147,7 +115,7 @@ bool ds1307_get_time(struct ds1307_obj *obj, struct ds1307_time *time)
 
     time->seconds = from_bcd(data[0] & 0x7F); // Bit 7 = CH
     time->minutes = from_bcd(data[1]);
-    time->hours   = from_bcd(data[2] & 0x3F); // Zakładamy 24h
+    time->hours   = from_bcd(data[2] & 0x3F); // 24h mode
     time->day     = from_bcd(data[3]);
     time->date    = from_bcd(data[4]);
     time->month   = from_bcd(data[5]);
