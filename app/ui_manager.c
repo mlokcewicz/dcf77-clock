@@ -170,6 +170,31 @@ static void print_sync_status(event_sync_time_status_data_t *sync_time_status_da
     hal_led_set(!sync_time_status_data->dcf_output);
 }
 
+static void print_alarm_date_display_screen(void)
+{
+    hal_lcd_clear();
+
+    print_static_icons();
+    print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+    print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+}
+
+static void print_alarm_date_set_screen(void)
+{
+    hal_lcd_clear();
+
+    print_static_icons();
+    print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+    print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+
+    hal_lcd_print("OK", 1, 10);
+    hal_lcd_print("E", 1, 13);
+    hal_lcd_print(">", 1, 15);
+
+    hal_lcd_set_cursor_mode(true, false);
+    hal_lcd_set_cursor(items[0][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[0][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+}
+
 static uint8_t item_limit_value(uint8_t val, uint8_t min, uint8_t max)
 {
     if (val < min) return max;
@@ -208,12 +233,7 @@ void hal_button_pressed_cb(void)
 
             memcpy(event_get_data(EVENT_SET_TIME_REQ), event_get_data(EVENT_UPDATE_TIME_REQ), sizeof(event_set_time_req_data_t));
 
-            hal_lcd_print("OK", 1, 10);
-            hal_lcd_print("E", 1, 13);
-            hal_lcd_print(">", 1, 15);
-
-            hal_lcd_set_cursor_mode(true, false);
-            hal_lcd_set_cursor(items[0][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[0][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+            print_alarm_date_set_screen();
 
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
             break;
@@ -263,13 +283,8 @@ void hal_button_pressed_cb(void)
 
         case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
 
-            hal_lcd_print("OK", 1, 10);
-            hal_lcd_print("E", 1, 13);
-            hal_lcd_print(">", 1, 15);
-
-            print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
-            print_static_icons();
-            print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+            print_alarm_date_set_screen();
+            
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
             break;
 
@@ -311,10 +326,7 @@ void hal_encoder_rotation_cb(uint8_t dir)
 
 bool ui_manager_init(void)
 {
-    hal_lcd_clear();
-
-    print_static_icons();
-    print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+    print_alarm_date_display_screen();
 
     return true;
 }
