@@ -163,62 +163,60 @@ static char buf[16];
 
 static void print_time(struct ds1307_time *unix_time)
 {
-    uint8_t i = 0;
-    buf[i++] = (unix_time->hours_tens + '0');
-    buf[i++] = (unix_time->hours_units + '0');
-    buf[i++] = (':');
-    buf[i++] = (unix_time->minutes_tens + '0');
-    buf[i++] = (unix_time->minutes_units + '0');
-    buf[i++] = (':');
-    buf[i++] = (unix_time->seconds_tens + '0');
-    buf[i++] = (unix_time->seconds_units + '0');
-    buf[i++] = (' ');
-    buf[i++] = (unix_time->date_tens + '0');
-    buf[i++] = (unix_time->date_units + '0');
-    buf[i++] = ('.');
-    buf[i++] = (unix_time->month_tens + '0');
-    buf[i++] = (unix_time->month_units + '0');
-    buf[i++] = 0;
-    hal_lcd_print(buf, 0, 2);
-
     // uint8_t i = 0;
-    // buf[i++] = (unix_time->hours / 10 + '0');
-    // buf[i++] = (unix_time->hours % 10 + '0');
+    // buf[i++] = (unix_time->hours_tens + '0');
+    // buf[i++] = (unix_time->hours_units + '0');
     // buf[i++] = (':');
-    // buf[i++] = (unix_time->minutes / 10 + '0');
-    // buf[i++] = (unix_time->minutes % 10 + '0');
+    // buf[i++] = (unix_time->minutes_tens + '0');
+    // buf[i++] = (unix_time->minutes_units + '0');
     // buf[i++] = (':');
-    // buf[i++] = (unix_time->seconds / 10 + '0');
-    // buf[i++] = (unix_time->seconds % 10 + '0');
+    // buf[i++] = (unix_time->seconds_tens + '0');
+    // buf[i++] = (unix_time->seconds_units + '0');
     // buf[i++] = (' ');
-    // buf[i++] = (unix_time->date / 10 + '0');
-    // buf[i++] = (unix_time->date % 10 + '0');
+    // buf[i++] = (unix_time->date_tens + '0');
+    // buf[i++] = (unix_time->date_units + '0');
     // buf[i++] = ('.');
-    // buf[i++] = (unix_time->month / 10 + '0');
-    // buf[i++] = (unix_time->month % 10 + '0');
+    // buf[i++] = (unix_time->month_tens + '0');
+    // buf[i++] = (unix_time->month_units + '0');
     // buf[i++] = 0;
     // hal_lcd_print(buf, 0, 2);
+    uint8_t i = 0;
+    buf[i++] = (unix_time->hours / 10 + '0');
+    buf[i++] = (unix_time->hours % 10 + '0');
+    buf[i++] = (':');
+    buf[i++] = (unix_time->minutes / 10 + '0');
+    buf[i++] = (unix_time->minutes % 10 + '0');
+    buf[i++] = (':');
+    buf[i++] = (unix_time->seconds / 10 + '0');
+    buf[i++] = (unix_time->seconds % 10 + '0');
+    buf[i++] = (' ');
+    buf[i++] = (unix_time->date / 10 + '0');
+    buf[i++] = (unix_time->date % 10 + '0');
+    buf[i++] = ('.');
+    buf[i++] = (unix_time->month / 10 + '0');
+    buf[i++] = (unix_time->month % 10 + '0');
+    buf[i++] = 0;
+    hal_lcd_print(buf, 0, 2);
 }
 
 static void print_alarm(struct hal_timestamp *alarm)
 {
-    // uint8_t i = 0;
-    // buf[i++] = (alarm->hours / 10 + '0');
-    // buf[i++] = (alarm->hours % 10 + '0');
-    // buf[i++] = (':');
-    // buf[i++] = (alarm->minutes / 10 + '0');
-    // buf[i++] = (alarm->minutes % 10 + '0');
-    // buf[i++] = 0;
-    // hal_lcd_print(buf, 1, 2);
-
     uint8_t i = 0;
-    buf[i++] = (alarm->hours_tens + '0');
-    buf[i++] = (alarm->hours_units + '0');
+    buf[i++] = (alarm->hours / 10 + '0');
+    buf[i++] = (alarm->hours % 10 + '0');
     buf[i++] = (':');
-    buf[i++] = (alarm->minutes_tens + '0');
-    buf[i++] = (alarm->minutes_units + '0');
+    buf[i++] = (alarm->minutes / 10 + '0');
+    buf[i++] = (alarm->minutes % 10 + '0');
     buf[i++] = 0;
     hal_lcd_print(buf, 1, 2);
+    // uint8_t i = 0;
+    // buf[i++] = (alarm->hours_tens + '0');
+    // buf[i++] = (alarm->hours_units + '0');
+    // buf[i++] = (':');
+    // buf[i++] = (alarm->minutes_tens + '0');
+    // buf[i++] = (alarm->minutes_units + '0');
+    // buf[i++] = 0;
+    // hal_lcd_print(buf, 1, 2);
 }
 
 static void print_static_icons(void)
@@ -345,16 +343,10 @@ static void update_time(enum ui_manager_item_id item_id2, int8_t val)
     struct hal_timestamp *alarm = (struct hal_timestamp *)event_get_data(EVENT_SET_ALARM_REQ);
 
     uint8_t *ptr_tab[] = {(uint8_t*)time, (uint8_t*)alarm};
-    // // uint8_t *time_tab = (uint8_t*)time;
+    // uint8_t *time_tab = (uint8_t*)time;
 
-    // ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = limit_value(ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, 0, items[item_id2][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
+    ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = limit_value(ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, 0, items[item_id2][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
 
-    ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] =
-    limit_value(
-        ptr_tab[item_id2 > UI_MANAGER_ITEM_ID_DATE_M][items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val,
-        items[item_id2][UI_MANAGER_ITEM_PROPERTY_OFFSET] == OFFSET_DATE ? 1 : 0,
-        items[item_id2][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]
-    );
 
     // switch (item_id)
     // {

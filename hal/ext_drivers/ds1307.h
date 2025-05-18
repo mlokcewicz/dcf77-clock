@@ -60,39 +60,39 @@ typedef bool (*ds1307_serial_receive_cb)(uint8_t device_addr, uint8_t *data, uin
 //     uint8_t year_tens : 4;
 // } __attribute__((__packed__));
 
-struct ds1307_time
-{
-    uint8_t seconds_units;
-    uint8_t seconds_tens;
-    // uint8_t clock_halt;
-    uint8_t minutes_units;
-    uint8_t minutes_tens;
-    // uint8_t zero1; 
-    uint8_t hours_units;
-    uint8_t hours_tens;
-    uint8_t hour_mode;
-    // uint8_t zero2;
-    uint8_t day;
-    // uint8_t zero3;
-    uint8_t date_units;
-    uint8_t date_tens;
-    // uint8_t zero4;
-    uint8_t month_units;
-    uint8_t month_tens;
-    // uint8_t zero5;
-    uint8_t year_units;
-    uint8_t year_tens;
-};// __attribute__((__packed__));
-
-// struct ds1307_time {
-//     uint8_t seconds;
-//     uint8_t minutes;
-//     uint8_t hours;
+// struct ds1307_time
+// {
+//     uint8_t seconds_units;
+//     uint8_t seconds_tens;
+//     uint8_t clock_halt;
+//     uint8_t minutes_units;
+//     uint8_t minutes_tens;
+//     // uint8_t zero1; 
+//     uint8_t hours_units;
+//     uint8_t hours_tens;
+//     uint8_t hour_mode;
+//     // uint8_t zero2;
 //     uint8_t day;
-//     uint8_t date;
-//     uint8_t month;
-//     uint8_t year;
-// };
+//     // uint8_t zero3;
+//     uint8_t date_units;
+//     uint8_t date_tens;
+//     // uint8_t zero4;
+//     uint8_t month_units;
+//     uint8_t month_tens;
+//     // uint8_t zero5;
+//     uint8_t year_units;
+//     uint8_t year_tens;
+// };// __attribute__((__packed__));
+
+struct ds1307_time {
+    uint8_t seconds;
+    uint8_t minutes;
+    uint8_t hours;
+    uint8_t day;
+    uint8_t date;
+    uint8_t month;
+    uint8_t year;
+};
 
 //------------------------------------------------------------------------------
 

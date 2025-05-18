@@ -17,21 +17,21 @@
 
 //------------------------------------------------------------------------------
 
-// struct hal_timestamp
-// {
-//     uint8_t hours;
-//     uint8_t minutes;
-//     uint8_t is_enabled;
-// }__attribute__((packed));
-
 struct hal_timestamp
 {
-    uint8_t hours_tens;
-    uint8_t hours_units;
-    uint8_t minutes_tens;
-    uint8_t minutes_units;
+    uint8_t hours;
+    uint8_t minutes;
     uint8_t is_enabled;
 }__attribute__((packed));
+
+// struct hal_timestamp
+// {
+//     uint8_t hours_tens;
+//     uint8_t hours_units;
+//     uint8_t minutes_tens;
+//     uint8_t minutes_units;
+//     uint8_t is_enabled;
+// }__attribute__((packed));
 
 //------------------------------------------------------------------------------
 

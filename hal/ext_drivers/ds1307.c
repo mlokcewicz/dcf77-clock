@@ -102,67 +102,12 @@ bool ds1307_is_running(struct ds1307_obj *obj)
 //     return true;
 // }
 
-// static uint8_t to_bcd(uint8_t val) {
-//     return ((val / 10) << 4) | (val % 10);
-// }
-
-// static uint8_t from_bcd(uint8_t bcd) {
-//     return ((bcd >> 4) * 10) + (bcd & 0x0F);
-// }
-
-// bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *time)
-// {
-//     if (!obj || !time)
-//         return false;
-
-//     uint8_t msg[8];
-//     msg[0] = DS1307_REG_ADDR_SECONDS;
-//     msg[1] = to_bcd(time->seconds) & 0x7F; // Bit 7 = CH (Clock Halt)
-//     msg[2] = to_bcd(time->minutes);
-//     msg[3] = to_bcd(time->hours); // Zakładamy 24h
-//     msg[4] = to_bcd(time->day);
-//     msg[5] = to_bcd(time->date);
-//     msg[6] = to_bcd(time->month);
-//     msg[7] = to_bcd(time->year);
-
-//     if (!obj->serial_send(DS1307_ADDR, msg, sizeof(msg)))
-//         return false;
-
-//     return true;
-// }
-
-// bool ds1307_get_time(struct ds1307_obj *obj, struct ds1307_time *time)
-// {
-//     if (!obj || !time)
-//         return false;
-
-//     uint8_t reg = DS1307_REG_ADDR_SECONDS;
-//     uint8_t data[7];
-
-//     if (!obj->serial_send(DS1307_ADDR, &reg, 1))
-//         return false;
-
-//     if (!obj->serial_receive(DS1307_ADDR, data, sizeof(data)))
-//         return false;
-
-//     time->seconds = from_bcd(data[0] & 0x7F); // Bit 7 = CH
-//     time->minutes = from_bcd(data[1]);
-//     time->hours   = from_bcd(data[2] & 0x3F); // Zakładamy 24h
-//     time->day     = from_bcd(data[3]);
-//     time->date    = from_bcd(data[4]);
-//     time->month   = from_bcd(data[5]);
-//     time->year    = from_bcd(data[6]);
-
-//     return true;
-// }
-
-static uint8_t to_bcd(uint8_t tens, uint8_t units) {
-    return ((tens & 0x0F) << 4) | (units & 0x0F);
+static uint8_t to_bcd(uint8_t val) {
+    return ((val / 10) << 4) | (val % 10);
 }
 
-static void from_bcd(uint8_t bcd, uint8_t *tens, uint8_t *units) {
-    *tens = (bcd >> 4) & 0x0F;
-    *units = bcd & 0x0F;
+static uint8_t from_bcd(uint8_t bcd) {
+    return ((bcd >> 4) * 10) + (bcd & 0x0F);
 }
 
 bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *time)
@@ -172,13 +117,13 @@ bool ds1307_set_time(struct ds1307_obj *obj, struct ds1307_time *time)
 
     uint8_t msg[8];
     msg[0] = DS1307_REG_ADDR_SECONDS;
-    msg[1] = to_bcd(time->seconds_tens, time->seconds_units) & 0x7F; // Bit 7 = CH
-    msg[2] = to_bcd(time->minutes_tens, time->minutes_units);
-    msg[3] = to_bcd(time->hours_tens, time->hours_units); // 24h mode
-    msg[4] = time->day & 0x07;
-    msg[5] = to_bcd(time->date_tens, time->date_units);
-    msg[6] = to_bcd(time->month_tens, time->month_units);
-    msg[7] = to_bcd(time->year_tens, time->year_units);
+    msg[1] = to_bcd(time->seconds) & 0x7F; // Bit 7 = CH (Clock Halt)
+    msg[2] = to_bcd(time->minutes);
+    msg[3] = to_bcd(time->hours); // Zakładamy 24h
+    msg[4] = to_bcd(time->day);
+    msg[5] = to_bcd(time->date);
+    msg[6] = to_bcd(time->month);
+    msg[7] = to_bcd(time->year);
 
     if (!obj->serial_send(DS1307_ADDR, msg, sizeof(msg)))
         return false;
@@ -200,13 +145,13 @@ bool ds1307_get_time(struct ds1307_obj *obj, struct ds1307_time *time)
     if (!obj->serial_receive(DS1307_ADDR, data, sizeof(data)))
         return false;
 
-    from_bcd(data[0] & 0x7F, &time->seconds_tens, &time->seconds_units); // Bit 7 = CH
-    from_bcd(data[1], &time->minutes_tens, &time->minutes_units);
-    from_bcd(data[2] & 0x3F, &time->hours_tens, &time->hours_units); // 24h mode
-    time->day = data[3] & 0x07;
-    from_bcd(data[4], &time->date_tens, &time->date_units);
-    from_bcd(data[5], &time->month_tens, &time->month_units);
-    from_bcd(data[6], &time->year_tens, &time->year_units);
+    time->seconds = from_bcd(data[0] & 0x7F); // Bit 7 = CH
+    time->minutes = from_bcd(data[1]);
+    time->hours   = from_bcd(data[2] & 0x3F); // Zakładamy 24h
+    time->day     = from_bcd(data[3]);
+    time->date    = from_bcd(data[4]);
+    time->month   = from_bcd(data[5]);
+    time->year    = from_bcd(data[6]);
 
     return true;
 }
