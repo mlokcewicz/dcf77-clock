@@ -105,6 +105,21 @@ static struct buzzer_note alarm_beep[] =
 
 static char buf[16]; 
 
+static void print_static_icons(void)
+{
+    hal_lcd_set_cursor(0, 0);
+    hal_lcd_putc(UI_MANAGER_CHAR_ID_CLOCK);
+    
+    hal_lcd_set_cursor(1, 0);
+    hal_lcd_putc(UI_MANAGER_CHAR_ID_ALARM);
+
+    hal_lcd_set_cursor(1, 8);
+    hal_lcd_putc(UI_MANAGER_CHAR_ID_ANTENNA);
+
+    hal_lcd_set_cursor(1, 15);
+    hal_lcd_putc('>');
+}
+
 static void print_time(struct ds1307_time *unix_time)
 {
     uint8_t i = 0;
@@ -138,22 +153,7 @@ static void print_alarm(struct hal_timestamp *alarm)
     hal_lcd_print(buf, 1, 2);
 }
 
-static void print_static_icons(void)
-{
-    hal_lcd_set_cursor(0, 0);
-    hal_lcd_putc(UI_MANAGER_CHAR_ID_CLOCK);
-    
-    hal_lcd_set_cursor(1, 0);
-    hal_lcd_putc(UI_MANAGER_CHAR_ID_ALARM);
-
-    hal_lcd_set_cursor(1, 8);
-    hal_lcd_putc(UI_MANAGER_CHAR_ID_ANTENNA);
-
-    hal_lcd_set_cursor(1, 15);
-    hal_lcd_putc('>');
-}
-
-static void print_sync_status( event_sync_time_status_data_t *sync_time_status_data)
+static void print_sync_status(event_sync_time_status_data_t *sync_time_status_data)
 {
     simple_stdio_uint16_to_str(sync_time_status_data->time_ms, buf);
 
@@ -163,17 +163,12 @@ static void print_sync_status( event_sync_time_status_data_t *sync_time_status_d
     hal_lcd_print(buf, 0, pos);
 
     if (sync_time_status_data->frame_started)
-    {
         hal_lcd_print("S", 0, 15);
-    }
     else if (sync_time_status_data->error)
-    {
         hal_lcd_print("E", 0, 15);
-    }
 
     hal_led_set(!sync_time_status_data->dcf_output);
 }
-
 
 static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
 {
@@ -182,7 +177,7 @@ static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
     return val;
 }
 
-static void update_item(enum ui_manager_item_id item_id, int8_t val)
+static void item_update(enum ui_manager_item_id item_id, int8_t val)
 {
     event_set_time_req_data_t *time = (event_set_time_req_data_t *)event_get_data(EVENT_SET_TIME_REQ);
     event_set_alarm_req_data_t *alarm = (event_set_alarm_req_data_t *)event_get_data(EVENT_SET_ALARM_REQ);
@@ -235,7 +230,6 @@ void hal_button_pressed_cb(void)
                 hal_lcd_set_cursor_mode(false, false);
 
                 event_set(EVENT_SET_TIME_REQ);
-
                 event_set(EVENT_SET_ALARM_REQ);
 
                 ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
@@ -248,9 +242,9 @@ void hal_button_pressed_cb(void)
             {
                 ctx.state = UI_MANAGER_STATE_SYNC_SATUS_DISPLAY;
                 hal_lcd_clear();
+                hal_lcd_set_cursor_mode(false, false);
                 hal_lcd_set_cursor(1,0);
                 hal_lcd_putc('<');
-                hal_lcd_set_cursor(1,0);
             }
             else
             {
@@ -300,7 +294,7 @@ void hal_encoder_rotation_cb(uint8_t dir)
 
         case UI_MANAGER_STATE_VALUE_SELECT:
 
-            update_item(ctx.item_id, dir);
+            item_update(ctx.item_id, dir);
             print_time(event_get_data(EVENT_SET_TIME_REQ));
             print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 
