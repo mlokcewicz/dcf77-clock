@@ -72,7 +72,7 @@ struct ui_manager_ctx
 
 static struct ui_manager_ctx ctx; 
 
-static uint8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
+static const uint8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
 {
     [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
     [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
@@ -170,7 +170,7 @@ static void print_sync_status(event_sync_time_status_data_t *sync_time_status_da
     hal_led_set(!sync_time_status_data->dcf_output);
 }
 
-static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
+static uint8_t item_limit_value(uint8_t val, uint8_t min, uint8_t max)
 {
     if (val < min) return max;
     if (val > max) return min;
@@ -271,6 +271,7 @@ void hal_button_pressed_cb(void)
             print_static_icons();
             print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
+            break;
 
         default:
             break;
