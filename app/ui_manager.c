@@ -72,7 +72,7 @@ struct ui_manager_ctx
 
 static struct ui_manager_ctx ctx; 
 
-static int8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
+static uint8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
 {
     [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
     [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
