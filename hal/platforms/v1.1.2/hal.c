@@ -441,6 +441,10 @@ void hal_init(void)
 
 void hal_process(void)
 {
+    buzzer_process(&buzzer1_obj);
+    button_process(&button1_obj);
+    rotary_encoder_process(&encoder1_obj);
+
     wdt_reset();
 
     set_sleep_mode(SLEEP_MODE_IDLE);

@@ -126,12 +126,20 @@ static void item_update(enum ui_manager_item_id item_id, int8_t val)
 
 //------------------------------------------------------------------------------
 
-static void print_cursor(void)
+static void ui_alarm_play(bool play)
+{
+    if (play)
+        hal_audio_set_pattern(alarm_beep, sizeof(alarm_beep), 800);
+    else 
+        hal_audio_set_pattern(NULL, 0, 0);
+}
+
+static void ui_print_cursor(void)
 {
     hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
 }
 
-static void print_static_icons(void)
+static void ui_print_static_icons(void)
 {
     hal_lcd_set_cursor(0, 0);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_CLOCK);
@@ -143,7 +151,7 @@ static void print_static_icons(void)
     hal_lcd_putc(UI_MANAGER_CHAR_ID_ANTENNA);
 }
 
-static void print_time(struct ds1307_time *unix_time)
+static void ui_print_time(struct ds1307_time *unix_time)
 {
     uint8_t i = 0;
     ctx.buf[i++] = (unix_time->hours / 10 + '0');
@@ -164,7 +172,7 @@ static void print_time(struct ds1307_time *unix_time)
     hal_lcd_print(ctx.buf, 0, 2);
 }
 
-static void print_alarm(struct hal_timestamp *alarm)
+static void ui_print_alarm(struct hal_timestamp *alarm)
 {
     uint8_t i = 0;
     ctx.buf[i++] = (alarm->hours / 10 + '0');
@@ -176,7 +184,7 @@ static void print_alarm(struct hal_timestamp *alarm)
     hal_lcd_print(ctx.buf, 1, 2);
 }
 
-static void print_sync_status(event_sync_time_status_data_t *sync_time_status_data)
+static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status_data)
 {
     simple_stdio_uint16_to_str(sync_time_status_data->time_ms, ctx.buf);
 
@@ -193,23 +201,23 @@ static void print_sync_status(event_sync_time_status_data_t *sync_time_status_da
     hal_led_set(!sync_time_status_data->dcf_output);
 }
 
-static void print_alarm_date_display_screen(void)
+static void ui_print_alarm_date_display_screen(void)
 {
     hal_lcd_clear();
     hal_lcd_set_cursor_mode(false, false);
 
-    print_static_icons();
-    print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
-    print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+    ui_print_static_icons();
+    ui_print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+    ui_print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 }
 
-static void print_alarm_date_set_screen(void)
+static void ui_print_alarm_date_set_screen(void)
 {
     hal_lcd_clear();
 
-    print_static_icons();
-    print_time(event_get_data(EVENT_SET_TIME_REQ));
-    print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+    ui_print_static_icons();
+    ui_print_time(event_get_data(EVENT_SET_TIME_REQ));
+    ui_print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 
     hal_lcd_print("OK", 1, 10);
     hal_lcd_print("ESC", 1, 13);
@@ -218,13 +226,13 @@ static void print_alarm_date_set_screen(void)
     hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
 }
 
-static void print_time_sync_status_screen(void)
+static void ui_print_time_sync_status_screen(void)
 {
     hal_lcd_clear();
     hal_lcd_set_cursor_mode(false, false);
 }
 
-static void print_value_select_screen(void)
+static void ui_print_value_select_screen(void)
 {
     hal_lcd_set_cursor_mode(true, true);
 }
@@ -252,7 +260,7 @@ const uint8_t hal_user_defined_char_tab[5][8] =
 
 void hal_button_pressed_cb(void)
 {
-    hal_audio_set_pattern(NULL, 0, 0);
+    ui_alarm_play(false);
 
     switch (ctx.state)
     {
@@ -261,7 +269,7 @@ void hal_button_pressed_cb(void)
 
         memcpy(event_get_data(EVENT_SET_TIME_REQ), event_get_data(EVENT_UPDATE_TIME_REQ), sizeof(event_set_time_req_data_t));
 
-        print_alarm_date_set_screen();
+        ui_print_alarm_date_set_screen();
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
         break;
@@ -270,13 +278,13 @@ void hal_button_pressed_cb(void)
 
         if (ctx.item_id == UI_MANAGER_ITEM_ID_ESC)
         {
-            print_alarm_date_display_screen();
+            ui_print_alarm_date_display_screen();
 
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
         }
         else if (ctx.item_id == UI_MANAGER_ITEM_ID_OK)
         {
-            print_alarm_date_display_screen();
+            ui_print_alarm_date_display_screen();
 
             event_set(EVENT_SET_TIME_REQ);
             event_set(EVENT_SET_ALARM_REQ);
@@ -289,7 +297,7 @@ void hal_button_pressed_cb(void)
         }
         else
         {
-            print_value_select_screen();
+            ui_print_value_select_screen();
 
             ctx.state = UI_MANAGER_STATE_VALUE_SELECT;
         }
@@ -297,7 +305,7 @@ void hal_button_pressed_cb(void)
 
     case UI_MANAGER_STATE_VALUE_SELECT:
 
-        print_alarm_date_set_screen();
+        ui_print_alarm_date_set_screen();
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
         break;
@@ -314,7 +322,7 @@ void hal_encoder_rotation_cb(int8_t dir)
     {
     case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
 
-        print_time_sync_status_screen();
+        ui_print_time_sync_status_screen();
 
         ctx.state = UI_MANAGER_STATE_SYNC_SATUS_DISPLAY;
 
@@ -324,7 +332,7 @@ void hal_encoder_rotation_cb(int8_t dir)
 
         item_id_update(dir);
 
-        print_cursor();
+        ui_print_cursor();
 
         break;
 
@@ -332,16 +340,16 @@ void hal_encoder_rotation_cb(int8_t dir)
 
         item_update(ctx.item_id, dir);
 
-        print_time(event_get_data(EVENT_SET_TIME_REQ));
-        print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+        ui_print_time(event_get_data(EVENT_SET_TIME_REQ));
+        ui_print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 
-        print_cursor();
+        ui_print_cursor();
 
         break;
 
     case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
 
-        print_alarm_date_display_screen();
+        ui_print_alarm_date_display_screen();
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
 
@@ -357,20 +365,16 @@ void hal_encoder_rotation_cb(int8_t dir)
 
 bool ui_manager_init(void)
 {
-    print_alarm_date_display_screen();
+    ui_print_alarm_date_display_screen();
 
     return true;
 }
 
 void ui_manager_process(void)
 {
-    hal_audio_process();
-    hal_button_process();
-    hal_rotary_encoder_process();
-
     if (event_get() & EVENT_ALARM_REQ)
     {
-        hal_audio_set_pattern(alarm_beep, sizeof(alarm_beep), 800);
+        ui_alarm_play(true);
 
         event_clear(EVENT_ALARM_REQ);
     }
@@ -381,7 +385,7 @@ void ui_manager_process(void)
 
         if (event_get() & EVENT_UPDATE_TIME_REQ)
         {
-            print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+            ui_print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
 
             event_clear(EVENT_UPDATE_TIME_REQ);
         }
@@ -392,7 +396,7 @@ void ui_manager_process(void)
 
         if (event_get() & EVENT_SYNC_TIME_STATUS)
         {
-            print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS));
+            ui_print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS));
 
             event_clear(EVENT_SYNC_TIME_STATUS);
         }
