@@ -101,6 +101,25 @@ static struct buzzer_note alarm_beep[] =
 
 //------------------------------------------------------------------------------
 
+static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
+{
+    if (val < min) return max;
+    if (val > max) return min;
+    return val;
+}
+
+static void item_update(enum ui_manager_item_id item_id, int8_t val)
+{
+    event_set_time_req_data_t *time = (event_set_time_req_data_t *)event_get_data(EVENT_SET_TIME_REQ);
+    event_set_alarm_req_data_t *alarm = (event_set_alarm_req_data_t *)event_get_data(EVENT_SET_ALARM_REQ);
+
+    uint8_t *item_buf_ptrs[] = {(uint8_t*)time, (uint8_t*)alarm};
+
+    item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value(item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
+}
+
+//------------------------------------------------------------------------------
+
 static void print_static_icons(void)
 {
     hal_lcd_set_cursor(0, 0);
@@ -197,23 +216,6 @@ static void print_time_sync_status_screen(void)
 static void print_value_select_screen(void)
 {
     hal_lcd_set_cursor_mode(true, true);
-}
-
-static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
-{
-    if (val < min) return max;
-    if (val > max) return min;
-    return val;
-}
-
-static void item_update(enum ui_manager_item_id item_id, int8_t val)
-{
-    event_set_time_req_data_t *time = (event_set_time_req_data_t *)event_get_data(EVENT_SET_TIME_REQ);
-    event_set_alarm_req_data_t *alarm = (event_set_alarm_req_data_t *)event_get_data(EVENT_SET_ALARM_REQ);
-
-    uint8_t *item_buf_ptrs[] = {(uint8_t*)time, (uint8_t*)alarm};
-
-    item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value(item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
 }
 
 //------------------------------------------------------------------------------
@@ -351,6 +353,7 @@ void ui_manager_process(void)
 {
     hal_audio_process();
     hal_button_process();
+    hal_rotary_encoder_process();
 
     if (event_get() & EVENT_ALARM_REQ)
     {

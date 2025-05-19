@@ -89,9 +89,6 @@ __attribute__((weak)) const uint8_t hal_user_defined_char_tab[5][8];
 #define HAL_BUTTON_PIN GPIO_PIN_2
 #define HAL_BUTTON_PORT GPIO_PORT_B
 
-#define HAL_BUTTON_EXTI_ID EXTI_ID_PCINT2
-#define HAL_MAS6181B_BUTTON_EXTI_TRIGGER EXTI_TRIGGER_CHANGE   
-
 #define HAL_ENCODER_A_PIN GPIO_PIN_2
 #define HAL_ENCODER_A_PORT GPIO_PORT_D  
 #define HAL_ENCODER_B_PIN GPIO_PIN_3
@@ -112,6 +109,7 @@ __attribute__((weak)) const uint8_t hal_user_defined_char_tab[5][8];
 #define HAL_MAS6181B_OUT_PORT GPIO_PORT_B
 
 #define HAL_MAS6181B_EXTI_ID EXTI_ID_PCINT0
+#define HAL_MAS6181B_EXTI_TRIGGER EXTI_TRIGGER_CHANGE   
 
 /* Buzzer */
 
@@ -301,15 +299,11 @@ static struct rotary_encoder_cfg encoder1_cfg =
     .deinit_cb = NULL,
     .rotation_cb = encoder1_rotation_cb,
     .sub_steps_count = 4,
-    .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_A,
+    .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_NONE,
+    .debounce_counter_initial_value = 0,
 };
 
 static struct rotary_encoder_obj encoder1_obj;
-
-static void exti_encoder1_cb(void)
-{
-    rotary_encoder_process(&encoder1_obj);
-}
 
 /* TWI */
 
@@ -430,12 +424,8 @@ void hal_init(void)
     rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
     /* External interrupts */
-    exti_init(HAL_BUTTON_EXTI_ID, HAL_MAS6181B_BUTTON_EXTI_TRIGGER, exti_mas6181B_cb);
-    exti_enable(HAL_BUTTON_EXTI_ID, true);
+    exti_init(HAL_MAS6181B_EXTI_ID, HAL_MAS6181B_EXTI_TRIGGER, exti_mas6181B_cb);
     exti_enable(HAL_MAS6181B_EXTI_ID, true); 
-
-    exti_init(HAL_ENCODER_EXTI_ID, HAL_ENCODER_EXTI_TRIGGER, exti_encoder1_cb);
-    exti_enable(HAL_ENCODER_EXTI_ID, true);
 
     exti_init(HAL_SQW_EXTI_ID, HAL_SQW_EXTI_TRIGGER, exti_sqw_cb);
     exti_enable(HAL_SQW_EXTI_ID, true);
@@ -501,6 +491,11 @@ void hal_audio_process(void)
 void hal_button_process(void)
 {
     button_process(&button1_obj);
+}
+
+void hal_rotary_encoder_process(void)
+{
+    rotary_encoder_process(&encoder1_obj);
 }
 
 void hal_set_time(struct ds1307_time *time)
