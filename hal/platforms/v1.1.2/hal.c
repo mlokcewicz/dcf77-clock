@@ -259,9 +259,9 @@ static struct button_cfg button1_cfg =
 	.deinit = NULL,
     
     .active_low = true,
-    .irq_cfg = true,
+    .irq_cfg = false,
 
-	.debounce_counter_initial_value = 0,
+	.debounce_counter_initial_value = 255,
 	.autopress_counter_initial_value = 0,
 };
 
@@ -384,19 +384,16 @@ static struct mas6181b_cfg mas6181b1_cfg =
 
 static struct mas6181b_obj mas6181b1_obj;
 
-/* DCF77 Decoder and button Interrupt */
+/* DCF77 Decoder Interrupt */
 
-static void exti_mas6181B_and_button1_cb(void)
+static void exti_mas6181B_cb(void)
 {
     static uint16_t last_time = 0;
     uint16_t current_time = system_timer_get();
     uint16_t time_diff = current_time - last_time;
     last_time = current_time;
 
-    if (!gpio_get(HAL_BUTTON_PORT, HAL_BUTTON_PIN))
-        button_process(&button1_obj);
-    else
-        hal_dcf_cb(time_diff, gpio_get(HAL_MAS6181B_OUT_PORT, HAL_MAS6181B_OUT_PIN));
+    hal_dcf_cb(time_diff, gpio_get(HAL_MAS6181B_OUT_PORT, HAL_MAS6181B_OUT_PIN));
 }
 
 //------------------------------------------------------------------------------
@@ -433,7 +430,7 @@ void hal_init(void)
     rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
     /* External interrupts */
-    exti_init(HAL_BUTTON_EXTI_ID, HAL_MAS6181B_BUTTON_EXTI_TRIGGER, exti_mas6181B_and_button1_cb);
+    exti_init(HAL_BUTTON_EXTI_ID, HAL_MAS6181B_BUTTON_EXTI_TRIGGER, exti_mas6181B_cb);
     exti_enable(HAL_BUTTON_EXTI_ID, true);
     exti_enable(HAL_MAS6181B_EXTI_ID, true); 
 
@@ -499,6 +496,11 @@ void hal_audio_set_pattern(struct buzzer_note *pattern, uint16_t pattern_len, ui
 void hal_audio_process(void)
 {
     buzzer_process(&buzzer1_obj);
+}
+
+void hal_button_process(void)
+{
+    button_process(&button1_obj);
 }
 
 void hal_set_time(struct ds1307_time *time)

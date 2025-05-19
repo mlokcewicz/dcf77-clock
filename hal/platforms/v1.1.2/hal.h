@@ -66,6 +66,9 @@ void hal_audio_set_pattern(struct buzzer_note *pattern, uint16_t pattern_len, ui
 /// @brief Processes audio pattern for buzzer
 void hal_audio_process(void);
 
+/// @brief Processes button polling
+void hal_button_process(void);
+
 /// @brief Sets time on RTC
 /// @param time pointer to time structure @ref struct ds1307_time
 void hal_set_time(struct ds1307_time *time);

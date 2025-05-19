@@ -15,7 +15,7 @@ add_definitions(-DTIMER_USE_TIMER0_COMPA_ISR=1)
 add_definitions(-DTIMER_USE_TIMER1_CAPT_ISR=0)
 
 add_definitions(-DROTARY_ENCODER_USE_IRQ=1)
-add_definitions(-DBUTTON_USE_IRQ=1)
+add_definitions(-DBUTTON_USE_POLLING=1)
 
 add_subdirectory(drivers)
 add_subdirectory(ext_drivers)

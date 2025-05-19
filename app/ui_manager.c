@@ -185,7 +185,7 @@ static void print_alarm_date_set_screen(void)
     hal_lcd_print("ESC", 1, 13);
 
     hal_lcd_set_cursor_mode(true, false);
-    hal_lcd_set_cursor(items[0][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[0][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+    hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
 }
 
 static void print_time_sync_status_screen(void)
@@ -350,6 +350,7 @@ bool ui_manager_init(void)
 void ui_manager_process(void)
 {
     hal_audio_process();
+    hal_button_process();
 
     if (event_get() & EVENT_ALARM_REQ)
     {
