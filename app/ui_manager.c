@@ -101,6 +101,12 @@ static struct buzzer_note alarm_beep[] =
 
 //------------------------------------------------------------------------------
 
+static void item_id_update(int8_t diff)
+{
+    ctx.item_id += diff;
+    ctx.item_id = (ctx.item_id + UI_MANAGER_ITEM_ID_MAX) % UI_MANAGER_ITEM_ID_MAX;
+}
+
 static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
 {
     if (val < min) return max;
@@ -119,6 +125,11 @@ static void item_update(enum ui_manager_item_id item_id, int8_t val)
 }
 
 //------------------------------------------------------------------------------
+
+static void print_cursor(void)
+{
+    hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+}
 
 static void print_static_icons(void)
 {
@@ -197,7 +208,7 @@ static void print_alarm_date_set_screen(void)
     hal_lcd_clear();
 
     print_static_icons();
-    print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+    print_time(event_get_data(EVENT_SET_TIME_REQ));
     print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 
     hal_lcd_print("OK", 1, 10);
@@ -245,54 +256,55 @@ void hal_button_pressed_cb(void)
 
     switch (ctx.state)
     {
-        case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
-        case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
+    case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
+    case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
 
-            memcpy(event_get_data(EVENT_SET_TIME_REQ), event_get_data(EVENT_UPDATE_TIME_REQ), sizeof(event_set_time_req_data_t));
+        memcpy(event_get_data(EVENT_SET_TIME_REQ), event_get_data(EVENT_UPDATE_TIME_REQ), sizeof(event_set_time_req_data_t));
 
-            print_alarm_date_set_screen();
+        print_alarm_date_set_screen();
 
-            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
-            break;
+        ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
+        break;
 
-        case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
+    case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
 
-            if (ctx.item_id == UI_MANAGER_ITEM_ID_ESC)
-            {
-                print_alarm_date_display_screen();
+        if (ctx.item_id == UI_MANAGER_ITEM_ID_ESC)
+        {
+            print_alarm_date_display_screen();
 
-                ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
-            }
-            else if (ctx.item_id == UI_MANAGER_ITEM_ID_OK)
-            {
-                print_alarm_date_display_screen();
+            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
+        }
+        else if (ctx.item_id == UI_MANAGER_ITEM_ID_OK)
+        {
+            print_alarm_date_display_screen();
 
-                event_set(EVENT_SET_TIME_REQ);
-                event_set(EVENT_SET_ALARM_REQ);
+            event_set(EVENT_SET_TIME_REQ);
+            event_set(EVENT_SET_ALARM_REQ);
 
-                ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
-            }
-            else if (ctx.item_id == UI_MANAGER_ITEM_ID_SYNC)
-            {
-                event_set(EVENT_SYNC_TIME_REQ);
-            }
-            else
-            {
-                print_value_select_screen();
+            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
+        }
+        else if (ctx.item_id == UI_MANAGER_ITEM_ID_SYNC)
+        {
+            event_set(EVENT_SYNC_TIME_REQ);
+        }
+        else
+        {
+            print_value_select_screen();
 
-                ctx.state = UI_MANAGER_STATE_VALUE_SELECT;
-            }
-            break;
+            ctx.state = UI_MANAGER_STATE_VALUE_SELECT;
+        }
+        break;
 
-        case UI_MANAGER_STATE_VALUE_SELECT:
+    case UI_MANAGER_STATE_VALUE_SELECT:
 
-            print_alarm_date_set_screen();
+        print_alarm_date_set_screen();
 
-            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
-            break;
+        ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
+        break;
 
-        default:
-            break;
+    default:
+
+        break;
     }
 }
 
@@ -300,43 +312,44 @@ void hal_encoder_rotation_cb(int8_t dir)
 {
     switch (ctx.state)
     {
-        case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
+    case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
 
-            print_time_sync_status_screen();
+        print_time_sync_status_screen();
 
-            ctx.state = UI_MANAGER_STATE_SYNC_SATUS_DISPLAY;
+        ctx.state = UI_MANAGER_STATE_SYNC_SATUS_DISPLAY;
 
-            break;
+        break;
 
-        case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
+    case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
 
-            ctx.item_id += dir;
-            ctx.item_id = (ctx.item_id + UI_MANAGER_ITEM_ID_MAX) % UI_MANAGER_ITEM_ID_MAX;
+        item_id_update(dir);
 
-            hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
-            
-            break;
+        print_cursor();
 
-        case UI_MANAGER_STATE_VALUE_SELECT:
+        break;
 
-            item_update(ctx.item_id, dir);
-            print_time(event_get_data(EVENT_SET_TIME_REQ));
-            print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+    case UI_MANAGER_STATE_VALUE_SELECT:
 
-            hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+        item_update(ctx.item_id, dir);
 
-            break;
+        print_time(event_get_data(EVENT_SET_TIME_REQ));
+        print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 
-        case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
+        print_cursor();
 
-            print_alarm_date_display_screen();
-            
-            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
-            
-            break;
+        break;
 
-        default:
-            break;
+    case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
+
+        print_alarm_date_display_screen();
+
+        ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
+
+        break;
+
+    default:
+
+        break;
     }
 }
 
@@ -364,35 +377,31 @@ void ui_manager_process(void)
 
     switch (ctx.state)
     {
-        case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
-        {
-            if (event_get() & EVENT_UPDATE_TIME_REQ)
-            {
-                print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+    case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
 
-                event_clear(EVENT_UPDATE_TIME_REQ);
-            }
+        if (event_get() & EVENT_UPDATE_TIME_REQ)
+        {
+            print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
 
-            break;
+            event_clear(EVENT_UPDATE_TIME_REQ);
         }
-        case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
-        {
-            break;
-        }
-        case UI_MANAGER_STATE_VALUE_SELECT:
-        {
-            break;
-        }
-        case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY: 
-        {
-            if (event_get() & EVENT_SYNC_TIME_STATUS)
-            {
-                print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS));
 
-                event_clear(EVENT_SYNC_TIME_STATUS);
-            }
-            break;
+        break;
+
+    case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
+
+        if (event_get() & EVENT_SYNC_TIME_STATUS)
+        {
+            print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS));
+
+            event_clear(EVENT_SYNC_TIME_STATUS);
         }
+
+        break;
+
+    default: 
+        
+        break;
     }
 }
 
