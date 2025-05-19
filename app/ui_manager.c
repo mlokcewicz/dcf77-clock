@@ -40,7 +40,7 @@ enum ui_manager_item_id
     UI_MANAGER_ITEM_ID_OK,
     UI_MANAGER_ITEM_ID_ESC,
 
-    UI_MANAGER_SETTABLE_ITEM_ID_MAX,
+    UI_MANAGER_ITEM_ID_MAX,
 };
 
 enum ui_manager_item_property
@@ -71,7 +71,7 @@ struct ui_manager_ctx
 
 static struct ui_manager_ctx ctx; 
 
-static const uint8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
+static const uint8_t items[UI_MANAGER_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
 {
     [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
     [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
@@ -167,6 +167,7 @@ static void print_sync_status(event_sync_time_status_data_t *sync_time_status_da
 static void print_alarm_date_display_screen(void)
 {
     hal_lcd_clear();
+    hal_lcd_set_cursor_mode(false, false);
 
     print_static_icons();
     print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
@@ -186,6 +187,17 @@ static void print_alarm_date_set_screen(void)
 
     hal_lcd_set_cursor_mode(true, false);
     hal_lcd_set_cursor(items[0][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[0][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+}
+
+static void print_time_sync_status_screen(void)
+{
+    hal_lcd_clear();
+    hal_lcd_set_cursor_mode(false, false);
+}
+
+static void print_value_select_screen(void)
+{
+    hal_lcd_set_cursor_mode(true, true);
 }
 
 static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
@@ -247,13 +259,12 @@ void hal_button_pressed_cb(void)
             if (ctx.item_id == UI_MANAGER_ITEM_ID_ESC)
             {
                 print_alarm_date_display_screen();
-                hal_lcd_set_cursor_mode(false, false);
+
                 ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
             }
             else if (ctx.item_id == UI_MANAGER_ITEM_ID_OK)
             {
                 print_alarm_date_display_screen();
-                hal_lcd_set_cursor_mode(false, false);
 
                 event_set(EVENT_SET_TIME_REQ);
                 event_set(EVENT_SET_ALARM_REQ);
@@ -266,7 +277,7 @@ void hal_button_pressed_cb(void)
             }
             else
             {
-                hal_lcd_set_cursor_mode(true, true);
+                print_value_select_screen();
 
                 ctx.state = UI_MANAGER_STATE_VALUE_SELECT;
             }
@@ -274,7 +285,7 @@ void hal_button_pressed_cb(void)
 
         case UI_MANAGER_STATE_VALUE_SELECT:
 
-            hal_lcd_set_cursor_mode(true, false);
+            print_alarm_date_set_screen();
 
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
             break;
@@ -290,18 +301,19 @@ void hal_encoder_rotation_cb(int8_t dir)
     {
         case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
 
+            print_time_sync_status_screen();
+
             ctx.state = UI_MANAGER_STATE_SYNC_SATUS_DISPLAY;
-            hal_lcd_clear();
-            hal_lcd_set_cursor_mode(false, false);
 
             break;
 
         case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
 
             ctx.item_id += dir;
-            ctx.item_id = (ctx.item_id + UI_MANAGER_SETTABLE_ITEM_ID_MAX) % UI_MANAGER_SETTABLE_ITEM_ID_MAX;
+            ctx.item_id = (ctx.item_id + UI_MANAGER_ITEM_ID_MAX) % UI_MANAGER_ITEM_ID_MAX;
 
             hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+            
             break;
 
         case UI_MANAGER_STATE_VALUE_SELECT:
@@ -316,8 +328,10 @@ void hal_encoder_rotation_cb(int8_t dir)
 
         case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
 
-            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
             print_alarm_date_display_screen();
+            
+            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
+            
             break;
 
         default:
