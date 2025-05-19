@@ -154,6 +154,7 @@ static void ui_print_static_icons(void)
 static void ui_print_time(struct ds1307_time *unix_time)
 {
     uint8_t i = 0;
+
     ctx.buf[i++] = (unix_time->hours / 10 + '0');
     ctx.buf[i++] = (unix_time->hours % 10 + '0');
     ctx.buf[i++] = (':');
@@ -169,18 +170,21 @@ static void ui_print_time(struct ds1307_time *unix_time)
     ctx.buf[i++] = (unix_time->month / 10 + '0');
     ctx.buf[i++] = (unix_time->month % 10 + '0');
     ctx.buf[i++] = 0;
+
     hal_lcd_print(ctx.buf, 0, 2);
 }
 
 static void ui_print_alarm(struct hal_timestamp *alarm)
 {
     uint8_t i = 0;
+
     ctx.buf[i++] = (alarm->hours / 10 + '0');
     ctx.buf[i++] = (alarm->hours % 10 + '0');
     ctx.buf[i++] = (':');
     ctx.buf[i++] = (alarm->minutes / 10 + '0');
     ctx.buf[i++] = (alarm->minutes % 10 + '0');
     ctx.buf[i++] = 0;
+
     hal_lcd_print(ctx.buf, 1, 2);
 }
 
@@ -223,7 +227,8 @@ static void ui_print_alarm_date_set_screen(void)
     hal_lcd_print("ESC", 1, 13);
 
     hal_lcd_set_cursor_mode(true, false);
-    hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
+    
+    ui_print_cursor();
 }
 
 static void ui_print_time_sync_status_screen(void)
@@ -250,13 +255,13 @@ const uint8_t hal_user_defined_char_tab[5][8] =
 };
 
 // https://avtanski.net/projects/lcd/
-// %CHAR L 38C7F7CF38
-// %CHAR R 7E2255227E
-// %CHAR A 5C623A665C
-// %CHAR N 40205E2040
+// %CHAR ! 38C7F7CF38
+// %CHAR @ 7E2255227E
+// %CHAR # 5C623A665C
+// %CHAR $ 40205E2040
 // %CHAR ? 307CCF7C30
-// L 13:23:28 19.05
-// A 06:30 N  UTC+2
+// ! 13:23:28 19.05
+// # 06:30 $ UTC+02
 
 void hal_button_pressed_cb(void)
 {
@@ -272,6 +277,7 @@ void hal_button_pressed_cb(void)
         ui_print_alarm_date_set_screen();
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
+
         break;
 
     case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
@@ -308,6 +314,7 @@ void hal_button_pressed_cb(void)
         ui_print_alarm_date_set_screen();
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
+
         break;
 
     default:
