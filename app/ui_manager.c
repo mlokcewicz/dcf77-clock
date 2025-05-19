@@ -24,6 +24,7 @@ enum ui_manager_icon_id
     UI_MANAGER_CHAR_ID_CALENDAR,
     UI_MANAGER_CHAR_ID_ALARM,
     UI_MANAGER_CHAR_ID_ANTENNA,  
+    UI_MANAGER_CHAR_ID_TIMEZONE,
 };
 
 enum ui_manager_item_id
@@ -38,8 +39,6 @@ enum ui_manager_item_id
     UI_MANAGER_ITEM_ID_SYNC,
     UI_MANAGER_ITEM_ID_OK,
     UI_MANAGER_ITEM_ID_ESC,
-    UI_MANAGER_ITEM_ID_NEXT,
-    // UI_MANAGER_ITEM_ID_PREV,
 
     UI_MANAGER_SETTABLE_ITEM_ID_MAX,
 };
@@ -84,8 +83,6 @@ static const uint8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROP
     [UI_MANAGER_ITEM_ID_SYNC] = {24, 0, 0, 0},
     [UI_MANAGER_ITEM_ID_OK] = {26, 0, 0, 0},
     [UI_MANAGER_ITEM_ID_ESC] = {29, 0, 0, 0},
-    [UI_MANAGER_ITEM_ID_NEXT] = {31, 0, 0, 0},
-    // [UI_MANAGER_ITEM_ID_PREV] = {16, 0, 0},
 };
 
 static struct buzzer_note alarm_beep[] = 
@@ -115,9 +112,6 @@ static void print_static_icons(void)
 
     hal_lcd_set_cursor(1, 8);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_ANTENNA);
-
-    hal_lcd_set_cursor(1, 15);
-    hal_lcd_putc('>');
 }
 
 static void print_time(struct ds1307_time *unix_time)
@@ -188,8 +182,7 @@ static void print_alarm_date_set_screen(void)
     print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
 
     hal_lcd_print("OK", 1, 10);
-    hal_lcd_print("E", 1, 13);
-    hal_lcd_print(">", 1, 15);
+    hal_lcd_print("ESC", 1, 13);
 
     hal_lcd_set_cursor_mode(true, false);
     hal_lcd_set_cursor(items[0][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[0][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
@@ -215,13 +208,23 @@ static void item_update(enum ui_manager_item_id item_id, int8_t val)
 //------------------------------------------------------------------------------
 /* HAL callbacks and structures */
 
-const uint8_t hal_user_defined_char_tab[4][8] = 
+const uint8_t hal_user_defined_char_tab[5][8] = 
 {
     [UI_MANAGER_CHAR_ID_CLOCK] = {0x0E, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x0E, 0x0E}, // CLOCK
     [UI_MANAGER_CHAR_ID_CALENDAR] = {0x00, 0x15, 0x1F, 0x11, 0x15, 0x11, 0x1F, 0x00}, // CALENDAR
     [UI_MANAGER_CHAR_ID_ALARM] = {0x00, 0x1B, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x00}, // ALARM
     [UI_MANAGER_CHAR_ID_ANTENNA] = {0x00, 0x15, 0x0A, 0x04, 0x04, 0x04, 0x04, 0x00}, // ANTENNA
+    [UI_MANAGER_CHAR_ID_TIMEZONE] = {0x04, 0x0E, 0x1B, 0x1B, 0x0E, 0x0E, 0x04, 0x04} // TIMEZONE
 };
+
+// https://avtanski.net/projects/lcd/
+// %CHAR L 38C7F7CF38
+// %CHAR R 7E2255227E
+// %CHAR A 5C623A665C
+// %CHAR N 40205E2040
+// %CHAR ? 307CCF7C30
+// L 13:23:28 19.05
+// A 06:30 N  UTC+2
 
 void hal_button_pressed_cb(void)
 {
@@ -230,6 +233,7 @@ void hal_button_pressed_cb(void)
     switch (ctx.state)
     {
         case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
+        case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
 
             memcpy(event_get_data(EVENT_SET_TIME_REQ), event_get_data(EVENT_UPDATE_TIME_REQ), sizeof(event_set_time_req_data_t));
 
@@ -260,14 +264,6 @@ void hal_button_pressed_cb(void)
             {
                 event_set(EVENT_SYNC_TIME_REQ);
             }
-            else if (ctx.item_id == UI_MANAGER_ITEM_ID_NEXT)
-            {
-                ctx.state = UI_MANAGER_STATE_SYNC_SATUS_DISPLAY;
-                hal_lcd_clear();
-                hal_lcd_set_cursor_mode(false, false);
-                hal_lcd_set_cursor(1,0);
-                hal_lcd_putc('<');
-            }
             else
             {
                 hal_lcd_set_cursor_mode(true, true);
@@ -283,13 +279,6 @@ void hal_button_pressed_cb(void)
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
             break;
 
-        case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
-
-            print_alarm_date_set_screen();
-            
-            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
-            break;
-
         default:
             break;
     }
@@ -300,6 +289,11 @@ void hal_encoder_rotation_cb(int8_t dir)
     switch (ctx.state)
     {
         case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
+
+            ctx.state = UI_MANAGER_STATE_SYNC_SATUS_DISPLAY;
+            hal_lcd_clear();
+            hal_lcd_set_cursor_mode(false, false);
+
             break;
 
         case UI_MANAGER_STATE_TIME_DATE_ALARM_SET:
@@ -319,6 +313,13 @@ void hal_encoder_rotation_cb(int8_t dir)
             hal_lcd_set_cursor(items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] / 16, items[ctx.item_id][UI_MANAGER_ITEM_PROPERTY_POS] % 16);
 
             break;
+
+        case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
+
+            ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
+            print_alarm_date_display_screen();
+            break;
+
         default:
             break;
     }
