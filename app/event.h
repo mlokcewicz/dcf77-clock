@@ -35,6 +35,7 @@ struct event_sync_time_status_data
     uint8_t error;
     uint8_t frame_started;
     uint8_t triggred_on_bit;
+    uint8_t bit_number;
     uint8_t dcf_output;
     uint16_t time_ms;
 }__attribute__((packed));

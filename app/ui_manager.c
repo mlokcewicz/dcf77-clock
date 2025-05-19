@@ -192,15 +192,19 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
 {
     simple_stdio_uint16_to_str(sync_time_status_data->time_ms, ctx.buf);
 
-    uint8_t pos = sync_time_status_data->triggred_on_bit ? 0 : 8;
+    uint8_t pos = sync_time_status_data->triggred_on_bit ? 3 : 8;
 
-    hal_lcd_print("       ", 0, pos);
+    hal_lcd_print("    ", 0, pos);
     hal_lcd_print(ctx.buf, 0, pos);
 
+    simple_stdio_uint16_to_str(sync_time_status_data->bit_number, ctx.buf);
+    
+    hal_lcd_print(ctx.buf, 1, 3);
+
     if (sync_time_status_data->frame_started)
-        hal_lcd_print("S", 0, 15);
+        hal_lcd_print("STARTED", 0, 9);
     else if (sync_time_status_data->error)
-        hal_lcd_print("E", 0, 15);
+        hal_lcd_print("ERROR", 0, 9);
 
     hal_led_set(!sync_time_status_data->dcf_output);
 }
@@ -235,6 +239,9 @@ static void ui_print_time_sync_status_screen(void)
 {
     hal_lcd_clear();
     hal_lcd_set_cursor_mode(false, false);
+
+    hal_lcd_print("T:     /     ms", 0, 0);
+    hal_lcd_print("B:    S: ", 1, 0);
 }
 
 static void ui_print_value_select_screen(void)
