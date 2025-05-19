@@ -72,7 +72,7 @@ struct ui_manager_ctx
 
 static struct ui_manager_ctx ctx; 
 
-static const int8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
+static const uint8_t items[UI_MANAGER_SETTABLE_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
 {
     [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
     [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
@@ -207,7 +207,7 @@ static void item_update(enum ui_manager_item_id item_id, int8_t val)
     event_set_time_req_data_t *time = (event_set_time_req_data_t *)event_get_data(EVENT_SET_TIME_REQ);
     event_set_alarm_req_data_t *alarm = (event_set_alarm_req_data_t *)event_get_data(EVENT_SET_ALARM_REQ);
 
-    int8_t *item_buf_ptrs[] = {(int8_t*)time, (int8_t*)alarm};
+    uint8_t *item_buf_ptrs[] = {(uint8_t*)time, (uint8_t*)alarm};
 
     item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value(item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
 }
@@ -295,7 +295,7 @@ void hal_button_pressed_cb(void)
     }
 }
 
-void hal_encoder_rotation_cb(uint8_t dir)
+void hal_encoder_rotation_cb(int8_t dir)
 {
     switch (ctx.state)
     {
