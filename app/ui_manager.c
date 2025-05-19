@@ -67,6 +67,7 @@ struct ui_manager_ctx
 {
     enum ui_manager_state state;
     enum ui_manager_item_id item_id;
+    char buf[16];
 };
 
 static struct ui_manager_ctx ctx; 
@@ -100,8 +101,6 @@ static struct buzzer_note alarm_beep[] =
 
 //------------------------------------------------------------------------------
 
-static char buf[16]; 
-
 static void print_static_icons(void)
 {
     hal_lcd_set_cursor(0, 0);
@@ -117,44 +116,44 @@ static void print_static_icons(void)
 static void print_time(struct ds1307_time *unix_time)
 {
     uint8_t i = 0;
-    buf[i++] = (unix_time->hours / 10 + '0');
-    buf[i++] = (unix_time->hours % 10 + '0');
-    buf[i++] = (':');
-    buf[i++] = (unix_time->minutes / 10 + '0');
-    buf[i++] = (unix_time->minutes % 10 + '0');
-    buf[i++] = (':');
-    buf[i++] = (unix_time->seconds / 10 + '0');
-    buf[i++] = (unix_time->seconds % 10 + '0');
-    buf[i++] = (' ');
-    buf[i++] = (unix_time->date / 10 + '0');
-    buf[i++] = (unix_time->date % 10 + '0');
-    buf[i++] = ('.');
-    buf[i++] = (unix_time->month / 10 + '0');
-    buf[i++] = (unix_time->month % 10 + '0');
-    buf[i++] = 0;
-    hal_lcd_print(buf, 0, 2);
+    ctx.buf[i++] = (unix_time->hours / 10 + '0');
+    ctx.buf[i++] = (unix_time->hours % 10 + '0');
+    ctx.buf[i++] = (':');
+    ctx.buf[i++] = (unix_time->minutes / 10 + '0');
+    ctx.buf[i++] = (unix_time->minutes % 10 + '0');
+    ctx.buf[i++] = (':');
+    ctx.buf[i++] = (unix_time->seconds / 10 + '0');
+    ctx.buf[i++] = (unix_time->seconds % 10 + '0');
+    ctx.buf[i++] = (' ');
+    ctx.buf[i++] = (unix_time->date / 10 + '0');
+    ctx.buf[i++] = (unix_time->date % 10 + '0');
+    ctx.buf[i++] = ('.');
+    ctx.buf[i++] = (unix_time->month / 10 + '0');
+    ctx.buf[i++] = (unix_time->month % 10 + '0');
+    ctx.buf[i++] = 0;
+    hal_lcd_print(ctx.buf, 0, 2);
 }
 
 static void print_alarm(struct hal_timestamp *alarm)
 {
     uint8_t i = 0;
-    buf[i++] = (alarm->hours / 10 + '0');
-    buf[i++] = (alarm->hours % 10 + '0');
-    buf[i++] = (':');
-    buf[i++] = (alarm->minutes / 10 + '0');
-    buf[i++] = (alarm->minutes % 10 + '0');
-    buf[i++] = 0;
-    hal_lcd_print(buf, 1, 2);
+    ctx.buf[i++] = (alarm->hours / 10 + '0');
+    ctx.buf[i++] = (alarm->hours % 10 + '0');
+    ctx.buf[i++] = (':');
+    ctx.buf[i++] = (alarm->minutes / 10 + '0');
+    ctx.buf[i++] = (alarm->minutes % 10 + '0');
+    ctx.buf[i++] = 0;
+    hal_lcd_print(ctx.buf, 1, 2);
 }
 
 static void print_sync_status(event_sync_time_status_data_t *sync_time_status_data)
 {
-    simple_stdio_uint16_to_str(sync_time_status_data->time_ms, buf);
+    simple_stdio_uint16_to_str(sync_time_status_data->time_ms, ctx.buf);
 
     uint8_t pos = sync_time_status_data->triggred_on_bit ? 0 : 8;
 
     hal_lcd_print("       ", 0, pos);
-    hal_lcd_print(buf, 0, pos);
+    hal_lcd_print(ctx.buf, 0, pos);
 
     if (sync_time_status_data->frame_started)
         hal_lcd_print("S", 0, 15);
