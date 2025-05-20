@@ -46,7 +46,10 @@ void hal_dcf_cb(uint16_t ms, bool triggred_on_bit)
 
     ctx.decoder_status = dcf77_decode(ms, triggred_on_bit);
     
-    (ctx.decoder_status == DCF77_DECODER_STATUS_BIT_RECEIVED) ? ctx.bit_number++ : (ctx.bit_number = 0);
+    if (ctx.decoder_status == DCF77_DECODER_STATUS_BIT_RECEIVED)
+        ctx.bit_number++;
+    else if (ctx.decoder_status != DCF77_DECODER_STATUS_BREAK_RECEIVED)
+        ctx.bit_number = 0;
 };
 
 //------------------------------------------------------------------------------
