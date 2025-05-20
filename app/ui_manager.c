@@ -25,15 +25,18 @@ enum ui_manager_icon_id
     UI_MANAGER_CHAR_ID_ALARM,
     UI_MANAGER_CHAR_ID_ANTENNA,  
     UI_MANAGER_CHAR_ID_TIMEZONE,
+    UI_MANAGER_CHAR_ID_ALARM_SET,
+    UI_MANAGER_CHAR_ID_ALARM_UNSET
 };
 
 enum ui_manager_item_id
 {
     UI_MANAGER_ITEM_ID_TIME_H,
     UI_MANAGER_ITEM_ID_TIME_M,
-    UI_MANAGER_ITEM_ID_TIME_S,
     UI_MANAGER_ITEM_ID_DATE_D,
     UI_MANAGER_ITEM_ID_DATE_M,
+    UI_MANAGER_ITEM_ID_DATE_Y,
+    UI_MANAGER_ITEM_ID_ALARM_TOGGLE,
     UI_MANAGER_ITEM_ID_ALARM_H,
     UI_MANAGER_ITEM_ID_ALARM_M,
     UI_MANAGER_ITEM_ID_SYNC,
@@ -59,6 +62,7 @@ enum ui_manager_state
     UI_MANAGER_STATE_TIME_DATE_ALARM_SET,
     UI_MANAGER_STATE_VALUE_SELECT,
     UI_MANAGER_STATE_SYNC_SATUS_DISPLAY,
+    UI_MANAGER_STATE_ALARM,
 };
 
 //------------------------------------------------------------------------------
@@ -67,7 +71,7 @@ struct ui_manager_ctx
 {
     enum ui_manager_state state;
     enum ui_manager_item_id item_id;
-    char buf[16];
+    char buf[18];
 };
 
 static struct ui_manager_ctx ctx; 
@@ -76,9 +80,10 @@ static const uint8_t items[UI_MANAGER_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX]
 {
     [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
     [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
-    [UI_MANAGER_ITEM_ID_TIME_S] = {9, 0, 59, offsetof(event_set_time_req_data_t, seconds)},
-    [UI_MANAGER_ITEM_ID_DATE_D] = {12, 1, 31, offsetof(event_set_time_req_data_t, date)},
-    [UI_MANAGER_ITEM_ID_DATE_M] = {15, 1, 12, offsetof(event_set_time_req_data_t, month)},
+    [UI_MANAGER_ITEM_ID_DATE_D] = {9, 1, 31, offsetof(event_set_time_req_data_t, date)},
+    [UI_MANAGER_ITEM_ID_DATE_M] = {12, 1, 12, offsetof(event_set_time_req_data_t, month)},
+    [UI_MANAGER_ITEM_ID_DATE_Y] = {15, 0, 99, offsetof(event_set_time_req_data_t, year)},
+    [UI_MANAGER_ITEM_ID_ALARM_TOGGLE] = {16, 0, 1, offsetof(event_set_alarm_req_data_t, is_enabled)},
     [UI_MANAGER_ITEM_ID_ALARM_H] = {19, 0, 23, offsetof(event_set_alarm_req_data_t, hours)},
     [UI_MANAGER_ITEM_ID_ALARM_M] = {22, 0, 59, offsetof(event_set_alarm_req_data_t, minutes)},
     [UI_MANAGER_ITEM_ID_SYNC] = {24, 0, 0, 0},
@@ -121,7 +126,7 @@ static void item_update(enum ui_manager_item_id item_id, int8_t val)
 
     uint8_t *item_buf_ptrs[] = {(uint8_t*)time, (uint8_t*)alarm};
 
-    item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value(item_buf_ptrs[item_id > UI_MANAGER_ITEM_ID_DATE_M][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
+    item_buf_ptrs[item_id >= UI_MANAGER_ITEM_ID_ALARM_TOGGLE][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value(item_buf_ptrs[item_id >= UI_MANAGER_ITEM_ID_ALARM_TOGGLE][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
 }
 
 //------------------------------------------------------------------------------
@@ -144,9 +149,6 @@ static void ui_print_static_icons(void)
     hal_lcd_set_cursor(0, 0);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_CLOCK);
     
-    hal_lcd_set_cursor(1, 0);
-    hal_lcd_putc(UI_MANAGER_CHAR_ID_ALARM);
-
     hal_lcd_set_cursor(1, 8);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_ANTENNA);
 }
@@ -157,18 +159,18 @@ static void ui_print_time(struct ds1307_time *unix_time)
 
     ctx.buf[i++] = (unix_time->hours / 10 + '0');
     ctx.buf[i++] = (unix_time->hours % 10 + '0');
-    ctx.buf[i++] = (':');
+    ctx.buf[i++] = ((unix_time->seconds & 1) ? ':' : ' ');
     ctx.buf[i++] = (unix_time->minutes / 10 + '0');
     ctx.buf[i++] = (unix_time->minutes % 10 + '0');
-    ctx.buf[i++] = (':');
-    ctx.buf[i++] = (unix_time->seconds / 10 + '0');
-    ctx.buf[i++] = (unix_time->seconds % 10 + '0');
     ctx.buf[i++] = (' ');
     ctx.buf[i++] = (unix_time->date / 10 + '0');
     ctx.buf[i++] = (unix_time->date % 10 + '0');
-    ctx.buf[i++] = ('.');
+    ctx.buf[i++] = ('/');
     ctx.buf[i++] = (unix_time->month / 10 + '0');
     ctx.buf[i++] = (unix_time->month % 10 + '0');
+    ctx.buf[i++] = ('/');
+    ctx.buf[i++] = (unix_time->year / 10 + '0');
+    ctx.buf[i++] = (unix_time->year % 10 + '0');
     ctx.buf[i++] = 0;
 
     hal_lcd_print(ctx.buf, 0, 2);
@@ -178,6 +180,8 @@ static void ui_print_alarm(struct hal_timestamp *alarm)
 {
     uint8_t i = 0;
 
+    ctx.buf[i++] = (alarm->is_enabled ? UI_MANAGER_CHAR_ID_ALARM_SET : UI_MANAGER_CHAR_ID_ALARM_UNSET);
+    ctx.buf[i++] = (' ');
     ctx.buf[i++] = (alarm->hours / 10 + '0');
     ctx.buf[i++] = (alarm->hours % 10 + '0');
     ctx.buf[i++] = (':');
@@ -185,7 +189,7 @@ static void ui_print_alarm(struct hal_timestamp *alarm)
     ctx.buf[i++] = (alarm->minutes % 10 + '0');
     ctx.buf[i++] = 0;
 
-    hal_lcd_print(ctx.buf, 1, 2);
+    hal_lcd_print(ctx.buf, 1, 0);
 }
 
 static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status_data)
@@ -199,12 +203,13 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
 
     simple_stdio_uint16_to_str(sync_time_status_data->bit_number, ctx.buf);
     
+    hal_lcd_print("  ", 1, 3);
     hal_lcd_print(ctx.buf, 1, 3);
 
     if (sync_time_status_data->frame_started)
-        hal_lcd_print("STARTED", 0, 9);
+        hal_lcd_print("STARTED", 1, 9);
     else if (sync_time_status_data->error)
-        hal_lcd_print("ERROR", 0, 9);
+        hal_lcd_print("ERROR  ", 1, 9);
 
     hal_led_set(!sync_time_status_data->dcf_output);
 }
@@ -252,13 +257,15 @@ static void ui_print_value_select_screen(void)
 //------------------------------------------------------------------------------
 /* HAL callbacks and structures */
 
-const uint8_t hal_user_defined_char_tab[5][8] = 
+const uint8_t hal_user_defined_char_tab[7][8] = 
 {
-    [UI_MANAGER_CHAR_ID_CLOCK] = {0x0E, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x0E, 0x0E}, // CLOCK
-    [UI_MANAGER_CHAR_ID_CALENDAR] = {0x00, 0x15, 0x1F, 0x11, 0x15, 0x11, 0x1F, 0x00}, // CALENDAR
-    [UI_MANAGER_CHAR_ID_ALARM] = {0x00, 0x1B, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x00}, // ALARM
-    [UI_MANAGER_CHAR_ID_ANTENNA] = {0x00, 0x15, 0x0A, 0x04, 0x04, 0x04, 0x04, 0x00}, // ANTENNA
-    [UI_MANAGER_CHAR_ID_TIMEZONE] = {0x04, 0x0E, 0x1B, 0x1B, 0x0E, 0x0E, 0x04, 0x04} // TIMEZONE
+    [UI_MANAGER_CHAR_ID_CLOCK] = {0x0E, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x0E, 0x0E},
+    [UI_MANAGER_CHAR_ID_CALENDAR] = {0x00, 0x15, 0x1F, 0x11, 0x15, 0x11, 0x1F, 0x00},
+    [UI_MANAGER_CHAR_ID_ALARM] = {0x00, 0x1B, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x00},
+    [UI_MANAGER_CHAR_ID_ANTENNA] = {0x00, 0x15, 0x0A, 0x04, 0x04, 0x04, 0x04, 0x00},
+    [UI_MANAGER_CHAR_ID_TIMEZONE] = {0x04, 0x0E, 0x1B, 0x1B, 0x0E, 0x0E, 0x04, 0x04},
+    [UI_MANAGER_CHAR_ID_ALARM_SET] = {0x04, 0x0E, 0x0E, 0x0E, 0x0E, 0x1F, 0x1F, 0x04},
+    [UI_MANAGER_CHAR_ID_ALARM_UNSET] = {0x04, 0x0E,0x0A, 0x0A, 0x0A, 0x11, 0x1F, 0x04},
 };
 
 // https://avtanski.net/projects/lcd/
@@ -272,8 +279,6 @@ const uint8_t hal_user_defined_char_tab[5][8] =
 
 void hal_button_pressed_cb(void)
 {
-    ui_alarm_play(false);
-
     switch (ctx.state)
     {
     case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
@@ -321,6 +326,14 @@ void hal_button_pressed_cb(void)
         ui_print_alarm_date_set_screen();
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
+
+        break;
+    
+    case UI_MANAGER_STATE_ALARM:
+
+        ui_alarm_play(false);
+
+        ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
 
         break;
 
@@ -389,6 +402,8 @@ void ui_manager_process(void)
     if (event_get() & EVENT_ALARM_REQ)
     {
         ui_alarm_play(true);
+
+        ctx.state = UI_MANAGER_STATE_ALARM;
 
         event_clear(EVENT_ALARM_REQ);
     }

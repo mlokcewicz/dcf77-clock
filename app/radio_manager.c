@@ -46,7 +46,7 @@ void hal_dcf_cb(uint16_t ms, bool triggred_on_bit)
 
     ctx.decoder_status = dcf77_decode(ms, triggred_on_bit);
     
-    if (ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED || ctx.decoder_status == ctx.decoder_status == DCF77_DECODER_STATUS_ERROR)
+    if (ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED || ctx.decoder_status == DCF77_DECODER_STATUS_ERROR)
         ctx.bit_number = 0;
     else if (ctx.decoder_status == DCF77_DECODER_STATUS_BIT_RECEIVED)
         ctx.bit_number++;

@@ -58,7 +58,7 @@ __attribute__((weak)) void hal_exti_sqw_cb(void);
 __attribute__((weak)) void hal_button_pressed_cb(void); 
 __attribute__((weak)) void hal_encoder_rotation_cb(int8_t dir); 
 __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit); 
-__attribute__((weak)) const uint8_t hal_user_defined_char_tab[5][8];
+__attribute__((weak)) const uint8_t hal_user_defined_char_tab[7][8];
 
 /* Pin assignement */
 
