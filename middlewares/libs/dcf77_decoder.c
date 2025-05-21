@@ -31,21 +31,11 @@ enum dcf77_bit_val
 
 //------------------------------------------------------------------------------
 
-struct dcf77_frame_validator
-{
-    uint8_t frame_start_always_zero : 1;
-    uint32_t other : 19;
-    uint8_t time_start_always_one : 1;
-    uint8_t minutes_with_parity : 8;
-    uint8_t hours_with_parity : 7;
-    uint32_t date_with_parity : 23;
-} __attribute__((__packed__));
-
 struct dcf77_ctx 
 {
     bool frame_started;
-    uint8_t frame[2][8];  
     uint8_t bit_cnt;
+    uint8_t frame[2][8];  
 };
 
 static struct dcf77_ctx ctx;
@@ -69,23 +59,43 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
     return DCF77_BIT_VAL_ERROR;
 }
 
-static bool validate_frame(void)
+static uint8_t frame_get_bit(const uint8_t *frame, uint8_t bit)
 {
-    struct dcf77_frame_validator *dcf_frame = (struct dcf77_frame_validator *)ctx.frame[1];
+    return (frame[bit / 8] >> (bit % 8)) & 1;
+}
 
-    if (dcf_frame->frame_start_always_zero != 0)
+static uint8_t frame_get_parity(const uint8_t *frame, uint8_t start, uint8_t len)
+{
+    uint8_t p = 0;
+
+    for (uint8_t i = 0; i < len; ++i)
+        p ^= frame_get_bit(frame, start + i);
+    
+    return p;
+}
+
+static bool frame_validate(void)
+{
+    const uint8_t *frame = ctx.frame[1];
+
+    /* Bit 0: always 0 (frame start) */
+    if (frame_get_bit(frame, 0) != 0)
         return false;
 
-    if (dcf_frame->time_start_always_one != 1)
+    /* Bit 15: always 1 (time start) */
+    if (frame_get_bit(frame, 20) != 1)
         return false;
 
-    if (__builtin_parity(dcf_frame->minutes_with_parity))
+    /* Minute parity: bits 21-27 (minutes), bit 28 (parity) */
+    if (frame_get_parity(frame, 21, 8))
         return false;
 
-    if (__builtin_parity(dcf_frame->hours_with_parity))
+    /* Hour parity: bits 29-34 (hours), bit 35 (parity) */
+    if (frame_get_parity(frame, 29, 7))
         return false;
 
-    if (__builtin_parity(dcf_frame->date_with_parity))
+    /* Date parity: bits 36-57 (date), bit 58 (parity) */
+    if (frame_get_parity(frame, 36, 23))
         return false;
 
     return true;
@@ -131,12 +141,11 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
         if (ctx.bit_cnt >= 59 + dcf_frame->leap_second)
         {
             memcpy(ctx.frame[1], ctx.frame[0], sizeof(ctx.frame[1]));
-            memset(ctx.frame[0], 0x00, sizeof(ctx.frame[0]));
 
             ctx.frame_started = false;
             ctx.bit_cnt = 0;
 
-            if (!validate_frame())
+            if (!frame_validate())
                 return DCF77_DECODER_STATUS_ERROR;
 
             return DCF77_DECODER_STATUS_SYNCED;
