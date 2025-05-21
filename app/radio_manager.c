@@ -88,17 +88,16 @@ void radio_manager_process(void)
         if (ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && ctx.prev_decoder_status == DCF77_DECODER_STATUS_SYNCED)
         {
             sync_time_status_data->dcf_output = true;
-
-            struct dcf77_frame *dcf_frame = dcf77_get_frame();
             
-            struct ds1307_time *set_time_req_data = event_get_data(EVENT_SET_TIME_REQ);
-
+            event_set_time_req_data_t *set_time_req_data = event_get_data(EVENT_SET_TIME_REQ);
+            
+            uint8_t *dcf_frame = dcf77_get_frame();
             set_time_req_data->seconds = 0;
-            set_time_req_data->minutes = 10 * dcf_frame->minutes_tens + dcf_frame->minutes_units;
-            set_time_req_data->hours = 10 * dcf_frame->hours_tens + dcf_frame->hours_units;
-            set_time_req_data->date = 10 * dcf_frame->month_day_tens + dcf_frame->month_day_units;
-            set_time_req_data->month = 10 * dcf_frame->months_tens + dcf_frame->months_units;
-            set_time_req_data->year = 10 * dcf_frame->years_tens + dcf_frame->years_units;
+            set_time_req_data->minutes = 10 * DCF77_DECODER_FRAME_GET_MINUTES_TENS(dcf_frame) + DCF77_DECODER_FRAME_GET_MINUTES_UNITS(dcf_frame);
+            set_time_req_data->hours = 10 * DCF77_DECODER_FRAME_GET_HOURS_TENS(dcf_frame) + DCF77_DECODER_FRAME_GET_HOURS_UNITS(dcf_frame);
+            set_time_req_data->date = 10 * DCF77_DECODER_FRAME_GET_DAY_TENS(dcf_frame) + DCF77_DECODER_FRAME_GET_DAY_UNITS(dcf_frame);
+            set_time_req_data->month = 10 * DCF77_DECODER_FRAME_GET_MONTH_TENS(dcf_frame) + DCF77_DECODER_FRAME_GET_MONTH_UNITS(dcf_frame);
+            set_time_req_data->year = 10 * DCF77_DECODER_FRAME_GET_YEAR_TENS(dcf_frame) + DCF77_DECODER_FRAME_GET_YEAR_UNITS(dcf_frame);
 
             event_set(EVENT_SET_TIME_REQ);
 
