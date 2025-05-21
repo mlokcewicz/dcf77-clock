@@ -58,7 +58,7 @@ __attribute__((weak)) void hal_exti_sqw_cb(void);
 __attribute__((weak)) void hal_button_pressed_cb(void); 
 __attribute__((weak)) void hal_encoder_rotation_cb(int8_t dir); 
 __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit); 
-__attribute__((weak)) const uint8_t hal_user_defined_char_tab[7][8];
+__attribute__((weak)) const uint8_t hal_user_defined_char_tab[4][8];
 
 /* Pin assignement */
 
@@ -414,8 +414,6 @@ void hal_init(void)
 
     /* LCD */
     hd44780_init(&lcd_obj, &lcd_cfg);
-    hd44780_print(&lcd_obj, "TEST");
-    hd44780_set_pos(&lcd_obj, 1, 0);
 
     /* Button */
     button_init(&button1_obj, &button1_cfg);
@@ -520,6 +518,16 @@ void hal_set_alarm(struct hal_timestamp *alarm)
 void hal_get_alarm(struct hal_timestamp *alarm)
 {
     eeprom_read_block((void *)alarm, (const void *)0x00, sizeof(struct hal_timestamp));
+}
+
+void hal_set_timezone(int8_t *tz)
+{
+    eeprom_write_block((const void *)tz, (void *)(0x00 + sizeof(struct hal_timestamp)), sizeof(int8_t));
+}
+
+void hal_get_timezone(int8_t *tz)
+{
+    eeprom_read_block((void *)tz, (const void *)(0x00 + sizeof(struct hal_timestamp)), sizeof(int8_t));
 }
 
 bool hal_time_is_reset(void)

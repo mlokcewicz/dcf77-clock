@@ -28,6 +28,7 @@ enum event_type
     EVENT_SET_ALARM_REQ = 1 << 3,
     EVENT_ALARM_REQ = 1 << 4,
     EVENT_UPDATE_TIME_REQ = 1 << 5, 
+    EVENT_SET_TIME_ZONE_REQ = 1 << 6, 
 };
 
 struct event_sync_time_status_data

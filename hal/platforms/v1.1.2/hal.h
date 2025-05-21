@@ -88,6 +88,14 @@ void hal_set_alarm(struct hal_timestamp *alarm);
 /// @param alarm pointer to alarm structure @ref struct hal_timestamp
 void hal_get_alarm(struct hal_timestamp *alarm);
 
+/// @brief Sets timezone
+/// @param tz pointer to timezone value
+void hal_set_timezone(int8_t *tz);
+
+/// @brief Gets timezone
+/// @param tz pointer to timezone value
+void hal_get_timezone(int8_t *tz);
+
 /// @brief Checks if RTC is running
 /// @return true if RTC is running, otherwise false
 bool hal_time_is_reset(void);
