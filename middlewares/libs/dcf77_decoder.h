@@ -30,31 +30,59 @@ enum dcf77_decoder_status
 };
 
 //------------------------------------------------------------------------------
+// Macros for extracting DCF77 frame fields from a uint8_t* frame (bit 0 = LSB of frame[0])
 
-struct dcf77_frame
-{
-    uint8_t frame_start_always_zero : 1;
-    uint16_t weather_info : 14;
-    uint8_t auxiliary_antenna : 1;
-    uint8_t time_change_announcement : 1;
-    uint8_t winter_time : 2;
-    uint8_t leap_second : 1;
-    uint8_t time_start_always_one : 1;
-    uint8_t minutes_units : 4;
-    uint8_t minutes_tens : 3;
-    uint8_t minutes_parity : 1;
-    uint8_t hours_units : 4;
-    uint8_t hours_tens : 2;
-    uint8_t hours_parity : 1;
-    uint8_t month_day_units : 4;
-    uint8_t month_day_tens : 2;
-    uint8_t weekday : 3;
-    uint8_t months_units : 4;
-    uint8_t months_tens : 1;
-    uint8_t years_units : 4;
-    uint8_t years_tens: 4;
-    uint8_t date_parity: 1;
-} __attribute__((__packed__));
+// MOJE 96% - Program:    7868 bytes (96.0% Full)
+
+// #define DCF77_DECODER_FRAME_GET_FRAME_START(frame)         (((frame[0] >> 0) & 0x01))
+// #define DCF77_DECODER_FRAME_GET_WEATHER_INFO(frame)        ((((uint16_t)(frame[0] >> 1)) & 0x7F) | (((uint16_t)(frame[1] & 0x3F)) << 7))
+// #define DCF77_DECODER_FRAME_GET_AUX_ANTENNA(frame)         (((frame[1] >> 7) & 0x01))
+// #define DCF77_DECODER_FRAME_GET_TIME_CHANGE_ANN(frame)     (((frame[2] >> 0) & 0x01))
+// #define DCF77_DECODER_FRAME_GET_WINTER_TIME(frame)         (((frame[2] >> 1) & 0x03))
+// #define DCF77_DECODER_FRAME_GET_LEAP_SECOND(frame)         (((frame[2] >> 3) & 0x01))
+// #define DCF77_DECODER_FRAME_GET_TIME_START(frame)          (((frame[2] >> 4) & 0x01))
+
+// #define DCF77_DECODER_FRAME_GET_MINUTES_UNITS(frame)       (((frame[3] >> 0) & 0x01) << 3 | ((frame[2] >> 5) & 0x07))
+// #define DCF77_DECODER_FRAME_GET_MINUTES_TENS(frame)        (((frame[3] >> 1) & 0x07))
+// #define DCF77_DECODER_FRAME_GET_MINUTES_PARITY(frame)      (((frame[3] >> 4) & 0x01))
+// #define DCF77_DECODER_FRAME_GET_HOURS_UNITS(frame)         (((frame[4] >> 0) & 0x01) << 3 | ((frame[3] >> 5) & 0x07))
+// #define DCF77_DECODER_FRAME_GET_HOURS_TENS(frame)          (((frame[4] >> 1) & 0x03))
+// #define DCF77_DECODER_FRAME_GET_HOURS_PARITY(frame)        (((frame[4] >> 3) & 0x01))
+// #define DCF77_DECODER_FRAME_GET_DAY_UNITS(frame)           (((frame[4] >> 4) & 0x0F))
+// #define DCF77_DECODER_FRAME_GET_DAY_TENS(frame)            (((frame[5] >> 0) & 0x03))
+// #define DCF77_DECODER_FRAME_GET_WEEKDAY(frame)             (((frame[5] >> 2) & 0x07))
+// #define DCF77_DECODER_FRAME_GET_MONTH_UNITS(frame)         (((frame[6] >> 0) & 0x01) << 3 | ((frame[5] >> 5) & 0x07))
+// #define DCF77_DECODER_FRAME_GET_MONTH_TENS(frame)          (((frame[6] >> 1) & 0x01))
+// #define DCF77_DECODER_FRAME_GET_YEAR_UNITS(frame)          (((frame[6] >> 2) & 0x0F))
+// #define DCF77_DECODER_FRAME_GET_YEAR_TENS(frame)           (((frame[7] >> 0) & 0x03) << 2 | ((frame[6] >> 6) & 0x03))
+// #define DCF77_DECODER_FRAME_GET_DATE_PARITY(frame)         (((frame[7] >> 2) & 0x01))
+
+#define DCF77_GET_BITS(frame, bit_pos, mask) ((((((uint16_t)frame[((bit_pos) / 8) + 1] << 8) | (uint16_t)frame[(bit_pos) / 8]) >> ((bit_pos) % 8)) & (mask)))
+
+#define DCF77_DECODER_FRAME_GET_FRAME_START(frame)          DCF77_GET_BITS(frame, 0, 0x01)
+#define DCF77_DECODER_FRAME_GET_WEATHER_INFO(frame)         (((DCF77_GET_BITS(frame, 1, 0x7F)) | (DCF77_GET_BITS(frame, 8, 0x3F) << 7)))
+#define DCF77_DECODER_FRAME_GET_AUX_ANTENNA(frame)          DCF77_GET_BITS(frame, 15, 0x01)
+#define DCF77_DECODER_FRAME_GET_TIME_CHANGE_ANN(frame)      DCF77_GET_BITS(frame, 16, 0x01)
+#define DCF77_DECODER_FRAME_GET_WINTER_TIME(frame)          DCF77_GET_BITS(frame, 17, 0x03)
+#define DCF77_DECODER_FRAME_GET_LEAP_SECOND(frame)          DCF77_GET_BITS(frame, 19, 0x01)
+#define DCF77_DECODER_FRAME_GET_TIME_START(frame)           DCF77_GET_BITS(frame, 20, 0x01)
+
+#define DCF77_DECODER_FRAME_GET_MINUTES_UNITS(frame)        DCF77_GET_BITS(frame, 21, 0x0F)
+#define DCF77_DECODER_FRAME_GET_MINUTES_TENS(frame)         DCF77_GET_BITS(frame, 25, 0x07)
+#define DCF77_DECODER_FRAME_GET_MINUTES_PARITY(frame)       DCF77_GET_BITS(frame, 28, 0x01)
+
+#define DCF77_DECODER_FRAME_GET_HOURS_UNITS(frame)          DCF77_GET_BITS(frame, 29, 0x0F)
+#define DCF77_DECODER_FRAME_GET_HOURS_TENS(frame)           DCF77_GET_BITS(frame, 33, 0x03)
+#define DCF77_DECODER_FRAME_GET_HOURS_PARITY(frame)         DCF77_GET_BITS(frame, 35, 0x01)
+
+#define DCF77_DECODER_FRAME_GET_DAY_UNITS(frame)            DCF77_GET_BITS(frame, 36, 0x0F)
+#define DCF77_DECODER_FRAME_GET_DAY_TENS(frame)             DCF77_GET_BITS(frame, 40, 0x03)
+#define DCF77_DECODER_FRAME_GET_WEEKDAY(frame)              DCF77_GET_BITS(frame, 42, 0x07)
+#define DCF77_DECODER_FRAME_GET_MONTH_UNITS(frame)          DCF77_GET_BITS(frame, 45, 0x0F)
+#define DCF77_DECODER_FRAME_GET_MONTH_TENS(frame)           DCF77_GET_BITS(frame, 49, 0x01)
+#define DCF77_DECODER_FRAME_GET_YEAR_UNITS(frame)           DCF77_GET_BITS(frame, 50, 0x0F)
+#define DCF77_DECODER_FRAME_GET_YEAR_TENS(frame)            DCF77_GET_BITS(frame, 54, 0x0F)
+#define DCF77_DECODER_FRAME_GET_DATE_PARITY(frame)          DCF77_GET_BITS(frame, 58, 0x01)
 
 //------------------------------------------------------------------------------
 
@@ -65,8 +93,8 @@ struct dcf77_frame
 enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit);
 
 /// @brief Returns pointer do last received time frame
-/// @return last received frame pointer @ref struct dcf77_frame
-struct dcf77_frame *dcf77_get_frame(void);
+/// @return last received frame pointer
+uint8_t *dcf77_get_frame(void);
 
 //------------------------------------------------------------------------------
 

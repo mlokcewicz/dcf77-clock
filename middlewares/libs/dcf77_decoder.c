@@ -106,7 +106,6 @@ static bool frame_validate(void)
 enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
 {
     enum dcf77_bit_val val = 0;
-    struct dcf77_frame *dcf_frame = (struct dcf77_frame *)ctx.frame[0];
 
     if (!ctx.frame_started)
     {
@@ -138,7 +137,7 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
 
         ctx.bit_cnt++;
 
-        if (ctx.bit_cnt >= 59 + dcf_frame->leap_second)
+        if (ctx.bit_cnt >= 59 + DCF77_DECODER_FRAME_GET_LEAP_SECOND(ctx.frame[0]))
         {
             memcpy(ctx.frame[1], ctx.frame[0], sizeof(ctx.frame[1]));
 
@@ -162,9 +161,10 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
     }
 }
 
-struct dcf77_frame *dcf77_get_frame(void)
+uint8_t *dcf77_get_frame(void)
 {
-    return (struct dcf77_frame*)ctx.frame[1];
+    return ctx.frame[1];
 }
 
 //------------------------------------------------------------------------------
+
