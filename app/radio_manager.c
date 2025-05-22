@@ -81,6 +81,8 @@ void radio_manager_process(void)
         sync_time_status_data->time_ms = ctx.last_time_ms;
         sync_time_status_data->frame_started = (ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED);
         sync_time_status_data->error = (ctx.decoder_status == DCF77_DECODER_STATUS_ERROR);
+        sync_time_status_data->synced = false;
+
         sync_time_status_data->dcf_output = hal_dcf_get_state();
         
         event_set(EVENT_SYNC_TIME_STATUS);
@@ -88,6 +90,7 @@ void radio_manager_process(void)
         if (ctx.decoder_status == DCF77_DECODER_STATUS_FRAME_STARTED && ctx.prev_decoder_status == DCF77_DECODER_STATUS_SYNCED)
         {
             sync_time_status_data->dcf_output = true;
+            sync_time_status_data->synced = false;
             
             event_set_time_req_data_t *set_time_req_data = event_get_data(EVENT_SET_TIME_REQ);
             

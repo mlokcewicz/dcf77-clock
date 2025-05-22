@@ -45,10 +45,12 @@ FUSES =
 
 /* Non implemented ISR handling */
 
+#if 0
 ISR(BADISR_vect)
 {
     /* Add error handling */
 }
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -58,7 +60,7 @@ __attribute__((weak)) void hal_exti_sqw_cb(void);
 __attribute__((weak)) void hal_button_pressed_cb(void); 
 __attribute__((weak)) void hal_encoder_rotation_cb(int8_t dir); 
 __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit); 
-__attribute__((weak)) const uint8_t hal_user_defined_char_tab[4][8];
+__attribute__((weak)) const uint8_t hal_user_defined_char_tab[6][8];
 
 /* Pin assignement */
 
@@ -483,6 +485,11 @@ void hal_lcd_putc(const char ch)
 void hal_audio_set_pattern(struct buzzer_note *pattern, uint16_t pattern_len, uint16_t bpm)
 {
     buzzer_set_pattern(&buzzer1_obj, pattern, pattern_len, bpm);
+}
+
+void hal_audio_stop(void)
+{
+    buzzer_stop_pattern(&buzzer1_obj);
 }
 
 void hal_audio_process(void)

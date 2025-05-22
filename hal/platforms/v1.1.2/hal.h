@@ -63,6 +63,9 @@ void hal_lcd_putc(const char ch);
 /// @param bpm selected audio pattern BPM
 void hal_audio_set_pattern(struct buzzer_note *pattern, uint16_t pattern_len, uint16_t bpm);
 
+/// @brief Stops audio pattern for buzzer
+void hal_audio_stop(void);
+
 /// @brief Processes audio pattern for buzzer
 void hal_audio_process(void);
 
