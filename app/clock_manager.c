@@ -144,9 +144,7 @@ void clock_manager_process(void)
 
         /* Set time request without set time zone request means DCF77 sync request - shift from UTC+01 needed */
         if (!(event_get() & EVENT_SET_TIMEZONE_REQ))
-        {
             shift_time(time, ctx.timezone - CLOCK_MANAGER_DCF77_TIME_ZONE); 
-        }
 
         hal_set_time(event_get_data(EVENT_SET_TIME_REQ));
 
