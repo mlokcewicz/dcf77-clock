@@ -15,14 +15,16 @@
 
 #define CLOCK_MANAGER_TIMESTAMP(h, m) (struct hal_timestamp){.hours = h, .minutes = m}
 
-#define CLOCK_MANAGER_SYNC_TIMESTAMP CLOCK_MANAGER_TIMESTAMP(4, 0)
-#define CLOCK_MANAGER_DCF77_TIME_ZONE 1
+#define CLOCK_MANAGER_SYNC_TIMESTAMP CLOCK_MANAGER_TIMESTAMP(4, 0) /* Auto synchronization at 04:00 */
+#define CLOCK_MANAGER_DCF77_TIME_ZONE 1 /* DCF77 sends time signal in UTC+1 time zone (UTC+2 for DST) */
 
 //------------------------------------------------------------------------------
 
 struct clock_manager_ctx
 {
     bool new_sec;
+    struct hal_timestamp alarm;
+    int8_t timezone;
 };
 
 static struct clock_manager_ctx ctx;
@@ -38,11 +40,26 @@ void hal_exti_sqw_cb(void)
 
 //------------------------------------------------------------------------------
 
-static bool time_is_equal(event_update_time_req_data_t *time, struct hal_timestamp *timestamp)
+static bool timestamp_is_reached(event_update_time_req_data_t *time, struct hal_timestamp *timestamp)
 {
-    return (time->seconds == 0 && 
-            time->minutes == timestamp->minutes && 
-            time->hours == timestamp->hours);
+#if 1
+    return (time->seconds == 0 &&  time->minutes == timestamp->minutes && time->hours == timestamp->hours);
+#else 
+    /* Safe version of timestamp check - robust against interrupt loss / rtc communication failure */ 
+    /* Due to value editing, timestamp struct cannot be temporary object created in-place */ 
+    if ((time->minutes + 60 * time->hours) >= (timestamp->minutes + 60 * timestamp->hours))
+    {
+        if (!timestamp->is_handled)
+        {
+            timestamp->is_handled = true;
+            return true;
+        }
+    }
+    else
+        timestamp->is_handled = false;
+
+    return false;
+#endif
 }
 
 static const uint8_t days[] = {31,28,31,30,31,30,31,31,30,31,30,31};
@@ -75,6 +92,7 @@ static void shift_time(event_set_time_req_data_t *t, int8_t tz)
         h -= 24;
         d++;
     }
+
     t->hours = h;
 
     uint8_t dim = days_in_month(m, y);
@@ -83,16 +101,20 @@ static void shift_time(event_set_time_req_data_t *t, int8_t tz)
     {
         if (--m < 1)
         {
-            m = 12; /*y = (y ? y-1 : 99);*/
+            m = 12; 
+            /* y = (y ? y - 1 : 99); */
         }
+
         d = days_in_month(m, y);
     }
     else if (d > dim)
     {
         d = 1;
+        
         if (++m > 12)
         {
-            m = 1; /*y = (y < 99 ? y+1 : 0);*/
+            m = 1; 
+            /* y = (y < 99 ? y + 1 : 0); */
         }
     }
 
@@ -108,8 +130,8 @@ bool clock_manager_init(void)
     /* if (hal_time_is_reset()) */
         event_set(EVENT_SYNC_TIME_REQ);
 
-    hal_get_alarm(event_get_data(EVENT_SET_ALARM_REQ));
-    hal_get_timezone(event_get_data(EVENT_SET_TIME_ZONE_REQ));
+    hal_get_alarm(&ctx.alarm);
+    hal_get_timezone(&ctx.timezone);
 
     return true;
 }
@@ -121,11 +143,9 @@ void clock_manager_process(void)
         event_set_time_req_data_t *time = event_get_data(EVENT_SET_TIME_REQ);
 
         /* Set time request without set time zone request means DCF77 sync request - shift from UTC+01 needed */
-        if (!(event_get() & EVENT_SET_TIME_ZONE_REQ))
+        if (!(event_get() & EVENT_SET_TIMEZONE_REQ))
         {
-            int8_t *time_zone = event_get_data(EVENT_SET_TIME_ZONE_REQ);
-            
-            shift_time(time, *time_zone - CLOCK_MANAGER_DCF77_TIME_ZONE); 
+            shift_time(time, ctx.timezone - CLOCK_MANAGER_DCF77_TIME_ZONE); 
         }
 
         hal_set_time(event_get_data(EVENT_SET_TIME_REQ));
@@ -133,16 +153,18 @@ void clock_manager_process(void)
         event_clear(EVENT_SET_TIME_REQ);
     }
 
-    if (event_get() & EVENT_SET_TIME_ZONE_REQ)
+    if (event_get() & EVENT_SET_TIMEZONE_REQ)
     {
-        hal_set_timezone(event_get_data(EVENT_SET_TIME_ZONE_REQ));
+        hal_set_timezone(event_get_data(EVENT_SET_TIMEZONE_REQ));
+        hal_get_timezone(&ctx.timezone);
 
-        event_clear(EVENT_SET_TIME_ZONE_REQ);
+        event_clear(EVENT_SET_TIMEZONE_REQ);
     }
 
     if (event_get() & EVENT_SET_ALARM_REQ)
     {
         hal_set_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+        hal_get_alarm(&ctx.alarm);
 
         event_clear(EVENT_SET_ALARM_REQ);
     }
@@ -150,17 +172,15 @@ void clock_manager_process(void)
     if (ctx.new_sec)
     {
         event_update_time_req_data_t *time = event_get_data(EVENT_UPDATE_TIME_REQ);
-        event_set_alarm_req_data_t *alarm = event_get_data(EVENT_SET_ALARM_REQ);
 
         hal_get_time(time);
 
         event_set(EVENT_UPDATE_TIME_REQ);
 
-        /* TODO: Change timestamp check to >= and add timestamp_handled flag */
-        if (time_is_equal(time, &CLOCK_MANAGER_SYNC_TIMESTAMP))
+        if (timestamp_is_reached(time, &CLOCK_MANAGER_SYNC_TIMESTAMP))
             event_set(EVENT_SYNC_TIME_REQ);
 
-        if (alarm->is_enabled && time_is_equal(time, alarm))
+        if (ctx.alarm.is_enabled && timestamp_is_reached(time, &ctx.alarm))
             event_set(EVENT_ALARM_REQ);
 
         ctx.new_sec = false;
