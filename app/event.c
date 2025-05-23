@@ -19,7 +19,7 @@ struct event_ctx
     event_update_time_req_data_t update_time_data;
     event_set_time_req_data_t set_time_data;
     event_set_alarm_req_data_t set_alarm_data;
-    event_set_timezone_req_data_t time_zone_buf;
+    event_set_timezone_req_data_t timezone_buf;
 };
 
 static struct event_ctx ctx;
@@ -47,11 +47,11 @@ void *event_get_data(enum event_type event)
     if (event == EVENT_SET_TIME_REQ)
         return &ctx.set_time_data;
 
+    if (event == EVENT_SET_TIMEZONE_REQ)
+        return &ctx.timezone_buf;
+
     if (event == EVENT_SET_ALARM_REQ)
         return &ctx.set_alarm_data;
-
-    if (event == EVENT_SET_TIMEZONE_REQ)
-        return &ctx.time_zone_buf;
 
     return NULL; // No data available for the event
 }

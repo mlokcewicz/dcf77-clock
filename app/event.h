@@ -24,11 +24,11 @@ enum event_type
 {
     EVENT_SYNC_TIME_REQ = 1 << 0,
     EVENT_SYNC_TIME_STATUS = 1 << 1,
-    EVENT_SET_TIME_REQ = 1 << 2,
-    EVENT_SET_ALARM_REQ = 1 << 3,
-    EVENT_ALARM_REQ = 1 << 4,
-    EVENT_UPDATE_TIME_REQ = 1 << 5, 
-    EVENT_SET_TIMEZONE_REQ = 1 << 6, 
+    EVENT_UPDATE_TIME_REQ = 1 << 2, 
+    EVENT_SET_TIME_REQ = 1 << 3,
+    EVENT_SET_TIMEZONE_REQ = 1 << 4, 
+    EVENT_SET_ALARM_REQ = 1 << 5,
+    EVENT_ALARM_REQ = 1 << 6,
 };
 
 struct event_sync_time_status_data
