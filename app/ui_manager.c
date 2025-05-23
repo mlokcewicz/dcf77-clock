@@ -118,8 +118,11 @@ static void item_id_update(int8_t diff)
 
 static int8_t item_limit_value(int8_t val, int8_t min, int8_t max)
 {
-    if (val < min) return max;
-    if (val > max) return min;
+    if (val < min) 
+        return max;
+    if (val > max) 
+        return min;
+    
     return val;
 }
 
