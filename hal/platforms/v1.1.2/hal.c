@@ -539,7 +539,7 @@ void hal_get_timezone(int8_t *tz)
 
 bool hal_time_is_reset(void)
 {
-    return ds1307_is_running(&rtc_obj);
+    return !ds1307_is_running(&rtc_obj);
 }
 
 bool hal_dcf_get_state(void)
