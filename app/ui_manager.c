@@ -75,9 +75,6 @@ struct ui_manager_ctx
     enum ui_manager_item_id item_id;
     bool time_was_changed;
     char buf[15];
-
-    event_set_alarm_req_data_t alarm_buf;
-    event_set_timezone_req_data_t timezone_buf;
 };
 
 static struct ui_manager_ctx ctx; 
