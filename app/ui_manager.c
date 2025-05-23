@@ -12,21 +12,22 @@
 
 #include <event.h>
 
-#include <simple_stdio.h>
-
 #include <hal.h>
+
+//------------------------------------------------------------------------------
+
+#define UI_MANAGER_ALARM_BPM 1000
 
 //------------------------------------------------------------------------------
 
 enum ui_manager_icon_id 
 {
     UI_MANAGER_CHAR_ID_CLOCK,
-    UI_MANAGER_CHAR_ID_CALENDAR,
-    UI_MANAGER_CHAR_ID_ALARM,
     UI_MANAGER_CHAR_ID_ANTENNA,  
-    UI_MANAGER_CHAR_ID_TIMEZONE,
     UI_MANAGER_CHAR_ID_ALARM_SET,
-    UI_MANAGER_CHAR_ID_ALARM_UNSET
+    UI_MANAGER_CHAR_ID_ALARM_UNSET,
+    UI_MANAGER_CHAR_ID_ESCAPE,
+    UI_MANAGER_CHAR_ID_OK,
 };
 
 enum ui_manager_item_id
@@ -39,9 +40,10 @@ enum ui_manager_item_id
     UI_MANAGER_ITEM_ID_ALARM_TOGGLE,
     UI_MANAGER_ITEM_ID_ALARM_H,
     UI_MANAGER_ITEM_ID_ALARM_M,
+    UI_MANAGER_ITEM_ID_TIMEZONE,
     UI_MANAGER_ITEM_ID_SYNC,
-    UI_MANAGER_ITEM_ID_OK,
     UI_MANAGER_ITEM_ID_ESC,
+    UI_MANAGER_ITEM_ID_OK,
 
     UI_MANAGER_ITEM_ID_MAX,
 };
@@ -71,7 +73,11 @@ struct ui_manager_ctx
 {
     enum ui_manager_state state;
     enum ui_manager_item_id item_id;
-    char buf[18];
+    bool time_was_changed;
+    char buf[15];
+
+    event_set_alarm_req_data_t alarm_buf;
+    event_set_timezone_req_data_t timezone_buf;
 };
 
 static struct ui_manager_ctx ctx; 
@@ -86,9 +92,10 @@ static const uint8_t items[UI_MANAGER_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX]
     [UI_MANAGER_ITEM_ID_ALARM_TOGGLE] = {16, 0, 1, offsetof(event_set_alarm_req_data_t, is_enabled)},
     [UI_MANAGER_ITEM_ID_ALARM_H] = {19, 0, 23, offsetof(event_set_alarm_req_data_t, hours)},
     [UI_MANAGER_ITEM_ID_ALARM_M] = {22, 0, 59, offsetof(event_set_alarm_req_data_t, minutes)},
-    [UI_MANAGER_ITEM_ID_SYNC] = {24, 0, 0, 0},
-    [UI_MANAGER_ITEM_ID_OK] = {26, 0, 0, 0},
-    [UI_MANAGER_ITEM_ID_ESC] = {29, 0, 0, 0},
+    [UI_MANAGER_ITEM_ID_TIMEZONE] = {26, -12, 14, 0},
+    [UI_MANAGER_ITEM_ID_SYNC] = {28, 0, 0, 0},
+    [UI_MANAGER_ITEM_ID_ESC] = {30, 0, 0, 0},
+    [UI_MANAGER_ITEM_ID_OK] = {31, 0, 0, 0},
 };
 
 static struct buzzer_note alarm_beep[] = 
@@ -101,7 +108,7 @@ static struct buzzer_note alarm_beep[] =
 	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
 	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
 	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_STOP, 1000UL * 800},
+	{BUZZER_TONE_STOP, 1000UL * UI_MANAGER_ALARM_BPM},
 }; 
 
 //------------------------------------------------------------------------------
@@ -123,20 +130,24 @@ static void item_update(enum ui_manager_item_id item_id, int8_t val)
 {
     event_set_time_req_data_t *time = (event_set_time_req_data_t *)event_get_data(EVENT_SET_TIME_REQ);
     event_set_alarm_req_data_t *alarm = (event_set_alarm_req_data_t *)event_get_data(EVENT_SET_ALARM_REQ);
+    int8_t *timezone = event_get_data(EVENT_SET_TIMEZONE_REQ);
 
-    uint8_t *item_buf_ptrs[] = {(uint8_t*)time, (uint8_t*)alarm};
+    uint8_t *item_buf_ptrs[] = {(uint8_t*)time, (uint8_t*)alarm, (uint8_t*)timezone};
 
-    item_buf_ptrs[item_id >= UI_MANAGER_ITEM_ID_ALARM_TOGGLE][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value(item_buf_ptrs[item_id >= UI_MANAGER_ITEM_ID_ALARM_TOGGLE][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
+    uint8_t buf_idx = (item_id >= UI_MANAGER_ITEM_ID_ALARM_TOGGLE) + (item_id == UI_MANAGER_ITEM_ID_TIMEZONE);
+
+    item_buf_ptrs[buf_idx][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value((item_buf_ptrs[buf_idx][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]]) + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
 }
 
 //------------------------------------------------------------------------------
 
 static void ui_alarm_play(bool play)
 {
-    if (play)
-        hal_audio_set_pattern(alarm_beep, sizeof(alarm_beep), 800);
-    else 
-        hal_audio_set_pattern(NULL, 0, 0);
+    if (!play) 
+        hal_audio_stop(); 
+
+    hal_audio_set_pattern(play ? alarm_beep : NULL, sizeof(alarm_beep), UI_MANAGER_ALARM_BPM);
+    hal_led_set(play);
 }
 
 static void ui_print_cursor(void)
@@ -148,8 +159,8 @@ static void ui_print_static_icons(void)
 {
     hal_lcd_set_cursor(0, 0);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_CLOCK);
-    
-    hal_lcd_set_cursor(1, 8);
+
+    hal_lcd_set_cursor(1, 12);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_ANTENNA);
 }
 
@@ -192,18 +203,43 @@ static void ui_print_alarm(struct hal_timestamp *alarm)
     hal_lcd_print(ctx.buf, 1, 0);
 }
 
-static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status_data)
+void ui_print_timezone(const int8_t *tz)
 {
-    simple_stdio_uint16_to_str(sync_time_status_data->time_ms, ctx.buf);
+    int8_t val = *tz;
 
-    uint8_t pos = sync_time_status_data->triggred_on_bit ? 3 : 8;
-
-    hal_lcd_print("    ", 0, pos);
-    hal_lcd_print(ctx.buf, 0, pos);
-
-    simple_stdio_uint16_to_str(sync_time_status_data->bit_number, ctx.buf);
+    hal_lcd_set_cursor(1, 8);
     
-    hal_lcd_print("  ", 1, 3);
+    hal_lcd_putc(val >= 0 ? '+' : '-');
+
+    if (val < 0) 
+        val = -val;
+    
+    hal_lcd_putc((val / 10) + '0');
+    hal_lcd_putc((val % 10) + '0');
+}
+
+static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status_data, bool full)
+{
+    if (!full)
+    {
+        hal_lcd_print(sync_time_status_data->synced ? "OK" : "--", 1, 14);
+        return;
+    }
+
+    uint8_t i = 0;
+    ctx.buf[i++] = (sync_time_status_data->time_ms / 1000 + '0');
+    ctx.buf[i++] = ((sync_time_status_data->time_ms / 100) % 10 + '0');
+    ctx.buf[i++] = ((sync_time_status_data->time_ms / 10) % 10 + '0');
+    ctx.buf[i++] = (sync_time_status_data->time_ms % 10 + '0');
+    ctx.buf[i++] = 0;
+
+    hal_lcd_print(ctx.buf, 0, sync_time_status_data->triggred_on_bit ? 3 : 8);
+
+    i = 0;
+    ctx.buf[i++] = (sync_time_status_data->bit_number / 10 + '0');
+    ctx.buf[i++] = (sync_time_status_data->bit_number % 10 + '0');
+    ctx.buf[i++] = 0;
+
     hal_lcd_print(ctx.buf, 1, 3);
 
     if (sync_time_status_data->frame_started)
@@ -214,28 +250,23 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
     hal_led_set(!sync_time_status_data->dcf_output);
 }
 
-static void ui_print_alarm_date_display_screen(void)
+static void ui_print_alarm_date_screen(bool set)
 {
     hal_lcd_clear();
-    hal_lcd_set_cursor_mode(false, false);
-
+    
     ui_print_static_icons();
-    ui_print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+    ui_print_time(event_get_data(set ? EVENT_SET_TIME_REQ : EVENT_UPDATE_TIME_REQ));
     ui_print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
-}
+    ui_print_timezone(event_get_data(EVENT_SET_TIMEZONE_REQ));
 
-static void ui_print_alarm_date_set_screen(void)
-{
-    hal_lcd_clear();
+    if (set)
+    {
+        hal_lcd_set_cursor(1, 14);
+        hal_lcd_putc(UI_MANAGER_CHAR_ID_ESCAPE);
+        hal_lcd_putc(UI_MANAGER_CHAR_ID_OK);
+    }
 
-    ui_print_static_icons();
-    ui_print_time(event_get_data(EVENT_SET_TIME_REQ));
-    ui_print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
-
-    hal_lcd_print("OK", 1, 10);
-    hal_lcd_print("ESC", 1, 13);
-
-    hal_lcd_set_cursor_mode(true, false);
+    hal_lcd_set_cursor_mode(set, false);
     
     ui_print_cursor();
 }
@@ -246,7 +277,7 @@ static void ui_print_time_sync_status_screen(void)
     hal_lcd_set_cursor_mode(false, false);
 
     hal_lcd_print("T:     /     ms", 0, 0);
-    hal_lcd_print("B:    S: ", 1, 0);
+    hal_lcd_print("B:    S:", 1, 0);
 }
 
 static void ui_print_value_select_screen(void)
@@ -257,25 +288,23 @@ static void ui_print_value_select_screen(void)
 //------------------------------------------------------------------------------
 /* HAL callbacks and structures */
 
-const uint8_t hal_user_defined_char_tab[7][8] = 
+const uint8_t hal_user_defined_char_tab[6][8] = 
 {
     [UI_MANAGER_CHAR_ID_CLOCK] = {0x0E, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x0E, 0x0E},
-    [UI_MANAGER_CHAR_ID_CALENDAR] = {0x00, 0x15, 0x1F, 0x11, 0x15, 0x11, 0x1F, 0x00},
-    [UI_MANAGER_CHAR_ID_ALARM] = {0x00, 0x1B, 0x0E, 0x15, 0x15, 0x13, 0x0E, 0x00},
     [UI_MANAGER_CHAR_ID_ANTENNA] = {0x00, 0x15, 0x0A, 0x04, 0x04, 0x04, 0x04, 0x00},
-    [UI_MANAGER_CHAR_ID_TIMEZONE] = {0x04, 0x0E, 0x1B, 0x1B, 0x0E, 0x0E, 0x04, 0x04},
     [UI_MANAGER_CHAR_ID_ALARM_SET] = {0x04, 0x0E, 0x0E, 0x0E, 0x0E, 0x1F, 0x1F, 0x04},
     [UI_MANAGER_CHAR_ID_ALARM_UNSET] = {0x04, 0x0E,0x0A, 0x0A, 0x0A, 0x11, 0x1F, 0x04},
+    [UI_MANAGER_CHAR_ID_OK] = {0x00, 0x01, 0x03, 0x16, 0x1C, 0x08, 0x00, 0x00},
+    [UI_MANAGER_CHAR_ID_ESCAPE] = {0x00, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x00, 0x00}
 };
 
 // https://avtanski.net/projects/lcd/
-// %CHAR ! 38C7F7CF38
-// %CHAR @ 7E2255227E
-// %CHAR # 5C623A665C
-// %CHAR $ 40205E2040
-// %CHAR ? 307CCF7C30
-// ! 13:23:28 19.05
-// # 06:30 $ UTC+02
+// %CHAR A 38C7F7CF38
+// %CHAR D 40205E2040
+// %CHAR F 067EFF7E06
+// %CHAR G 067AC37A06
+// A 18:45 21/05/25
+// G 06:30 +01 D OK
 
 void hal_button_pressed_cb(void)
 {
@@ -286,7 +315,7 @@ void hal_button_pressed_cb(void)
 
         memcpy(event_get_data(EVENT_SET_TIME_REQ), event_get_data(EVENT_UPDATE_TIME_REQ), sizeof(event_set_time_req_data_t));
 
-        ui_print_alarm_date_set_screen();
+        ui_print_alarm_date_screen(true);
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
 
@@ -296,16 +325,26 @@ void hal_button_pressed_cb(void)
 
         if (ctx.item_id == UI_MANAGER_ITEM_ID_ESC)
         {
-            ui_print_alarm_date_display_screen();
+            /* Restore previous alarm and timezone value - could be replaced by copying using Clock Manager buffer pointer getters */
+            hal_get_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+            hal_get_timezone(event_get_data(EVENT_SET_TIMEZONE_REQ));
+
+            ui_print_alarm_date_screen(false);
 
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
         }
         else if (ctx.item_id == UI_MANAGER_ITEM_ID_OK)
         {
-            ui_print_alarm_date_display_screen();
+            ui_print_alarm_date_screen(false);
 
-            event_set(EVENT_SET_TIME_REQ);
+            if (ctx.time_was_changed)
+            {
+                event_set(EVENT_SET_TIME_REQ);
+                ctx.time_was_changed = false;
+            }
+
             event_set(EVENT_SET_ALARM_REQ);
+            event_set(EVENT_SET_TIMEZONE_REQ);
 
             ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
         }
@@ -315,15 +354,19 @@ void hal_button_pressed_cb(void)
         }
         else
         {
+            if (ctx.item_id < UI_MANAGER_ITEM_ID_ALARM_TOGGLE)
+                ctx.time_was_changed = true;
+
             ui_print_value_select_screen();
 
             ctx.state = UI_MANAGER_STATE_VALUE_SELECT;
         }
+
         break;
 
     case UI_MANAGER_STATE_VALUE_SELECT:
 
-        ui_print_alarm_date_set_screen();
+        ui_print_alarm_date_screen(true);
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_SET;
 
@@ -369,6 +412,7 @@ void hal_encoder_rotation_cb(int8_t dir)
 
         ui_print_time(event_get_data(EVENT_SET_TIME_REQ));
         ui_print_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+        ui_print_timezone(event_get_data(EVENT_SET_TIMEZONE_REQ));
 
         ui_print_cursor();
 
@@ -376,7 +420,7 @@ void hal_encoder_rotation_cb(int8_t dir)
 
     case UI_MANAGER_STATE_SYNC_SATUS_DISPLAY:
 
-        ui_print_alarm_date_display_screen();
+        ui_print_alarm_date_screen(false);
 
         ctx.state = UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY;
 
@@ -392,7 +436,11 @@ void hal_encoder_rotation_cb(int8_t dir)
 
 bool ui_manager_init(void)
 {
-    ui_print_alarm_date_display_screen();
+    /* It could be replaced by using event / getter from Clock Manager to remove HAL dependency */
+    hal_get_alarm(event_get_data(EVENT_SET_ALARM_REQ));
+    hal_get_timezone(event_get_data(EVENT_SET_TIMEZONE_REQ));
+
+    ui_print_alarm_date_screen(false);
 
     return true;
 }
@@ -411,10 +459,12 @@ void ui_manager_process(void)
     switch (ctx.state)
     {
     case UI_MANAGER_STATE_TIME_DATE_ALARM_DISPLAY:
+    case UI_MANAGER_STATE_ALARM:
 
         if (event_get() & EVENT_UPDATE_TIME_REQ)
         {
             ui_print_time(event_get_data(EVENT_UPDATE_TIME_REQ));
+            ui_print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS), false);
 
             event_clear(EVENT_UPDATE_TIME_REQ);
         }
@@ -425,7 +475,7 @@ void ui_manager_process(void)
 
         if (event_get() & EVENT_SYNC_TIME_STATUS)
         {
-            ui_print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS));
+            ui_print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS), true);
 
             event_clear(EVENT_SYNC_TIME_STATUS);
         }
