@@ -72,15 +72,21 @@ static bool is_leap_year(uint8_t year)
 
 static uint8_t days_in_month(uint8_t m, uint8_t y)
 {
-    if (m == 2 && is_leap_year(y)) return 29;
-    if (m >= 1 && m <= 12) return days[m-1];
+    if (m == 2 && is_leap_year(y)) 
+        return 29;
+
+    if (m >= 1 && m <= 12) 
+        return days[m-1];
+    
     return 31;
 }
 
 static void shift_time(event_set_time_req_data_t *t, int8_t tz)
 {
     int8_t h = t->hours + tz;
-    int8_t d = t->date, m = t->month, y = t->year;
+    int8_t d = t->date; 
+    int8_t m = t->month; 
+    int8_t y = t->year;
 
     if (h < 0)
     {
@@ -102,7 +108,7 @@ static void shift_time(event_set_time_req_data_t *t, int8_t tz)
         if (--m < 1)
         {
             m = 12; 
-            /* y = (y ? y - 1 : 99); */
+            // y = (y ? y - 1 : 99); 
         }
 
         d = days_in_month(m, y);
@@ -114,7 +120,7 @@ static void shift_time(event_set_time_req_data_t *t, int8_t tz)
         if (++m > 12)
         {
             m = 1; 
-            /* y = (y < 99 ? y + 1 : 0); */
+            // y = (y < 99 ? y + 1 : 0);
         }
     }
 
