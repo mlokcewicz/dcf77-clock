@@ -19,11 +19,9 @@
 
 struct hal_timestamp
 {
-    uint8_t hours_tens : 2;
-    uint8_t hours_units : 4;
-    uint8_t minutes_tens : 3;
-    uint8_t minutes_units : 4;
-    uint8_t is_enabled : 1;
+    uint8_t hours;
+    uint8_t minutes;
+    uint8_t is_enabled;
 }__attribute__((packed));
 
 //------------------------------------------------------------------------------
@@ -65,8 +63,17 @@ void hal_lcd_putc(const char ch);
 /// @param bpm selected audio pattern BPM
 void hal_audio_set_pattern(struct buzzer_note *pattern, uint16_t pattern_len, uint16_t bpm);
 
+/// @brief Stops audio pattern for buzzer
+void hal_audio_stop(void);
+
 /// @brief Processes audio pattern for buzzer
 void hal_audio_process(void);
+
+/// @brief Processes button polling
+void hal_button_process(void);
+
+/// @brief Processes encoder polling
+void hal_rotary_encoder_process(void);
 
 /// @brief Sets time on RTC
 /// @param time pointer to time structure @ref struct ds1307_time
@@ -83,6 +90,14 @@ void hal_set_alarm(struct hal_timestamp *alarm);
 /// @brief  Gets alarm from RTC
 /// @param alarm pointer to alarm structure @ref struct hal_timestamp
 void hal_get_alarm(struct hal_timestamp *alarm);
+
+/// @brief Sets timezone
+/// @param tz pointer to timezone value
+void hal_set_timezone(int8_t *tz);
+
+/// @brief Gets timezone
+/// @param tz pointer to timezone value
+void hal_get_timezone(int8_t *tz);
 
 /// @brief Checks if RTC is running
 /// @return true if RTC is running, otherwise false

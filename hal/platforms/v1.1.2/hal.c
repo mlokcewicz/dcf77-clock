@@ -45,10 +45,12 @@ FUSES =
 
 /* Non implemented ISR handling */
 
+#if 0
 ISR(BADISR_vect)
 {
     /* Add error handling */
 }
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -56,9 +58,9 @@ ISR(BADISR_vect)
 
 __attribute__((weak)) void hal_exti_sqw_cb(void); 
 __attribute__((weak)) void hal_button_pressed_cb(void); 
-__attribute__((weak)) void hal_encoder_rotation_cb(bool right); 
+__attribute__((weak)) void hal_encoder_rotation_cb(int8_t dir); 
 __attribute__((weak)) void hal_dcf_cb(uint16_t ms, bool triggred_on_bit); 
-__attribute__((weak)) const uint8_t hal_user_defined_char_tab[4][8];
+__attribute__((weak)) const uint8_t hal_user_defined_char_tab[6][8];
 
 /* Pin assignement */
 
@@ -89,9 +91,6 @@ __attribute__((weak)) const uint8_t hal_user_defined_char_tab[4][8];
 #define HAL_BUTTON_PIN GPIO_PIN_2
 #define HAL_BUTTON_PORT GPIO_PORT_B
 
-#define HAL_BUTTON_EXTI_ID EXTI_ID_PCINT2
-#define HAL_MAS6181B_BUTTON_EXTI_TRIGGER EXTI_TRIGGER_CHANGE   
-
 #define HAL_ENCODER_A_PIN GPIO_PIN_2
 #define HAL_ENCODER_A_PORT GPIO_PORT_D  
 #define HAL_ENCODER_B_PIN GPIO_PIN_3
@@ -112,6 +111,7 @@ __attribute__((weak)) const uint8_t hal_user_defined_char_tab[4][8];
 #define HAL_MAS6181B_OUT_PORT GPIO_PORT_B
 
 #define HAL_MAS6181B_EXTI_ID EXTI_ID_PCINT0
+#define HAL_MAS6181B_EXTI_TRIGGER EXTI_TRIGGER_CHANGE   
 
 /* Buzzer */
 
@@ -259,9 +259,9 @@ static struct button_cfg button1_cfg =
 	.deinit = NULL,
     
     .active_low = true,
-    .irq_cfg = true,
+    .irq_cfg = false,
 
-	.debounce_counter_initial_value = 0,
+	.debounce_counter_initial_value = 255,
 	.autopress_counter_initial_value = 0,
 };
 
@@ -290,7 +290,7 @@ static bool encoder1_init_cb(void)
 static void encoder1_rotation_cb(enum rotary_encoder_direction dir, int8_t step_cnt)
 {
     (void)step_cnt;
-    hal_encoder_rotation_cb(dir == ROTARY_ENCODER_DIR_RIGHT);
+    hal_encoder_rotation_cb(dir);
 }
 
 static struct rotary_encoder_cfg encoder1_cfg = 
@@ -301,15 +301,11 @@ static struct rotary_encoder_cfg encoder1_cfg =
     .deinit_cb = NULL,
     .rotation_cb = encoder1_rotation_cb,
     .sub_steps_count = 4,
-    .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_A,
+    .irq_cfg = ROTARY_ENCODER_IRQ_CONFIG_NONE,
+    .debounce_counter_initial_value = 0,
 };
 
 static struct rotary_encoder_obj encoder1_obj;
-
-static void exti_encoder1_cb(void)
-{
-    rotary_encoder_process(&encoder1_obj);
-}
 
 /* TWI */
 
@@ -384,19 +380,16 @@ static struct mas6181b_cfg mas6181b1_cfg =
 
 static struct mas6181b_obj mas6181b1_obj;
 
-/* DCF77 Decoder and button Interrupt */
+/* DCF77 Decoder Interrupt */
 
-static void exti_mas6181B_and_button1_cb(void)
+static void exti_mas6181B_cb(void)
 {
     static uint16_t last_time = 0;
     uint16_t current_time = system_timer_get();
     uint16_t time_diff = current_time - last_time;
     last_time = current_time;
 
-    if (!gpio_get(HAL_BUTTON_PORT, HAL_BUTTON_PIN))
-        button_process(&button1_obj);
-    else
-        hal_dcf_cb(time_diff, gpio_get(HAL_MAS6181B_OUT_PORT, HAL_MAS6181B_OUT_PIN));
+    hal_dcf_cb(time_diff, gpio_get(HAL_MAS6181B_OUT_PORT, HAL_MAS6181B_OUT_PIN));
 }
 
 //------------------------------------------------------------------------------
@@ -423,8 +416,6 @@ void hal_init(void)
 
     /* LCD */
     hd44780_init(&lcd_obj, &lcd_cfg);
-    hd44780_print(&lcd_obj, "TEST");
-    hd44780_set_pos(&lcd_obj, 1, 0);
 
     /* Button */
     button_init(&button1_obj, &button1_cfg);
@@ -433,12 +424,8 @@ void hal_init(void)
     rotary_encoder_init(&encoder1_obj, &encoder1_cfg);
 
     /* External interrupts */
-    exti_init(HAL_BUTTON_EXTI_ID, HAL_MAS6181B_BUTTON_EXTI_TRIGGER, exti_mas6181B_and_button1_cb);
-    exti_enable(HAL_BUTTON_EXTI_ID, true);
+    exti_init(HAL_MAS6181B_EXTI_ID, HAL_MAS6181B_EXTI_TRIGGER, exti_mas6181B_cb);
     exti_enable(HAL_MAS6181B_EXTI_ID, true); 
-
-    exti_init(HAL_ENCODER_EXTI_ID, HAL_ENCODER_EXTI_TRIGGER, exti_encoder1_cb);
-    exti_enable(HAL_ENCODER_EXTI_ID, true);
 
     exti_init(HAL_SQW_EXTI_ID, HAL_SQW_EXTI_TRIGGER, exti_sqw_cb);
     exti_enable(HAL_SQW_EXTI_ID, true);
@@ -454,6 +441,10 @@ void hal_init(void)
 
 void hal_process(void)
 {
+    buzzer_process(&buzzer1_obj);
+    button_process(&button1_obj);
+    rotary_encoder_process(&encoder1_obj);
+
     wdt_reset();
 
     set_sleep_mode(SLEEP_MODE_IDLE);
@@ -496,9 +487,24 @@ void hal_audio_set_pattern(struct buzzer_note *pattern, uint16_t pattern_len, ui
     buzzer_set_pattern(&buzzer1_obj, pattern, pattern_len, bpm);
 }
 
+void hal_audio_stop(void)
+{
+    buzzer_stop_pattern(&buzzer1_obj);
+}
+
 void hal_audio_process(void)
 {
     buzzer_process(&buzzer1_obj);
+}
+
+void hal_button_process(void)
+{
+    button_process(&button1_obj);
+}
+
+void hal_rotary_encoder_process(void)
+{
+    rotary_encoder_process(&encoder1_obj);
 }
 
 void hal_set_time(struct ds1307_time *time)
@@ -521,9 +527,19 @@ void hal_get_alarm(struct hal_timestamp *alarm)
     eeprom_read_block((void *)alarm, (const void *)0x00, sizeof(struct hal_timestamp));
 }
 
+void hal_set_timezone(int8_t *tz)
+{
+    eeprom_write_block((const void *)tz, (void *)(0x00 + sizeof(struct hal_timestamp)), sizeof(int8_t));
+}
+
+void hal_get_timezone(int8_t *tz)
+{
+    eeprom_read_block((void *)tz, (const void *)(0x00 + sizeof(struct hal_timestamp)), sizeof(int8_t));
+}
+
 bool hal_time_is_reset(void)
 {
-    return ds1307_is_running(&rtc_obj);
+    return !ds1307_is_running(&rtc_obj);
 }
 
 bool hal_dcf_get_state(void)
