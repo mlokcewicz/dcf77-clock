@@ -25,8 +25,9 @@
 
 #include <gpio.h>
 #include <exti.h>  
-#include <twi.h>
 #include <timer.h>
+#include <twi.h>
+#include <usart.h>
 
 //------------------------------------------------------------------------------
 
@@ -307,13 +308,21 @@ static struct rotary_encoder_cfg encoder1_cfg =
 
 static struct rotary_encoder_obj encoder1_obj;
 
+/* USART */
+static struct usart_cfg usart0_cfg =
+{
+    .mode = USART_MODE_ASYMC,
+    .rx_tx = USART_TX_ENABLE,
+    .data_size = USART_DATASIZE_8_BIT,
+    .parity = USART_PARITY_DISABLED,
+    .stop_bits = USART_STOP_BITS_1,
+};
+
 /* TWI */
 
 static struct twi_cfg twi1_cfg = 
 {
     .pull_up_en = false,
-    .frequency = 100,
-    .irq_mode = false,
 };
 
 /* RTC - DS1307 */
@@ -401,7 +410,6 @@ void hal_init(void)
 
     /* Power down */
     power_adc_disable();
-    power_usart0_disable();
     power_spi_disable();
     
     /* System timer */
@@ -435,6 +443,9 @@ void hal_init(void)
 
     /* MAS6181B */
     mas6181b_init(&mas6181b1_obj, &mas6181b1_cfg);
+
+    /* USART */
+    usart_init(&usart0_cfg);
     
     sei();
 }
@@ -540,6 +551,11 @@ void hal_get_timezone(int8_t *tz)
 bool hal_time_is_reset(void)
 {
     return !ds1307_is_running(&rtc_obj);
+}
+
+void hal_send_time_info(struct ds1307_time *time)
+{
+    usart_send((uint8_t*)time, sizeof(*time));
 }
 
 bool hal_dcf_get_state(void)

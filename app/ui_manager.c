@@ -28,7 +28,7 @@
 #define UI_ITEM_POS_DATE_D                              (9)
 #define UI_ITEM_POS_DATE_M                              (12)
 #define UI_ITEM_POS_DATE_Y                              (15)
-#define UI_ITEM_POS_ALARM_TOGGLE                        (16)
+#define UI_ITEM_POS_ALARM_EN                            (16)
 #define UI_ITEM_POS_ALARM_H                             (19)
 #define UI_ITEM_POS_ALARM_M                             (22)
 #define UI_ITEM_POS_TIMEZONE                            (26)
@@ -51,8 +51,8 @@
 #define UI_ITEM_DATE_Y_MIN                              (0)
 #define UI_ITEM_DATE_Y_MAX                              (99)
     
-#define UI_ITEM_ALARM_TOGGLE_MIN                        (0)
-#define UI_ITEM_ALARM_TOGGLE_MAX                        (1)
+#define UI_ITEM_ALARM_EN_MIN                            (0)
+#define UI_ITEM_ALARM_EN_MAX                            (1)
     
 #define UI_ITEM_ALARM_H_MIN                             (0)
 #define UI_ITEM_ALARM_H_MAX                             (23)
@@ -65,7 +65,20 @@
     
 #define UI_ITEM_DUMMY_MIN                               (0)
 #define UI_ITEM_DUMMY_MAX                               (0)
-    
+
+#define UI_ITEM_OFFSET_TIME_H                           offsetof(event_set_time_req_data_t, hours)
+#define UI_ITEM_OFFSET_TIME_M                           offsetof(event_set_time_req_data_t, minutes)
+#define UI_ITEM_OFFSET_DATE_D                           offsetof(event_set_time_req_data_t, date)
+#define UI_ITEM_OFFSET_DATE_M                           offsetof(event_set_time_req_data_t, month)
+#define UI_ITEM_OFFSET_DATE_Y                           offsetof(event_set_time_req_data_t, year)
+#define UI_ITEM_OFFSET_ALARM_EN                         offsetof(event_set_alarm_req_data_t, is_enabled)
+#define UI_ITEM_OFFSET_ALARM_H                          offsetof(event_set_alarm_req_data_t, hours)
+#define UI_ITEM_OFFSET_ALARM_M                          offsetof(event_set_alarm_req_data_t, minutes)
+#define UI_ITEM_OFFSET_TIMEZONE                         0
+#define UI_ITEM_OFFSET_SYNC                             0
+#define UI_ITEM_OFFSET_ESC                              0
+#define UI_ITEM_OFFSET_OK                               0
+
 #define UI_ITEM_POS_CLOCK_ICON_ROW                      (0)
 #define UI_ITEM_POS_CLOCK_ICON_COL                      (0)
     
@@ -119,7 +132,7 @@ enum ui_manager_item_id
     UI_MANAGER_ITEM_ID_DATE_D,
     UI_MANAGER_ITEM_ID_DATE_M,
     UI_MANAGER_ITEM_ID_DATE_Y,
-    UI_MANAGER_ITEM_ID_ALARM_TOGGLE,
+    UI_MANAGER_ITEM_ID_ALARM_EN,
     UI_MANAGER_ITEM_ID_ALARM_H,
     UI_MANAGER_ITEM_ID_ALARM_M,
     UI_MANAGER_ITEM_ID_TIMEZONE,
@@ -161,36 +174,20 @@ struct ui_manager_ctx
 
 static struct ui_manager_ctx ctx; 
 
-// static const uint8_t items[UI_MANAGER_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
-// {
-//     [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
-//     [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
-//     [UI_MANAGER_ITEM_ID_DATE_D] = {9, 1, 31, offsetof(event_set_time_req_data_t, date)},
-//     [UI_MANAGER_ITEM_ID_DATE_M] = {12, 1, 12, offsetof(event_set_time_req_data_t, month)},
-//     [UI_MANAGER_ITEM_ID_DATE_Y] = {15, 0, 99, offsetof(event_set_time_req_data_t, year)},
-//     [UI_MANAGER_ITEM_ID_ALARM_TOGGLE] = {16, 0, 1, offsetof(event_set_alarm_req_data_t, is_enabled)},
-//     [UI_MANAGER_ITEM_ID_ALARM_H] = {19, 0, 23, offsetof(event_set_alarm_req_data_t, hours)},
-//     [UI_MANAGER_ITEM_ID_ALARM_M] = {22, 0, 59, offsetof(event_set_alarm_req_data_t, minutes)},
-//     [UI_MANAGER_ITEM_ID_TIMEZONE] = {26, -12, 14, 0},
-//     [UI_MANAGER_ITEM_ID_SYNC] = {28, 0, 0, 0},
-//     [UI_MANAGER_ITEM_ID_ESC] = {30, 0, 0, 0},
-//     [UI_MANAGER_ITEM_ID_OK] = {31, 0, 0, 0},
-// };
-
 static const uint8_t items[UI_MANAGER_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
 {
-    [UI_MANAGER_ITEM_ID_TIME_H]       = {UI_ITEM_POS_TIME_H,      UI_ITEM_TIME_H_MIN,        UI_ITEM_TIME_H_MAX,        offsetof(event_set_time_req_data_t, hours)},
-    [UI_MANAGER_ITEM_ID_TIME_M]       = {UI_ITEM_POS_TIME_M,      UI_ITEM_TIME_M_MIN,        UI_ITEM_TIME_M_MAX,        offsetof(event_set_time_req_data_t, minutes)},
-    [UI_MANAGER_ITEM_ID_DATE_D]       = {UI_ITEM_POS_DATE_D,      UI_ITEM_DATE_D_MIN,        UI_ITEM_DATE_D_MAX,        offsetof(event_set_time_req_data_t, date)},
-    [UI_MANAGER_ITEM_ID_DATE_M]       = {UI_ITEM_POS_DATE_M,      UI_ITEM_DATE_M_MIN,        UI_ITEM_DATE_M_MAX,        offsetof(event_set_time_req_data_t, month)},
-    [UI_MANAGER_ITEM_ID_DATE_Y]       = {UI_ITEM_POS_DATE_Y,      UI_ITEM_DATE_Y_MIN,        UI_ITEM_DATE_Y_MAX,        offsetof(event_set_time_req_data_t, year)},
-    [UI_MANAGER_ITEM_ID_ALARM_TOGGLE] = {UI_ITEM_POS_ALARM_TOGGLE, UI_ITEM_ALARM_TOGGLE_MIN, UI_ITEM_ALARM_TOGGLE_MAX,  offsetof(event_set_alarm_req_data_t, is_enabled)},
-    [UI_MANAGER_ITEM_ID_ALARM_H]      = {UI_ITEM_POS_ALARM_H,     UI_ITEM_ALARM_H_MIN,       UI_ITEM_ALARM_H_MAX,       offsetof(event_set_alarm_req_data_t, hours)},
-    [UI_MANAGER_ITEM_ID_ALARM_M]      = {UI_ITEM_POS_ALARM_M,     UI_ITEM_ALARM_M_MIN,       UI_ITEM_ALARM_M_MAX,       offsetof(event_set_alarm_req_data_t, minutes)},
-    [UI_MANAGER_ITEM_ID_TIMEZONE]     = {UI_ITEM_POS_TIMEZONE,    UI_ITEM_TIMEZONE_MIN,      UI_ITEM_TIMEZONE_MAX,      0},
-    [UI_MANAGER_ITEM_ID_SYNC]         = {UI_ITEM_POS_SYNC,        UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         0},
-    [UI_MANAGER_ITEM_ID_ESC]          = {UI_ITEM_POS_ESC,         UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         0},
-    [UI_MANAGER_ITEM_ID_OK]           = {UI_ITEM_POS_OK,          UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         0},
+    [UI_MANAGER_ITEM_ID_TIME_H]       = {UI_ITEM_POS_TIME_H,      UI_ITEM_TIME_H_MIN,        UI_ITEM_TIME_H_MAX,        UI_ITEM_OFFSET_TIME_H},
+    [UI_MANAGER_ITEM_ID_TIME_M]       = {UI_ITEM_POS_TIME_M,      UI_ITEM_TIME_M_MIN,        UI_ITEM_TIME_M_MAX,        UI_ITEM_OFFSET_TIME_M},
+    [UI_MANAGER_ITEM_ID_DATE_D]       = {UI_ITEM_POS_DATE_D,      UI_ITEM_DATE_D_MIN,        UI_ITEM_DATE_D_MAX,        UI_ITEM_OFFSET_DATE_D},
+    [UI_MANAGER_ITEM_ID_DATE_M]       = {UI_ITEM_POS_DATE_M,      UI_ITEM_DATE_M_MIN,        UI_ITEM_DATE_M_MAX,        UI_ITEM_OFFSET_DATE_M},
+    [UI_MANAGER_ITEM_ID_DATE_Y]       = {UI_ITEM_POS_DATE_Y,      UI_ITEM_DATE_Y_MIN,        UI_ITEM_DATE_Y_MAX,        UI_ITEM_OFFSET_DATE_Y},
+    [UI_MANAGER_ITEM_ID_ALARM_EN] =     {UI_ITEM_POS_ALARM_EN,    UI_ITEM_ALARM_EN_MIN,      UI_ITEM_ALARM_EN_MAX,      UI_ITEM_OFFSET_ALARM_EN},
+    [UI_MANAGER_ITEM_ID_ALARM_H]      = {UI_ITEM_POS_ALARM_H,     UI_ITEM_ALARM_H_MIN,       UI_ITEM_ALARM_H_MAX,       UI_ITEM_OFFSET_ALARM_H},
+    [UI_MANAGER_ITEM_ID_ALARM_M]      = {UI_ITEM_POS_ALARM_M,     UI_ITEM_ALARM_M_MIN,       UI_ITEM_ALARM_M_MAX,       UI_ITEM_OFFSET_ALARM_M},
+    [UI_MANAGER_ITEM_ID_TIMEZONE]     = {UI_ITEM_POS_TIMEZONE,    UI_ITEM_TIMEZONE_MIN,      UI_ITEM_TIMEZONE_MAX,      UI_ITEM_OFFSET_TIMEZONE},
+    [UI_MANAGER_ITEM_ID_SYNC]         = {UI_ITEM_POS_SYNC,        UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         UI_ITEM_OFFSET_SYNC},
+    [UI_MANAGER_ITEM_ID_ESC]          = {UI_ITEM_POS_ESC,         UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         UI_ITEM_OFFSET_ESC},
+    [UI_MANAGER_ITEM_ID_OK]           = {UI_ITEM_POS_OK,          UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         UI_ITEM_OFFSET_OK},
 };
 
 static struct buzzer_note alarm_beep[] = 
@@ -232,7 +229,7 @@ static void item_update(enum ui_manager_item_id item_id, int8_t val)
 
     uint8_t *item_buf_ptrs[] = {(uint8_t*)time, (uint8_t*)alarm, (uint8_t*)timezone};
 
-    uint8_t buf_idx = (item_id >= UI_MANAGER_ITEM_ID_ALARM_TOGGLE) + (item_id == UI_MANAGER_ITEM_ID_TIMEZONE);
+    uint8_t buf_idx = (item_id >= UI_MANAGER_ITEM_ID_ALARM_EN) + (item_id == UI_MANAGER_ITEM_ID_TIMEZONE);
 
     item_buf_ptrs[buf_idx][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]] = item_limit_value((item_buf_ptrs[buf_idx][items[item_id][UI_MANAGER_ITEM_PROPERTY_OFFSET]]) + val, items[item_id][UI_MANAGER_ITEM_PROPERTY_MIN_VALUE], items[item_id][UI_MANAGER_ITEM_PROPERTY_MAX_VALUE]);
 }
@@ -444,7 +441,7 @@ void hal_button_pressed_cb(void)
         }
         else
         {
-            if (ctx.item_id < UI_MANAGER_ITEM_ID_ALARM_TOGGLE)
+            if (ctx.item_id < UI_MANAGER_ITEM_ID_ALARM_EN)
                 ctx.time_was_changed = true;
 
             ui_print_value_select_screen();

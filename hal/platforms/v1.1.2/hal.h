@@ -103,6 +103,10 @@ void hal_get_timezone(int8_t *tz);
 /// @return true if RTC is running, otherwise false
 bool hal_time_is_reset(void);
 
+/// @brief Sends time info via USART
+/// @param time current time structure
+void hal_send_time_info(struct ds1307_time *time);
+
 /// @brief Gets actual DCF77 receiver output state
 /// @return true if DCF77 receiver output is high, otherwise false
 bool hal_dcf_get_state(void);

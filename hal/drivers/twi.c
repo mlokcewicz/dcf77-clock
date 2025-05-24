@@ -14,12 +14,6 @@
 
 //------------------------------------------------------------------------------
 
-#ifndef TWI_USE_TWI_ISR
-#define TWI_USE_TWI_ISR 0
-#endif 
-
-//------------------------------------------------------------------------------
-
 enum twi_state
 {
     TWI_STATE_IDLE,
@@ -39,7 +33,9 @@ struct twi_ctx
     volatile enum twi_state state;
 };
 
+#if TWI_USE_TWI_ISR
 static struct twi_ctx ctx;
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -98,23 +94,34 @@ static bool handle_error(void)
 
 bool twi_init(struct twi_cfg *cfg)
 {
-    if (!cfg || cfg->frequency == 0 || F_CPU < (16UL * cfg->frequency) || (cfg->irq_mode && (TWI_USE_TWI_ISR == 0)))
+    if (!cfg)
         return false;
 
+#if TWI_USE_FIXED_SPEED == 0
+    if (((cfg->frequency == 0 || F_CPU < (16UL * cfg->frequency)) && (TWI_USE_FIXED_SPEED == 0)))
+        return false;
+#endif
+
+#if TWI_USE_TWI_ISR
     ctx.irq_mode = cfg->irq_mode;
     ctx.data = NULL;
     ctx.data_idx = 0;
     ctx.data_size = 0;
     ctx.read = false;
     ctx.state = TWI_STATE_IDLE;
-
+#endif
     /* Enable internal pull-ups */
     if (cfg->pull_up_en)
         PORTC |= (1 << PC4) | (1 << PC5);
 
     /* Enable TWI and set ACK bit generation */
     TWCR = (1 << TWEN) | (1 << TWEA);
-
+    
+#if TWI_USE_FIXED_SPEED
+    /* Set bus speed - fixed, prescaler = 1 */
+    TWBR = (uint8_t)(((F_CPU / TWI_FIXED_SPEED) - 16) / 2);
+    TWSR &= ~((1 << TWPS1) | (1 << TWPS0)); // prescaler = 1
+#else
     /* Set bus speed - calculate bitrate and prescaler */
     uint8_t presc = 0;
     uint16_t bitrate = F_CPU / (2 * cfg->frequency) - 8;
@@ -129,6 +136,7 @@ bool twi_init(struct twi_cfg *cfg)
 
     TWSR &= ~(1 << TWPS1) & ~(1 << TWPS1);
     TWSR |= (presc & 0b11);
+#endif 
 
     return true;
 }
@@ -138,10 +146,10 @@ bool twi_send(uint8_t addr, uint8_t *data, uint8_t size, bool generate_stop_cond
     if (!data || size == 0)
         return false;
 
+#if TWI_USE_TWI_ISR
     /* Handle interrupt mode */
     if (ctx.irq_mode)
     {
-    #if TWI_USE_TWI_ISR
         ctx.addr = addr;
         ctx.data = data;
         ctx.data_size = size;
@@ -151,10 +159,10 @@ bool twi_send(uint8_t addr, uint8_t *data, uint8_t size, bool generate_stop_cond
 
         /* Generate START condition */
         TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
-    #endif
-
-        return TWI_USE_TWI_ISR;
+        
+        return true;
     }
+#endif
 
     /* Generate START condition */
     if (!generate_start())
@@ -192,9 +200,9 @@ bool twi_receive(uint8_t addr, uint8_t *data, uint8_t size)
     if (!data || size == 0)
         return false;
 
+#if TWI_USE_TWI_ISR
     if (ctx.irq_mode)
     {
-    #if TWI_USE_TWI_ISR
         ctx.addr = addr;
         ctx.data = data;
         ctx.data_size = size;
@@ -205,9 +213,9 @@ bool twi_receive(uint8_t addr, uint8_t *data, uint8_t size)
         /* Generate START condition */
         TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
 
-    #endif
-        return TWI_USE_TWI_ISR;
+        return true;
     }
+#endif
 
     /* Generate START condition */
     if (!generate_start())
@@ -251,10 +259,15 @@ bool twi_receive(uint8_t addr, uint8_t *data, uint8_t size)
 
 bool twi_is_finished(bool *error)
 {
+#if TWI_USE_TWI_ISR
     if (error)
         *error = ctx.error;
 
     return ctx.error || !(TWCR & (1 << TWSTO));
+#endif
+
+    (void)error;
+    return true;
 }
 
 void twi_deinit(void)
@@ -268,7 +281,9 @@ void twi_deinit(void)
     /* Disable internal pull-ups */
     PORTC &= ~(1 << PC4) & ~(1 << PC5);
 
+#if TWI_USE_TWI_ISR
     memset(&ctx, 0x00, sizeof(ctx));
+#endif
 }
 
 //------------------------------------------------------------------------------
