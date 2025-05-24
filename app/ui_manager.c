@@ -16,7 +16,89 @@
 
 //------------------------------------------------------------------------------
 
-#define UI_MANAGER_ALARM_BPM 1000
+#define UI_MANAGER_CHAR_BUF_LEN                         (15)
+
+//------------------------------------------------------------------------------
+
+#define UI_ALARM_BPM                                    (1000UL)
+#define UI_ALARM_INTERVAL_MS                            (1000UL)
+    
+#define UI_ITEM_POS_TIME_H                              (3)
+#define UI_ITEM_POS_TIME_M                              (6)
+#define UI_ITEM_POS_DATE_D                              (9)
+#define UI_ITEM_POS_DATE_M                              (12)
+#define UI_ITEM_POS_DATE_Y                              (15)
+#define UI_ITEM_POS_ALARM_TOGGLE                        (16)
+#define UI_ITEM_POS_ALARM_H                             (19)
+#define UI_ITEM_POS_ALARM_M                             (22)
+#define UI_ITEM_POS_TIMEZONE                            (26)
+#define UI_ITEM_POS_SYNC                                (28)
+#define UI_ITEM_POS_ESC                                 (30)
+#define UI_ITEM_POS_OK                                  (31)
+    
+#define UI_ITEM_TIME_H_MIN                              (0)
+#define UI_ITEM_TIME_H_MAX                              (23)
+    
+#define UI_ITEM_TIME_M_MIN                              (0)
+#define UI_ITEM_TIME_M_MAX                              (59)
+    
+#define UI_ITEM_DATE_D_MIN                              (1)
+#define UI_ITEM_DATE_D_MAX                              (31)
+    
+#define UI_ITEM_DATE_M_MIN                              (1)
+#define UI_ITEM_DATE_M_MAX                              (12)
+    
+#define UI_ITEM_DATE_Y_MIN                              (0)
+#define UI_ITEM_DATE_Y_MAX                              (99)
+    
+#define UI_ITEM_ALARM_TOGGLE_MIN                        (0)
+#define UI_ITEM_ALARM_TOGGLE_MAX                        (1)
+    
+#define UI_ITEM_ALARM_H_MIN                             (0)
+#define UI_ITEM_ALARM_H_MAX                             (23)
+    
+#define UI_ITEM_ALARM_M_MIN                             (0)
+#define UI_ITEM_ALARM_M_MAX                             (59)
+    
+#define UI_ITEM_TIMEZONE_MIN                            (-12)
+#define UI_ITEM_TIMEZONE_MAX                            (14)
+    
+#define UI_ITEM_DUMMY_MIN                               (0)
+#define UI_ITEM_DUMMY_MAX                               (0)
+    
+#define UI_ITEM_POS_CLOCK_ICON_ROW                      (0)
+#define UI_ITEM_POS_CLOCK_ICON_COL                      (0)
+    
+#define UI_ITEM_POS_ANTENNA_ICON_ROW                    (1)
+#define UI_ITEM_POS_ANTENNA_ICON_COL                    (12)
+    
+#define UI_ITEM_POS_TIME_STRING_ROW                     (0)
+#define UI_ITEM_POS_TIME_STRING_COL                     (2)
+    
+#define UI_ITEM_POS_ALARM_STRING_ROW                    (1)
+#define UI_ITEM_POS_ALARM_STRING_COL                    (0)
+    
+#define UI_ITEM_POS_TIMEZONE_STRING_ROW                 (1)
+#define UI_ITEM_POS_TIMEZONE_STRING_COL                 (8)
+    
+#define UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_ROW           (1)
+#define UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_COL           (14)
+    
+#define UI_ITEM_POS_SYNC_STATUS_TIME_ROW                (0)
+#define UI_ITEM_POS_SYNC_STATUS_BIT_TIME_COL            (3)
+#define UI_ITEM_POS_SYNC_STATUS_BREAK_TIME_COL          (8)
+    
+#define UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_ROW          (1)
+#define UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_COL          (3)
+    
+#define UI_ITEM_POS_SYNC_STATUS_STATE_ROW               (1)
+#define UI_ITEM_POS_SYNC_STATUS_STATER_COL              (9)
+    
+#define UI_ITEM_POS_SYNC_STATUS_TIME_STRING_ROW         (0)
+#define UI_ITEM_POS_SYNC_STATUS_TIME_STRING_COL         (0)
+
+#define UI_ITEM_POS_SYNC_STATUS_BIT_STATE_STRING_ROW    (1)
+#define UI_ITEM_POS_SYNC_STATUS_BIT_STATE_STRING_COL    (0)
 
 //------------------------------------------------------------------------------
 
@@ -74,25 +156,41 @@ struct ui_manager_ctx
     enum ui_manager_state state;
     enum ui_manager_item_id item_id;
     bool time_was_changed;
-    char buf[15];
+    char buf[UI_MANAGER_CHAR_BUF_LEN];
 };
 
 static struct ui_manager_ctx ctx; 
 
+// static const uint8_t items[UI_MANAGER_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
+// {
+//     [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
+//     [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
+//     [UI_MANAGER_ITEM_ID_DATE_D] = {9, 1, 31, offsetof(event_set_time_req_data_t, date)},
+//     [UI_MANAGER_ITEM_ID_DATE_M] = {12, 1, 12, offsetof(event_set_time_req_data_t, month)},
+//     [UI_MANAGER_ITEM_ID_DATE_Y] = {15, 0, 99, offsetof(event_set_time_req_data_t, year)},
+//     [UI_MANAGER_ITEM_ID_ALARM_TOGGLE] = {16, 0, 1, offsetof(event_set_alarm_req_data_t, is_enabled)},
+//     [UI_MANAGER_ITEM_ID_ALARM_H] = {19, 0, 23, offsetof(event_set_alarm_req_data_t, hours)},
+//     [UI_MANAGER_ITEM_ID_ALARM_M] = {22, 0, 59, offsetof(event_set_alarm_req_data_t, minutes)},
+//     [UI_MANAGER_ITEM_ID_TIMEZONE] = {26, -12, 14, 0},
+//     [UI_MANAGER_ITEM_ID_SYNC] = {28, 0, 0, 0},
+//     [UI_MANAGER_ITEM_ID_ESC] = {30, 0, 0, 0},
+//     [UI_MANAGER_ITEM_ID_OK] = {31, 0, 0, 0},
+// };
+
 static const uint8_t items[UI_MANAGER_ITEM_ID_MAX][UI_MANAGER_ITEM_PROPERTY_MAX] = 
 {
-    [UI_MANAGER_ITEM_ID_TIME_H] = {3, 0, 23, offsetof(event_set_time_req_data_t, hours)},
-    [UI_MANAGER_ITEM_ID_TIME_M] = {6, 0, 59, offsetof(event_set_time_req_data_t, minutes)},
-    [UI_MANAGER_ITEM_ID_DATE_D] = {9, 1, 31, offsetof(event_set_time_req_data_t, date)},
-    [UI_MANAGER_ITEM_ID_DATE_M] = {12, 1, 12, offsetof(event_set_time_req_data_t, month)},
-    [UI_MANAGER_ITEM_ID_DATE_Y] = {15, 0, 99, offsetof(event_set_time_req_data_t, year)},
-    [UI_MANAGER_ITEM_ID_ALARM_TOGGLE] = {16, 0, 1, offsetof(event_set_alarm_req_data_t, is_enabled)},
-    [UI_MANAGER_ITEM_ID_ALARM_H] = {19, 0, 23, offsetof(event_set_alarm_req_data_t, hours)},
-    [UI_MANAGER_ITEM_ID_ALARM_M] = {22, 0, 59, offsetof(event_set_alarm_req_data_t, minutes)},
-    [UI_MANAGER_ITEM_ID_TIMEZONE] = {26, -12, 14, 0},
-    [UI_MANAGER_ITEM_ID_SYNC] = {28, 0, 0, 0},
-    [UI_MANAGER_ITEM_ID_ESC] = {30, 0, 0, 0},
-    [UI_MANAGER_ITEM_ID_OK] = {31, 0, 0, 0},
+    [UI_MANAGER_ITEM_ID_TIME_H]       = {UI_ITEM_POS_TIME_H,      UI_ITEM_TIME_H_MIN,        UI_ITEM_TIME_H_MAX,        offsetof(event_set_time_req_data_t, hours)},
+    [UI_MANAGER_ITEM_ID_TIME_M]       = {UI_ITEM_POS_TIME_M,      UI_ITEM_TIME_M_MIN,        UI_ITEM_TIME_M_MAX,        offsetof(event_set_time_req_data_t, minutes)},
+    [UI_MANAGER_ITEM_ID_DATE_D]       = {UI_ITEM_POS_DATE_D,      UI_ITEM_DATE_D_MIN,        UI_ITEM_DATE_D_MAX,        offsetof(event_set_time_req_data_t, date)},
+    [UI_MANAGER_ITEM_ID_DATE_M]       = {UI_ITEM_POS_DATE_M,      UI_ITEM_DATE_M_MIN,        UI_ITEM_DATE_M_MAX,        offsetof(event_set_time_req_data_t, month)},
+    [UI_MANAGER_ITEM_ID_DATE_Y]       = {UI_ITEM_POS_DATE_Y,      UI_ITEM_DATE_Y_MIN,        UI_ITEM_DATE_Y_MAX,        offsetof(event_set_time_req_data_t, year)},
+    [UI_MANAGER_ITEM_ID_ALARM_TOGGLE] = {UI_ITEM_POS_ALARM_TOGGLE, UI_ITEM_ALARM_TOGGLE_MIN, UI_ITEM_ALARM_TOGGLE_MAX,  offsetof(event_set_alarm_req_data_t, is_enabled)},
+    [UI_MANAGER_ITEM_ID_ALARM_H]      = {UI_ITEM_POS_ALARM_H,     UI_ITEM_ALARM_H_MIN,       UI_ITEM_ALARM_H_MAX,       offsetof(event_set_alarm_req_data_t, hours)},
+    [UI_MANAGER_ITEM_ID_ALARM_M]      = {UI_ITEM_POS_ALARM_M,     UI_ITEM_ALARM_M_MIN,       UI_ITEM_ALARM_M_MAX,       offsetof(event_set_alarm_req_data_t, minutes)},
+    [UI_MANAGER_ITEM_ID_TIMEZONE]     = {UI_ITEM_POS_TIMEZONE,    UI_ITEM_TIMEZONE_MIN,      UI_ITEM_TIMEZONE_MAX,      0},
+    [UI_MANAGER_ITEM_ID_SYNC]         = {UI_ITEM_POS_SYNC,        UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         0},
+    [UI_MANAGER_ITEM_ID_ESC]          = {UI_ITEM_POS_ESC,         UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         0},
+    [UI_MANAGER_ITEM_ID_OK]           = {UI_ITEM_POS_OK,          UI_ITEM_DUMMY_MIN,         UI_ITEM_DUMMY_MAX,         0},
 };
 
 static struct buzzer_note alarm_beep[] = 
@@ -105,7 +203,7 @@ static struct buzzer_note alarm_beep[] =
 	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
 	{BUZZER_TONE_C6, BUZZER_NOTE_QUARTER},
 	{BUZZER_TONE_STOP, BUZZER_NOTE_QUARTER},
-	{BUZZER_TONE_STOP, 1000UL * UI_MANAGER_ALARM_BPM},
+	{BUZZER_TONE_STOP, UI_ALARM_INTERVAL_MS * UI_ALARM_BPM},
 }; 
 
 //------------------------------------------------------------------------------
@@ -146,7 +244,7 @@ static void ui_alarm_play(bool play)
     if (!play) 
         hal_audio_stop(); 
 
-    hal_audio_set_pattern(play ? alarm_beep : NULL, sizeof(alarm_beep), UI_MANAGER_ALARM_BPM);
+    hal_audio_set_pattern(play ? alarm_beep : NULL, sizeof(alarm_beep), UI_ALARM_BPM);
     hal_led_set(play);
 }
 
@@ -157,10 +255,10 @@ static void ui_print_cursor(void)
 
 static void ui_print_static_icons(void)
 {
-    hal_lcd_set_cursor(0, 0);
+    hal_lcd_set_cursor(UI_ITEM_POS_CLOCK_ICON_ROW, UI_ITEM_POS_CLOCK_ICON_COL);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_CLOCK);
 
-    hal_lcd_set_cursor(1, 12);
+    hal_lcd_set_cursor(UI_ITEM_POS_ANTENNA_ICON_ROW, UI_ITEM_POS_ANTENNA_ICON_COL);
     hal_lcd_putc(UI_MANAGER_CHAR_ID_ANTENNA);
 }
 
@@ -184,7 +282,7 @@ static void ui_print_time(struct ds1307_time *unix_time)
     ctx.buf[i++] = (unix_time->year % 10 + '0');
     ctx.buf[i++] = 0;
 
-    hal_lcd_print(ctx.buf, 0, 2);
+    hal_lcd_print(ctx.buf, UI_ITEM_POS_TIME_STRING_ROW, UI_ITEM_POS_TIME_STRING_COL);
 }
 
 static void ui_print_alarm(struct hal_timestamp *alarm)
@@ -200,14 +298,14 @@ static void ui_print_alarm(struct hal_timestamp *alarm)
     ctx.buf[i++] = (alarm->minutes % 10 + '0');
     ctx.buf[i++] = 0;
 
-    hal_lcd_print(ctx.buf, 1, 0);
+    hal_lcd_print(ctx.buf, UI_ITEM_POS_ALARM_STRING_ROW, UI_ITEM_POS_ALARM_STRING_COL);
 }
 
 void ui_print_timezone(const int8_t *tz)
 {
     int8_t val = *tz;
 
-    hal_lcd_set_cursor(1, 8);
+    hal_lcd_set_cursor(UI_ITEM_POS_TIMEZONE_STRING_ROW, UI_ITEM_POS_TIMEZONE_STRING_COL);
     
     hal_lcd_putc(val >= 0 ? '+' : '-');
 
@@ -222,7 +320,7 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
 {
     if (!full)
     {
-        hal_lcd_print(sync_time_status_data->synced ? "OK" : "--", 1, 14);
+        hal_lcd_print(sync_time_status_data->synced ? "OK" : "--", UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_ROW, UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_COL);
         return;
     }
 
@@ -233,19 +331,19 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
     ctx.buf[i++] = (sync_time_status_data->time_ms % 10 + '0');
     ctx.buf[i++] = 0;
 
-    hal_lcd_print(ctx.buf, 0, sync_time_status_data->triggred_on_bit ? 3 : 8);
+    hal_lcd_print(ctx.buf, UI_ITEM_POS_SYNC_STATUS_TIME_ROW, sync_time_status_data->triggred_on_bit ? UI_ITEM_POS_SYNC_STATUS_BIT_TIME_COL : UI_ITEM_POS_SYNC_STATUS_BREAK_TIME_COL);
 
     i = 0;
     ctx.buf[i++] = (sync_time_status_data->bit_number / 10 + '0');
     ctx.buf[i++] = (sync_time_status_data->bit_number % 10 + '0');
     ctx.buf[i++] = 0;
 
-    hal_lcd_print(ctx.buf, 1, 3);
+    hal_lcd_print(ctx.buf, UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_ROW, UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_COL);
 
     if (sync_time_status_data->frame_started)
-        hal_lcd_print("STARTED", 1, 9);
+        hal_lcd_print("STARTED", UI_ITEM_POS_SYNC_STATUS_STATE_ROW, UI_ITEM_POS_SYNC_STATUS_STATER_COL);
     else if (sync_time_status_data->error)
-        hal_lcd_print("ERROR  ", 1, 9);
+        hal_lcd_print("ERROR  ", UI_ITEM_POS_SYNC_STATUS_STATE_ROW, UI_ITEM_POS_SYNC_STATUS_STATER_COL);
 
     hal_led_set(!sync_time_status_data->dcf_output);
 }
@@ -276,8 +374,8 @@ static void ui_print_time_sync_status_screen(void)
     hal_lcd_clear();
     hal_lcd_set_cursor_mode(false, false);
 
-    hal_lcd_print("T:     /     ms", 0, 0);
-    hal_lcd_print("B:    S:", 1, 0);
+    hal_lcd_print("T:     /     ms", UI_ITEM_POS_SYNC_STATUS_TIME_STRING_ROW, UI_ITEM_POS_SYNC_STATUS_TIME_STRING_COL);
+    hal_lcd_print("B:    S:", UI_ITEM_POS_SYNC_STATUS_BIT_STATE_STRING_ROW, UI_ITEM_POS_SYNC_STATUS_BIT_STATE_STRING_COL);
 }
 
 static void ui_print_value_select_screen(void)
@@ -297,14 +395,6 @@ const uint8_t hal_user_defined_char_tab[6][8] =
     [UI_MANAGER_CHAR_ID_OK] = {0x00, 0x01, 0x03, 0x16, 0x1C, 0x08, 0x00, 0x00},
     [UI_MANAGER_CHAR_ID_ESCAPE] = {0x00, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x00, 0x00}
 };
-
-// https://avtanski.net/projects/lcd/
-// %CHAR A 38C7F7CF38
-// %CHAR D 40205E2040
-// %CHAR F 067EFF7E06
-// %CHAR G 067AC37A06
-// A 18:45 21/05/25
-// G 06:30 +01 D OK
 
 void hal_button_pressed_cb(void)
 {
