@@ -1,8 +1,8 @@
 # dcf77-clock 
 
-DCF77 controlled radio clock based on ATmega88 microcontroller, MAS6181B AM receiver, DS1307 RTC. 
+**DCF77** controlled radio clock based on **ATmega88** microcontroller, **MAS6181B** AM receiver, **DS1307** RTC. 
 
-Capabilities:
+**Capabilities**:
 * Time and date display
 * Alarm handling 
 * Automatic and manual remote time and date synchronization to DCF77 signal
@@ -11,14 +11,14 @@ Capabilities:
 * DCF77 signal parameters preview during synchronization
 * Time and date retention by CR2032 battery
 
-Hardware:
+**Hardware**:
 * ATmega88
-* MAS6181B DCF77 receiver
+* **MAS6181B** DCF77 receiver
 * DS1307 RTC + CR2032
 * 2x16 HD44760 LCD
 * Rotary Encoder + LED + Buzzer
 
-Software:
+**Software**:
 * C11
 * Own MCU peripherals and external circuits drivers
 
