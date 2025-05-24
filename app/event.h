@@ -32,15 +32,21 @@ enum event_type
     EVENT_SEND_TIME_INFO_REQ = 1 << 7,
 };
 
+enum event_sync_time_status
+{
+    EVENT_SYNC_TIME_STATUS_WAITING,
+    EVENT_SYNC_TIME_STATUS_FRAME_STARTED,
+    EVENT_SYNC_TIME_STATUS_ERROR,
+    EVENT_SYNC_TIME_STATUS_SYNCED,
+};
+
 struct event_sync_time_status_data
 {
     uint8_t triggred_on_bit;
     uint8_t bit_number;
     uint16_t time_ms;
     uint8_t dcf_output;
-    uint8_t frame_started;
-    uint8_t error;
-    uint8_t synced;
+    enum event_sync_time_status status;
 };
 
 typedef struct event_sync_time_status_data event_sync_time_status_data_t;

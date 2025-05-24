@@ -317,7 +317,7 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
 {
     if (!full)
     {
-        hal_lcd_print(sync_time_status_data->synced ? "OK" : "--", UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_ROW, UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_COL);
+        hal_lcd_print(sync_time_status_data->status == EVENT_SYNC_TIME_STATUS_SYNCED ? "OK" : "--", UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_ROW, UI_ITEM_POS_SYNC_STATUS_IS_SYNCED_COL);
         return;
     }
 
@@ -337,10 +337,15 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
 
     hal_lcd_print(ctx.buf, UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_ROW, UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_COL);
 
-    if (sync_time_status_data->frame_started)
-        hal_lcd_print("STARTED", UI_ITEM_POS_SYNC_STATUS_STATE_ROW, UI_ITEM_POS_SYNC_STATUS_STATER_COL);
-    else if (sync_time_status_data->error)
-        hal_lcd_print("ERROR  ", UI_ITEM_POS_SYNC_STATUS_STATE_ROW, UI_ITEM_POS_SYNC_STATUS_STATER_COL);
+    static char *status_str_tab[] = 
+    {
+        [EVENT_SYNC_TIME_STATUS_WAITING] = "WAITING",
+        [EVENT_SYNC_TIME_STATUS_FRAME_STARTED] = "STARTED",
+        [EVENT_SYNC_TIME_STATUS_ERROR] = "ERROR  ",
+        [EVENT_SYNC_TIME_STATUS_SYNCED] = "SYNCED ",
+    };
+
+    hal_lcd_print(status_str_tab[sync_time_status_data->status], UI_ITEM_POS_SYNC_STATUS_STATE_ROW, UI_ITEM_POS_SYNC_STATUS_STATER_COL);
 
     hal_led_set(!sync_time_status_data->dcf_output);
 }
@@ -373,6 +378,8 @@ static void ui_print_time_sync_status_screen(void)
 
     hal_lcd_print("T:     /     ms", UI_ITEM_POS_SYNC_STATUS_TIME_STRING_ROW, UI_ITEM_POS_SYNC_STATUS_TIME_STRING_COL);
     hal_lcd_print("B:    S:", UI_ITEM_POS_SYNC_STATUS_BIT_STATE_STRING_ROW, UI_ITEM_POS_SYNC_STATUS_BIT_STATE_STRING_COL);
+
+    ui_print_sync_status(event_get_data(EVENT_SYNC_TIME_STATUS), true);
 }
 
 static void ui_print_value_select_screen(void)
