@@ -323,7 +323,6 @@ static struct usart_cfg usart0_cfg =
 static struct twi_cfg twi1_cfg = 
 {
     .pull_up_en = false,
-    .irq_mode = false,
 };
 
 /* RTC - DS1307 */

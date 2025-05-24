@@ -53,6 +53,9 @@ void *event_get_data(enum event_type event)
     if (event == EVENT_SET_ALARM_REQ)
         return &ctx.set_alarm_data;
 
+    if (event == EVENT_SEND_TIME_INFO_REQ)
+        return &ctx.update_time_data;
+
     return NULL; // No data available for the event
 }
 

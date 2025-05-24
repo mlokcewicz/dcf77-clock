@@ -36,7 +36,9 @@ extern "C" {
 struct twi_cfg
 {
     bool pull_up_en;
+#if TWI_USE_TWI_ISR
     bool irq_mode;
+#endif
 #if TWI_USE_FIXED_SPEED == 0
     uint16_t frequency;
 #endif
