@@ -14,20 +14,6 @@
 
 //------------------------------------------------------------------------------
 
-#ifndef TWI_USE_TWI_ISR
-#define TWI_USE_TWI_ISR 0
-#endif 
-
-#ifndef TWI_USE_FIXED_100KHZ
-#define TWI_USE_FIXED_100KHZ 0
-#endif 
-
-#ifndef TWI_USE_FIXED_400KHZ
-#define TWI_USE_FIXED_400KHZ 0
-#endif 
-
-//------------------------------------------------------------------------------
-
 enum twi_state
 {
     TWI_STATE_IDLE,
@@ -106,8 +92,13 @@ static bool handle_error(void)
 
 bool twi_init(struct twi_cfg *cfg)
 {
-    if (!cfg || ((cfg->frequency == 0 || F_CPU < (16UL * cfg->frequency)) && (!TWI_USE_FIXED_100KHZ && !TWI_USE_FIXED_400KHZ)) || (cfg->irq_mode && (TWI_USE_TWI_ISR == 0)))
+    if (!cfg || (cfg->irq_mode && (TWI_USE_TWI_ISR == 0)))
         return false;
+
+#if TWI_USE_FIXED_SPEED == 0
+    if (((cfg->frequency == 0 || F_CPU < (16UL * cfg->frequency)) && (TWI_USE_FIXED_SPEED == 0)))
+        return false;
+#endif
 
     ctx.irq_mode = cfg->irq_mode;
     ctx.data = NULL;
@@ -122,21 +113,12 @@ bool twi_init(struct twi_cfg *cfg)
 
     /* Enable TWI and set ACK bit generation */
     TWCR = (1 << TWEN) | (1 << TWEA);
-
-#if TWI_USE_FIXED_100KHZ
-
-    /* Set bus speed - fixed for 100kHz, prescaler = 1 */
-    TWBR = (uint8_t)(((F_CPU / 100000UL) - 16) / 2);
+    
+#if TWI_USE_FIXED_SPEED
+    /* Set bus speed - fixed, prescaler = 1 */
+    TWBR = (uint8_t)(((F_CPU / TWI_FIXED_SPEED) - 16) / 2);
     TWSR &= ~((1 << TWPS1) | (1 << TWPS0)); // prescaler = 1
-
-#elif TWI_USE_FIXED_400KHZ
-
-    /* Set bus speed - fixed for 400kHz, prescaler = 1 */
-    TWBR = (uint8_t)(((F_CPU / 400000UL) - 16) / 2);
-    TWSR &= ~((1 << TWPS1) | (1 << TWPS0)); // prescaler = 1
-
 #else
-
     /* Set bus speed - calculate bitrate and prescaler */
     uint8_t presc = 0;
     uint16_t bitrate = F_CPU / (2 * cfg->frequency) - 8;
@@ -164,7 +146,7 @@ bool twi_send(uint8_t addr, uint8_t *data, uint8_t size, bool generate_stop_cond
     /* Handle interrupt mode */
     if (ctx.irq_mode)
     {
-    #if TWI_USE_TWI_ISR
+#if TWI_USE_TWI_ISR
         ctx.addr = addr;
         ctx.data = data;
         ctx.data_size = size;
@@ -174,7 +156,7 @@ bool twi_send(uint8_t addr, uint8_t *data, uint8_t size, bool generate_stop_cond
 
         /* Generate START condition */
         TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
-    #endif
+#endif
 
         return TWI_USE_TWI_ISR;
     }
@@ -217,7 +199,7 @@ bool twi_receive(uint8_t addr, uint8_t *data, uint8_t size)
 
     if (ctx.irq_mode)
     {
-    #if TWI_USE_TWI_ISR
+#if TWI_USE_TWI_ISR
         ctx.addr = addr;
         ctx.data = data;
         ctx.data_size = size;
@@ -228,7 +210,7 @@ bool twi_receive(uint8_t addr, uint8_t *data, uint8_t size)
         /* Generate START condition */
         TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) | (1 << TWIE);
 
-    #endif
+#endif
         return TWI_USE_TWI_ISR;
     }
 

@@ -19,11 +19,27 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+#ifndef TWI_USE_TWI_ISR
+#define TWI_USE_TWI_ISR 0
+#endif 
+
+#ifndef TWI_USE_FIXED_SPEED
+#define TWI_USE_FIXED_SPEED 0 
+#endif 
+
+#ifndef TWI_FIXED_SPEED
+#define TWI_FIXED_SPEED 100000UL 
+#endif 
+
+//------------------------------------------------------------------------------
+
 struct twi_cfg
 {
     bool pull_up_en;
-    uint16_t frequency;
     bool irq_mode;
+#if TWI_USE_FIXED_SPEED == 0
+    uint16_t frequency;
+#endif
 };
 
 //------------------------------------------------------------------------------
