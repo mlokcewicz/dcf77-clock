@@ -181,6 +181,8 @@ void clock_manager_process(void)
 
         event_set(EVENT_UPDATE_TIME_REQ);
 
+        hal_send_time_info(time);
+
         if (timestamp_is_reached(time, &CLOCK_MANAGER_SYNC_TIMESTAMP))
             event_set(EVENT_SYNC_TIME_REQ);
 
