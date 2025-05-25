@@ -35,7 +35,7 @@
 
 struct clock_manager_ctx
 {
-    bool new_sec;
+    volatile bool new_sec;
     struct hal_timestamp alarm;
     int8_t timezone;
 };
@@ -46,7 +46,7 @@ static struct clock_manager_ctx ctx;
 
 /* HAL callbacks */
 
-void hal_exti_sqw_cb(void)
+void hal_exti_sqw_cb(void) // Called from ISR
 {
     ctx.new_sec = true;
 }

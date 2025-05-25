@@ -77,23 +77,29 @@ static void timer0_init(struct timer_obj *obj, struct timer_cfg *cfg)
         PORTD &= ~(1 << PD5);
 
     /* Configure interrupts handling */
+#if TIMER_USE_TIMER0_OVF_ISR
     if (cfg->ovrfv_cb) // Overflow
     {
         obj->ovrfv_cb = cfg->ovrfv_cb;
         TIMSK0 |= (1 << TOIE0);
     }
+#endif
 
+#if TIMER_USE_TIMER0_COMPA_ISR
     if (cfg->out_comp_a_cb) // Compare
     {
         obj->out_comp_a_cb = cfg->out_comp_a_cb;
         TIMSK0 |= 1 << OCIE0A;
     }
+#endif
 
+#if TIMER_USE_TIMER0_COMPB_ISR
     if (cfg->out_comp_b_cb) // Compare
     {
         obj->comp_b_cb = cfg->out_comp_b_cb;
         TIMSK0 |= 1 << OCIE0B;
     }
+#endif
 
     /* Set counter value */
     TCNT0 = cfg->counter_val;
@@ -130,24 +136,31 @@ static void timer1_init(struct timer_obj *obj, struct timer_cfg *cfg)
         DDRB |= (1 << PB2);
 
     /* Configure interrupts handling */
+#if TIMER_USE_TIMER1_OVF_ISR
     if (cfg->ovrfv_cb) // Overflow
     {
         obj->ovrfv_cb = cfg->ovrfv_cb;
         TIMSK1 |= (1 << TOIE1);
     }
+#endif
 
+#if TIMER_USE_TIMER1_COMPA_ISR
     if (cfg->out_comp_a_cb) // Compare
     {
         obj->out_comp_a_cb = cfg->out_comp_a_cb;
         TIMSK1 |= 1 << OCIE1A;
     }
+#endif
 
+#if TIMER_USE_TIMER1_COMPB_ISR
     if (cfg->out_comp_b_cb) // Compare
     {
         obj->comp_b_cb = cfg->out_comp_b_cb;
         TIMSK1 |= 1 << OCIE1B;
     }
+#endif
 
+#if TIMER_USE_TIMER1_CAPT_ISR
     if (cfg->in_capt_cb) // Capture
     {
         obj->in_capt_cb = cfg->in_capt_cb;
@@ -156,8 +169,8 @@ static void timer1_init(struct timer_obj *obj, struct timer_cfg *cfg)
         /* Configure ICP1 pin */
         DDRB &= ~(1 << PB0);
         PORTB = (PORTB & ~(1 << PB0)) | (cfg->input_capture_pullup << PB0);
-
     }
+#endif
 
     /* Input capture options (only Timer1) */
     TCCR1B &= ~(1 << ICNC1) & ~(1 << ICES1);
@@ -203,23 +216,29 @@ static void timer2_init(struct timer_obj *obj, struct timer_cfg *cfg)
         DDRD |= (1 << PD3);
 
     /* Configure interrupts handling */
+#if TIMER_USE_TIMER2_OVF_ISR
     if (cfg->ovrfv_cb) // Overflow
     {
         obj->ovrfv_cb = cfg->ovrfv_cb;
         TIMSK2 |= (1 << TOIE2);
     }
+#endif
 
+#if TIMER_USE_TIMER2_COMPA_ISR
     if (cfg->out_comp_a_cb) // Compare
     {
         obj->out_comp_a_cb = cfg->out_comp_a_cb;
         TIMSK2 |= 1 << OCIE2A;
     }
+#endif
 
+#if TIMER_USE_TIMER2_COMPB_ISR
     if (cfg->out_comp_b_cb) // Compare
     {
         obj->comp_b_cb = cfg->out_comp_b_cb;
         TIMSK2 |= 1 << OCIE2B;
     }
+#endif
 
     /* Set counter value */
     TCNT2 = cfg->counter_val;

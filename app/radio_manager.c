@@ -32,13 +32,13 @@
 
 struct radio_manager_ctx
 {
-    bool synced;
-    enum dcf77_decoder_status decoder_status;
-    enum dcf77_decoder_status prev_decoder_status;
-    bool triggered_on_bit;
-    bool prev_triggered_on_bit;
-    uint16_t last_time_ms;
-    uint8_t bit_number;
+    volatile bool synced;
+    volatile enum dcf77_decoder_status decoder_status;
+    volatile enum dcf77_decoder_status prev_decoder_status;
+    volatile bool triggered_on_bit;
+    volatile bool prev_triggered_on_bit;
+    volatile uint16_t last_time_ms;
+    volatile uint8_t bit_number;
 };
 
 static struct radio_manager_ctx ctx;
@@ -47,7 +47,7 @@ static struct radio_manager_ctx ctx;
 
 /* HAL callbacks */
 
-void hal_dcf_cb(uint16_t ms, bool triggred_on_bit)
+void hal_dcf_cb(uint16_t ms, bool triggred_on_bit) // Called from ISR
 {
     if (ctx.synced)
         return;

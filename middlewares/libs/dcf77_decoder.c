@@ -48,7 +48,7 @@ struct dcf77_ctx
 {
     bool frame_started;
     uint8_t bit_cnt;
-    uint8_t frame[2][8];  
+    volatile uint8_t frame[2][8];  
 };
 
 static struct dcf77_ctx ctx;
