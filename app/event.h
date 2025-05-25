@@ -29,7 +29,7 @@ extern "C" {
 
 #include <stdint.h>
 
-#include <hal.h> /* Do not duplicate struct ds1307_time and hal_timestamp (in this case flash consumption reduction > clean code) */
+#include <hal.h> /* Do not duplicate struct ds1307_time and hal_timestamp */
 
 //------------------------------------------------------------------------------
 

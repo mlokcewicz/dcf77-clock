@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include <buzzer.h> /* Do not duplicate struct buzzer_note (in this case FLASH consumption reduction > clean code) */
+#include <buzzer.h> /* Do not duplicate struct buzzer_note */
 #include <ds1307.h> /* Do not duplicate struct ds1307_time */
 
 //------------------------------------------------------------------------------

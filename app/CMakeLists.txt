@@ -7,7 +7,6 @@ target_include_directories(${CMAKE_PROJECT_NAME}.elf PRIVATE .)
 
 target_link_libraries(${CMAKE_PROJECT_NAME}.elf 
     libs
-    utils 
     platform 
 )
 

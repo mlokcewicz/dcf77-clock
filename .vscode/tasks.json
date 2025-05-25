@@ -34,7 +34,7 @@
         {
             "label": "debug",
             "type": "shell",
-            "command": "C:/embedded_tools/avrdude/avrdude.exe -pm88 -cusbasp -U flash:w:dcf77_clock.elf:a",
+            "command": "avrdude -pm88 -cusbasp -U flash:w:dcf77_clock.elf:a",
             "options": {
                 "cwd": "${workspaceFolder}/build/app"
             },
@@ -43,7 +43,7 @@
         {
             "label": "eeprom_flash",
             "type": "shell",
-            "command": "C:/embedded_tools/avrdude/avrdude.exe -pm88 -cusbasp -U eeprom:w:dcf77_clock.elf:a",
+            "command": "avrdude -pm88 -cusbasp -U eeprom:w:dcf77_clock.elf:a",
             "options": {
                 "cwd": "${workspaceFolder}/build/app"
             }
@@ -51,7 +51,7 @@
         {
             "label": "fusebits_flash",
             "type": "shell",
-            "command": "C:/embedded_tools/avrdude/avrdude.exe -pm88 -cusbasp -U lfuse:w:dcf77_clock.elf:a -U hfuse:w:dcf77_clock.elf:a -U efuse:w:dcf77_clock.elf:a -U lock:w:dcf77_clock.elf:a",
+            "command": "avrdude -pm88 -cusbasp -U lfuse:w:dcf77_clock.elf:a -U hfuse:w:dcf77_clock.elf:a -U efuse:w:dcf77_clock.elf:a -U lock:w:dcf77_clock.elf:a",
             "options": {
                 "cwd": "${workspaceFolder}/build/app"
             }

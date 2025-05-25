@@ -28,8 +28,8 @@
 
 #define CLOCK_MANAGER_TIMESTAMP(h, m) (struct hal_timestamp){.hours = h, .minutes = m}
 
-#define CLOCK_MANAGER_SYNC_TIMESTAMP CLOCK_MANAGER_TIMESTAMP(4, 0) /* Auto synchronization at 04:00 */
-#define CLOCK_MANAGER_DCF77_TIME_ZONE 1 /* DCF77 sends time signal in UTC+1 time zone (UTC+2 for DST) */
+#define CLOCK_MANAGER_SYNC_TIMESTAMP CLOCK_MANAGER_TIMESTAMP(4, 0)  /* Auto synchronization at 04:00 */
+#define CLOCK_MANAGER_DCF77_TIME_ZONE 1                             /* DCF77 sends time signal in UTC+1 time zone (UTC+2 for DST) */
 
 //------------------------------------------------------------------------------
 
@@ -146,8 +146,8 @@ static void shift_time(event_set_time_req_data_t *t, int8_t tz)
 
 bool clock_manager_init(void)
 {
-    /* if (hal_time_is_reset()) */
-        event_set(EVENT_SYNC_TIME_REQ);
+    /* Sync time every startup */
+    event_set(EVENT_SYNC_TIME_REQ);
 
     hal_get_alarm(&ctx.alarm);
     hal_get_timezone(&ctx.timezone);
