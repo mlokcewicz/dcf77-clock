@@ -47,6 +47,9 @@ void hal_init(void);
 /// @note This function should be called in the main loop   
 void hal_process(void);
 
+/// @brief Resets micronotroller
+void hal_system_reset(void);
+
 /// @brief Sets LED state
 void hal_led_set(bool state);
 

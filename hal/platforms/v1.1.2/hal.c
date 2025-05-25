@@ -113,6 +113,8 @@ __attribute__((weak)) const uint8_t hal_user_defined_char_tab[6][8];
 #define HAL_ENCODER_EXTI_ID EXTI_ID_INT0
 #define HAL_ENCODER_EXTI_TRIGGER EXTI_TRIGGER_FALLING_EDGE
 
+#define HAL_DS1307_COMM_RETRY_COUNT 5
+
 #define HAL_SQW_PIN GPIO_PIN_2
 #define HAL_SQW_PORT GPIO_PORT_C
 #define HAL_SQW_EXTI_ID EXTI_ID_PCINT10
@@ -452,7 +454,11 @@ void hal_init(void)
     exti_enable(HAL_SQW_EXTI_ID, true);
 
     /* DS1307 */
-    ds1307_init(&rtc_obj, &rtc_cfg);
+    uint8_t retries = HAL_DS1307_COMM_RETRY_COUNT;
+    while (retries-- && !ds1307_init(&rtc_obj, &rtc_cfg)) {};
+
+    if (retries == 0)
+        hal_system_reset();
 
     /* MAS6181B */
     mas6181b_init(&mas6181b1_obj, &mas6181b1_cfg);
@@ -473,6 +479,12 @@ void hal_process(void)
 
     set_sleep_mode(SLEEP_MODE_IDLE);
     sleep_mode();
+}
+
+void hal_system_reset(void)
+{
+    wdt_enable(WDTO_15MS);
+    while (1); 
 }
 
 void hal_led_set(bool state)
@@ -533,12 +545,20 @@ void hal_rotary_encoder_process(void)
 
 void hal_set_time(struct ds1307_time *time)
 {
-    ds1307_set_time(&rtc_obj, time);
+    uint8_t retries = HAL_DS1307_COMM_RETRY_COUNT;
+    while (retries-- && !ds1307_set_time(&rtc_obj, time)) {};
+
+    if (retries == 0)
+        hal_system_reset();
 }
 
 void hal_get_time(struct ds1307_time *time)
 {
-    ds1307_get_time(&rtc_obj, time);
+    uint8_t retries = HAL_DS1307_COMM_RETRY_COUNT;
+    while (retries-- && !ds1307_get_time(&rtc_obj, time)) {};
+
+    if (retries == 0)
+        hal_system_reset();
 }
 
 void hal_set_alarm(struct hal_timestamp *alarm)
