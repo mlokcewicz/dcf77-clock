@@ -27,7 +27,7 @@ int main()
     
     while (1)
     {
-        /* Watchdog, sleep mode handling and polling mode handling */
+        /* Watchdog, sleep mode and polling mode handling */
         hal_process();
 
         /* Main logic */
