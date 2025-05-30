@@ -350,7 +350,7 @@ static void ui_print_sync_status(event_sync_time_status_data_t *sync_time_status
 
     hal_lcd_print(ctx.buf, UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_ROW, UI_ITEM_POS_SYNC_STATUS_BIT_NUMBER_COL);
 
-    static char *status_str_tab[] = 
+    static const char *status_str_tab[] = 
     {
         [EVENT_SYNC_TIME_STATUS_WAITING] = "WAITING",
         [EVENT_SYNC_TIME_STATUS_FRAME_STARTED] = "STARTED",
