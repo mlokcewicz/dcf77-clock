@@ -1,6 +1,6 @@
 # dcf77-clock 
 
-**DCF77-controlled** radio clock project based on the **ATmega88** microcontroller, **MAS6181B** AM receiver, and **DS1307** RTC.
+**DCF77-controlled** radio clock based on the **ATmega88** microcontroller, **MAS6181B** AM receiver, and **DS1307** RTC.
 
 ![dcf77_clock_assembled](./docs/img/dcf77_clock_assembled.JPG)
 
