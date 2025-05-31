@@ -48,9 +48,9 @@ Confirm or cancel by selecting the CANCEL/OK icon and confirming by pushing the 
 
 There is also the option to force a radio synchronization by clicking the **antenna icon**.
 
-## Receiving time information via serial port
+## Receiving time information over the serial port
 
-The device transmits the current timestamp every second via the serial port ('9600 baud, 8N1, no flow control').
+The device transmits the current timestamp every second via the serial port (`9600 baud, 8N1, no flow control`).
 
 The following structure is transmitted:
 
