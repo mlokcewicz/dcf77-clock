@@ -16,7 +16,7 @@
 * Time and date retention powered by a CR2032 battery
   
 **Hardware:**
-* ATmega88
+* ATmega88 MCU
 * MAS6181B DCF77 receiver
 * DS1307 RTC + CR2032
 * 2x16 HD44760 LCD
