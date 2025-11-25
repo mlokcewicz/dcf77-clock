@@ -72,12 +72,12 @@ static enum dcf77_bit_val get_bit_val(uint16_t ms)
     return DCF77_BIT_VAL_ERROR;
 }
 
-static uint8_t frame_get_bit(const uint8_t *frame, uint8_t bit)
+static uint8_t frame_get_bit(const volatile uint8_t *frame, uint8_t bit)
 {
     return (frame[bit / 8] >> (bit % 8)) & 1;
 }
 
-static uint8_t frame_get_parity(const uint8_t *frame, uint8_t start, uint8_t len)
+static uint8_t frame_get_parity(const volatile uint8_t *frame, uint8_t start, uint8_t len)
 {
     uint8_t p = 0;
 
@@ -89,7 +89,7 @@ static uint8_t frame_get_parity(const uint8_t *frame, uint8_t start, uint8_t len
 
 static bool frame_validate(void)
 {
-    const uint8_t *frame = ctx.frame[1];
+    const volatile uint8_t *frame = ctx.frame[1];
 
     /* Bit 0: always 0 (frame start) */
     if (frame_get_bit(frame, 0) != 0)
@@ -152,7 +152,7 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
 
         if (ctx.bit_cnt >= 59 + DCF77_DECODER_FRAME_GET_LEAP_SECOND(ctx.frame[0]))
         {
-            memcpy(ctx.frame[1], ctx.frame[0], sizeof(ctx.frame[1]));
+            memcpy((void*)ctx.frame[1], (const void*)ctx.frame[0], sizeof(ctx.frame[1]));
 
             ctx.frame_started = false;
             ctx.bit_cnt = 0;
@@ -174,7 +174,7 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit)
     }
 }
 
-uint8_t *dcf77_get_frame(void)
+volatile uint8_t *dcf77_get_frame(void)
 {
     return ctx.frame[1];
 }

@@ -110,7 +110,7 @@ void radio_manager_process(void)
             
             event_set_time_req_data_t *set_time_req_data = event_get_data(EVENT_SET_TIME_REQ);
             
-            uint8_t *dcf_frame = dcf77_get_frame();
+            uint8_t *dcf_frame = (uint8_t*)dcf77_get_frame();
             
             set_time_req_data->seconds = 0;
             set_time_req_data->minutes = 10 * DCF77_DECODER_FRAME_GET_MINUTES_TENS(dcf_frame) + DCF77_DECODER_FRAME_GET_MINUTES_UNITS(dcf_frame);

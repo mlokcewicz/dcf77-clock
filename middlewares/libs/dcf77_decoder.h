@@ -82,7 +82,7 @@ enum dcf77_decoder_status dcf77_decode(uint16_t ms, bool triggered_on_bit);
 
 /// @brief Returns pointer do last received time frame
 /// @return last received frame pointer
-uint8_t *dcf77_get_frame(void);
+volatile uint8_t *dcf77_get_frame(void);
 
 //------------------------------------------------------------------------------
 
